@@ -78,6 +78,10 @@ export default function Home() {
   ];
 
   const [showScrollTop, setShowScrollTop] = useState(false); // Yukarı git butonu
+  const [showPremiumModal, setShowPremiumModal] = useState(false); // Premium teşvik modal
+
+  // Free kullanıcı limiti
+  const FREE_RISK_LIMIT = 20;
 
   const fileInputRef = useRef<any>(null);
   const logoInputRef = useRef<any>(null);
@@ -135,6 +139,20 @@ export default function Home() {
   const showNotification = (msg: string, type: 'success' | 'error' = 'success') => {
     setNotification({ show: true, message: msg, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 4000);
+  };
+
+  // Free kullanıcı kontrolü - Giriş yapmamışsa free
+  const isFreeUser = !session;
+
+  // Risk ekleme limiti kontrolü
+  const canAddMoreRisks = (countToAdd: number = 1): boolean => {
+    if (!isFreeUser) return true; // Premium kullanıcı - sınırsız
+    return risks.length + countToAdd <= FREE_RISK_LIMIT;
+  };
+
+  // Premium modal göster
+  const showPremiumLimitWarning = () => {
+    setShowPremiumModal(true);
   };
 
   // --- HESAPLAMA FONKSİYONLARI utils.ts'den import ediliyor ---
@@ -261,6 +279,11 @@ export default function Home() {
   };
 
   const handleAddRisk = () => {
+    // Free kullanıcı limit kontrolü
+    if (!canAddMoreRisks()) {
+      showPremiumLimitWarning();
+      return;
+    }
     if (isRiskDuplicate(form.hazard, form.risk)) {
       showNotification("Bu madde zaten ekli!", "error");
       return;
@@ -288,6 +311,11 @@ export default function Home() {
 
   const handleQuickAdd = (e: any, item: any, categoryCode: any) => {
     e.stopPropagation();
+    // Free kullanıcı limit kontrolü
+    if (!canAddMoreRisks()) {
+      showPremiumLimitWarning();
+      return;
+    }
     if (isRiskDuplicate(item.hazard, item.risk)) {
       showNotification("Bu madde zaten ekli!", "error");
       return;
@@ -325,6 +353,17 @@ export default function Home() {
 
   const handleAddAllFromCategory = (e: any, cat: any) => {
     if (e) e.stopPropagation();
+
+    // Free kullanıcı için eklenebilecek madde sayısını hesapla
+    const itemsToAdd = cat.items.filter((item: any) => !isRiskDuplicate(item.hazard, item.risk));
+    if (!canAddMoreRisks(itemsToAdd.length)) {
+      const remainingSlots = FREE_RISK_LIMIT - risks.length;
+      if (remainingSlots <= 0) {
+        showPremiumLimitWarning();
+        return;
+      }
+    }
+
     let addedCount = 0;
     let currentCategoryCount = risks.filter((r: any) => r.riskNo && r.riskNo.startsWith(cat.code + '.')).length;
     const newRisks: any[] = [];
@@ -391,7 +430,7 @@ export default function Home() {
           categories: riskCategories.map(c => ({
             code: c.code,
             category: c.category,
-            items: c.items?.map((item: any) => ({ source: item.source })) || []
+            items: c.items?.map((item: any) => ({ source: item.source, risk: item.risk })) || []
           }))
         })
       });
@@ -449,7 +488,7 @@ export default function Home() {
         setSelectedPreviewRisks(new Set(previewList.map(r => r.tempId))); // Hepsi tikli başlasın
         setShowAIPreview(true);
       } else {
-        showNotification(`"${sectorSearch}" sektörü için eklenecek yeni risk bulunamadı.`, 'error');
+        showNotification(`"${sectorSearch}" sektörü için tabloda riskler zaten mevcut.`, 'error');
       }
 
     } catch (error: any) {
@@ -466,6 +505,17 @@ export default function Home() {
 
     if (selectedRisks.length === 0) {
       showNotification('Lütfen en az bir madde seçin.', 'error');
+      return;
+    }
+
+    // Free kullanıcı limit kontrolü
+    if (!canAddMoreRisks(selectedRisks.length)) {
+      const remainingSlots = FREE_RISK_LIMIT - risks.length;
+      if (remainingSlots <= 0) {
+        showPremiumLimitWarning();
+        return;
+      }
+      showNotification(`Free kullanıcı olarak sadece ${remainingSlots} madde daha ekleyebilirsiniz.`, 'error');
       return;
     }
 
@@ -1918,6 +1968,27 @@ export default function Home() {
       }
     }
 
+    // Free kullanıcı için filigran ekle
+    if (isFreeUser) {
+      const totalPdfPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPdfPages; i++) {
+        doc.setPage(i);
+        const pgWidth = doc.internal.pageSize.width;
+        const pgHeight = doc.internal.pageSize.height;
+
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(40);
+        doc.setTextColor(200, 200, 200); // Açık gri
+
+        // Köşegen filigran
+        doc.text('www.isgpratik.com', pgWidth / 2, pgHeight / 2, {
+          angle: 45,
+          align: 'center',
+          baseline: 'middle'
+        });
+      }
+    }
+
     doc.save(filename);
   };
 
@@ -2020,15 +2091,15 @@ export default function Home() {
 
           {/* SEKTÖR SEÇ BÖLÜMÜ */}
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-            <h2 className="text-sm font-bold text-indigo-700 uppercase flex items-center mb-2">
+            <h2 className="text-xs font-bold text-indigo-700 uppercase flex items-center mb-2">
               <Zap className="w-4 h-4 mr-2" />
-              🤖 AI Sektör Analizi
+              ⚡ Hızlı Sektör Ekle (Beta)
             </h2>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Sektör yazın (örn: inşaat)..."
-                className="w-full pl-3 pr-24 py-2 text-sm border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                placeholder="Sektör yazın..."
+                className="w-full pl-3 pr-16 py-2 text-xs border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
                 value={sectorSearch}
                 onChange={(e) => {
                   setSectorSearch(e.target.value);
@@ -2042,9 +2113,9 @@ export default function Home() {
               <button
                 onClick={handleSectorAnalysis}
                 disabled={sectorLoading || !sectorSearch.trim()}
-                className="absolute right-1 top-1 px-2 py-1 bg-indigo-600 text-white rounded-md text-xs font-bold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
-                {sectorLoading ? '...' : 'Tabloya Ekle'}
+                {sectorLoading ? '...' : 'Ekle'}
               </button>
 
               {/* Sektör Önerileri Dropdown */}
@@ -2073,7 +2144,7 @@ export default function Home() {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              AI, sektör ile ilgili tüm riskleri otomatik ekler
+              Seçeceğiniz sektör ile ilgili tüm riskleri otomatik ekler
             </p>
           </div>
 
@@ -2832,6 +2903,38 @@ export default function Home() {
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {selectedPreviewRisks.size} Maddeyi Tabloya Ekle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PREMIUM TEŞVİK MODAL */}
+      {showPremiumModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Premium Üyelik Gerekli</h2>
+            <p className="text-gray-600 mb-4">
+              Free kullanıcılar maksimum <span className="font-bold text-orange-600">{FREE_RISK_LIMIT} risk maddesi</span> ekleyebilir.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Premium üyelik ile sınırsız risk maddesi ekleyebilir, filigransız PDF alabilir ve tüm özelliklere erişebilirsiniz.
+            </p>
+            <div className="space-y-3">
+              <Link
+                href="/register"
+                className="block w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all"
+              >
+                🎁 3 Ay Ücretsiz Premium - Kayıt Ol
+              </Link>
+              <button
+                onClick={() => setShowPremiumModal(false)}
+                className="w-full py-2 text-gray-500 hover:text-gray-700 text-sm"
+              >
+                Daha Sonra
               </button>
             </div>
           </div>

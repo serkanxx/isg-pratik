@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Home } from "lucide-react";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -139,6 +140,15 @@ export default function RegisterPage() {
                             : "Telefonunuza gelen kodu girin"}
                     </p>
                 </div>
+
+                {/* Ana Sayfaya Dön */}
+                <Link
+                    href="/"
+                    className="flex items-center justify-center gap-2 w-full py-2 mb-6 text-gray-600 hover:text-indigo-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    <Home className="w-4 h-4" />
+                    Ana Sayfaya Dön
+                </Link>
 
                 {/* Premium Badge */}
                 {step === 1 && (

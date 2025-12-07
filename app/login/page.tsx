@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Home } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -54,8 +55,17 @@ export default function LoginPage() {
                         <span className="text-2xl font-bold text-white">İSG</span>
                     </div>
                     <h1 className="text-2xl font-bold text-gray-800">Hoş Geldiniz</h1>
-                    <p className="text-gray-500 mt-2">İSG-PRO Risk Değerlendirme Sistemi</p>
+                    <p className="text-gray-500 mt-2">İSG Pratik İş Güvenliği Sistemi</p>
                 </div>
+
+                {/* Ana Sayfaya Dön */}
+                <Link
+                    href="/"
+                    className="flex items-center justify-center gap-2 w-full py-2 mb-6 text-gray-600 hover:text-indigo-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    <Home className="w-4 h-4" />
+                    Ana Sayfaya Dön
+                </Link>
 
                 {/* Hata Mesajı */}
                 {error && (
