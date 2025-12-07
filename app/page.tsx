@@ -79,6 +79,7 @@ export default function Home() {
 
   const [showScrollTop, setShowScrollTop] = useState(false); // Yukarı git butonu
   const [showPremiumModal, setShowPremiumModal] = useState(false); // Premium teşvik modal
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobil sidebar açık/kapalı
 
   // Free kullanıcı limiti
   const FREE_RISK_LIMIT = 20;
@@ -2036,8 +2037,15 @@ export default function Home() {
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
+              {/* Mobil Hamburger Menü Butonu */}
+              <button
+                onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                className="md:hidden mr-3 p-2 rounded-md hover:bg-blue-800 transition-colors"
+              >
+                {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
               <AlertTriangle className="h-8 w-8 text-yellow-400 mr-2" />
-              <span className="font-bold text-xl tracking-wide">İSG-PRO</span>
+              <span className="font-bold text-xl tracking-wide hidden sm:inline">İSG-PRO</span>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -2086,8 +2094,28 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
 
+        {/* Mobil Sidebar Overlay Arka Plan */}
+        {isMobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+
         {/* --- SOL MENÜ --- */}
-        <aside className="w-64 bg-white shadow-md flex flex-col hidden md:flex border-r border-gray-200 overflow-y-auto">
+        <aside className={`
+          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+          fixed md:relative
+          top-16 md:top-0
+          left-0
+          h-[calc(100vh-64px)]
+          w-72 md:w-64
+          bg-white shadow-md flex flex-col 
+          border-r border-gray-200 overflow-y-auto
+          transition-transform duration-300 ease-in-out
+          z-50 md:z-auto
+        `}>
 
           {/* SEKTÖR SEÇ BÖLÜMÜ */}
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
