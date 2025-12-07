@@ -1821,7 +1821,7 @@ export default function Home() {
         15: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
         16: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
 
-        17: { cellWidth: 10, halign: 'center', valign: 'middle' } // Sorumlu (Metni gizle, dikey çizeceğiz)
+        17: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 5.6 } // Sorumlu - font %30 küçültüldü
       },
       didDrawPage: (data) => {
         drawHeader(doc);
