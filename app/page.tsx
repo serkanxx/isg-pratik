@@ -2044,8 +2044,7 @@ export default function Home() {
               >
                 {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <AlertTriangle className="h-8 w-8 text-yellow-400 mr-2" />
-              <span className="font-bold text-xl tracking-wide hidden sm:inline">İSG-PRO</span>
+              <img src="/isgpratik.png" alt="İSG Pratik" className="h-8 w-auto" />
             </div>
 
             <div className="flex items-center space-x-4">
