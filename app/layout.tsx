@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     google: "j4rFgnURFww2H9HH7z5kWXtedMvdalOyefFAJqPlsr8", // Google Search Console doğrulama kodu
   },
   alternates: {
-    canonical: "https://isgpratik.com",
+    canonical: "https://www.isgpratik.com",
   },
   category: "İş Güvenliği",
   manifest: "/manifest.json",
