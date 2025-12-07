@@ -59,7 +59,7 @@ export default function Home() {
   const [notification, setNotification] = useState<Notification>({ show: false, message: '', type: 'success' });
   const [activeRowIdForImage, setActiveRowIdForImage] = useState(null);
   const [deleteConfirmStep, setDeleteConfirmStep] = useState(0); // 0: Kapalı, 1: İlk Onay, 2: Son Onay
-  const [isFormCollapsed, setIsFormCollapsed] = useState(false); // Formun açık/kapalı durumu
+  const [isFormCollapsed, setIsFormCollapsed] = useState(true); // Formun açık/kapalı durumu - varsayılan kapalı
   const [includeProcedure, setIncludeProcedure] = useState(true); // Risk Prosedürü dahil mi?
   const [sectorSearch, setSectorSearch] = useState(''); // Sektör arama terimi
   const [sectorLoading, setSectorLoading] = useState(false); // Sektör analizi yükleniyor mu?
@@ -2198,10 +2198,10 @@ export default function Home() {
             {filteredCategories.map((cat: any, index: any) => (
               <li key={index} className="border-b border-gray-100 group">
                 <div className={`w-full flex items-center justify-between px-3 py-1 hover:bg-blue-50 transition-colors ${risks.some((r: any) => r.categoryCode === cat.code)
-                    ? 'bg-green-100 hover:bg-green-200'
-                    : selectedCategory?.category === cat.category
-                      ? 'bg-blue-100'
-                      : ''
+                  ? 'bg-green-100 hover:bg-green-200'
+                  : selectedCategory?.category === cat.category
+                    ? 'bg-blue-100'
+                    : ''
                   }`}>
                   <button
                     onClick={() => setSelectedCategory(cat)}
@@ -2355,8 +2355,8 @@ export default function Home() {
                 {isFormCollapsed ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronUp className="w-5 h-5 text-gray-400" />}
               </div>
 
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFormCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
-                <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFormCollapsed ? 'max-h-0 opacity-0' : 'max-h-[800px] opacity-100'}`}>
+                <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
                   {/* Sol Kısım */}
                   <div className="lg:col-span-7 space-y-2">
                     <div className="grid grid-cols-3 gap-2">
