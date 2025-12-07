@@ -2109,10 +2109,10 @@ export default function Home() {
           fixed md:relative
           top-16 md:top-0
           left-0
-          h-[calc(100vh-64px)]
+          h-[calc(100vh-64px)] md:h-auto md:min-h-[calc(100vh-64px)]
           w-72 md:w-64
           bg-white shadow-md flex flex-col 
-          border-r border-gray-200 overflow-y-auto
+          border-r border-gray-200 overflow-y-auto md:overflow-visible
           transition-transform duration-300 ease-in-out
           z-50 md:z-auto
         `}>
@@ -2197,7 +2197,12 @@ export default function Home() {
           <ul className="flex-1">
             {filteredCategories.map((cat: any, index: any) => (
               <li key={index} className="border-b border-gray-100 group">
-                <div className={`w-full flex items-center justify-between px-3 py-2 hover:bg-blue-50 transition-colors ${selectedCategory?.category === cat.category ? 'bg-blue-100' : ''}`}>
+                <div className={`w-full flex items-center justify-between px-3 py-1 hover:bg-blue-50 transition-colors ${risks.some((r: any) => r.categoryCode === cat.code)
+                    ? 'bg-green-100 hover:bg-green-200'
+                    : selectedCategory?.category === cat.category
+                      ? 'bg-blue-100'
+                      : ''
+                  }`}>
                   <button
                     onClick={() => setSelectedCategory(cat)}
                     className="flex-1 text-left text-xs font-bold uppercase text-gray-700 flex items-center"
