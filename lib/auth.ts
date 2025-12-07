@@ -56,6 +56,39 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt",
     },
     callbacks: {
+        async signIn({ user, account, profile }) {
+            // Google OAuth için kullanıcı kontrolü
+            if (account?.provider === "google") {
+                try {
+                    // Kullanıcı var mı kontrol et
+                    const existingUser = await prisma.user.findUnique({
+                        where: { email: user.email || "" },
+                    });
+
+                    if (!existingUser && user.email) {
+                        // Yeni kullanıcı oluştur
+                        const trialEndsAt = new Date();
+                        trialEndsAt.setMonth(trialEndsAt.getMonth() + 3);
+
+                        await prisma.user.create({
+                            data: {
+                                email: user.email,
+                                name: user.name || "",
+                                image: user.image || "",
+                                phoneVerified: true,
+                                plan: "premium_trial",
+                                trialEndsAt,
+                            },
+                        });
+                    }
+                    return true;
+                } catch (error) {
+                    console.error("Google signIn error:", error);
+                    return false;
+                }
+            }
+            return true;
+        },
         async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
