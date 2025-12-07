@@ -2044,7 +2044,7 @@ export default function Home() {
               >
                 {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <img src="/isgpratik.png" alt="İSG Pratik" className="h-16 w-auto" />
+              <img src="/isgpratik.png" alt="İSG Pratik" className="h-20 w-auto" />
             </div>
 
             <div className="flex items-center space-x-4">
