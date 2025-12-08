@@ -2049,6 +2049,8 @@ export default function Home() {
 
             <div className="flex items-center space-x-4">
               <a href="/" className="text-sm font-bold text-gray-200 hover:text-white hover:underline transition-all">RİSK DEĞERLENDİRMESİ</a>
+              <span className="text-sm font-bold text-gray-400 cursor-not-allowed">ACİL DURUM EYLEM PLANI (YAKINDA)</span>
+              <span className="text-sm font-bold text-gray-400 cursor-not-allowed">YILLIK PLANLAR (YAKINDA)</span>
 
               {session ? (
                 <div className="flex items-center space-x-3">
