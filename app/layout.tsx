@@ -80,8 +80,13 @@ export const metadata: Metadata = {
   category: "İş Güvenliği",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: [
+      { url: '/isgpratik.png', type: 'image/png' },
+    ],
+    shortcut: ['/isgpratik.png'],
+    apple: [
+      { url: '/isgpratik.png', type: 'image/png' },
+    ],
   },
   viewport: {
     width: "device-width",
