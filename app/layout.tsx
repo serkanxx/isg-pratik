@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     canonical: "https://www.isgpratik.com",
   },
   category: "İş Güvenliği",
-  category: "İş Güvenliği",
+
   viewport: {
     width: "device-width",
     initialScale: 1,
