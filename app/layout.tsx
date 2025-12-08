@@ -78,17 +78,7 @@ export const metadata: Metadata = {
     canonical: "https://www.isgpratik.com",
   },
   category: "İş Güvenliği",
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/isgpratik.png', type: 'image/png' },
-    ],
-    shortcut: ['/favicon.ico'],
-    apple: [
-      { url: '/isgpratik.png', type: 'image/png' },
-    ],
-  },
+  category: "İş Güvenliği",
   viewport: {
     width: "device-width",
     initialScale: 1,
