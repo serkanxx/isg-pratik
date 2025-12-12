@@ -109,16 +109,56 @@ export async function POST(request: NextRequest) {
         // console.log('Eşleşen etiketler:', matchingTags);
 
         // 1. Sektör etiketleriyle eşleşen kayıtları bul
-        const { data: sectorResults, error: sectorError } = await supabase
-            .from('risk_items')
-            .select('*')
-            .overlaps('sector_tags', matchingTags)
-            .limit(limit);
+        let sectorResults: any[] = [];
+        let searchMethod = 'overlaps';
 
-        if (sectorError) {
-            console.error('Supabase arama hatası:', sectorError);
-            throw new Error(`Veritabanı arama hatası: ${sectorError.message}`);
+        try {
+            // Önce overlaps ile dene (PostgreSQL array intersection)
+            const { data: overlapsResults, error: overlapsError } = await supabase
+                .from('risk_items')
+                .select('*')
+                .overlaps('sector_tags', matchingTags)
+                .limit(limit);
+
+            if (overlapsError) {
+                console.error('Overlaps sorgu hatası:', overlapsError);
+                // Fallback: contains ile tek tek ara
+                searchMethod = 'contains_fallback';
+
+                for (const tag of matchingTags.slice(0, 3)) { // İlk 3 tag ile sınırla
+                    const { data: containsResults, error: containsError } = await supabase
+                        .from('risk_items')
+                        .select('*')
+                        .contains('sector_tags', [tag])
+                        .limit(500);
+
+                    if (!containsError && containsResults) {
+                        sectorResults.push(...containsResults);
+                    }
+                }
+
+                // Eğer contains de başarısız olursa, text search yap
+                if (sectorResults.length === 0) {
+                    searchMethod = 'text_search_fallback';
+                    const { data: textResults, error: textError } = await supabase
+                        .from('risk_items')
+                        .select('*')
+                        .or(`main_category.ilike.%${matchingTags[0]}%,sub_category.ilike.%${matchingTags[0]}%,source.ilike.%${matchingTags[0]}%`)
+                        .limit(500);
+
+                    if (!textError && textResults) {
+                        sectorResults = textResults;
+                    }
+                }
+            } else {
+                sectorResults = overlapsResults || [];
+            }
+        } catch (searchError) {
+            console.error('Sektör arama genel hatası:', searchError);
+            searchMethod = 'error_fallback';
         }
+
+        console.log(`Arama yöntemi: ${searchMethod}, Sektör sonuç sayısı: ${sectorResults.length}`);
 
         // 2. Kategori 278 "GENEL (TÜM SEKTÖRLER)" içindeki TÜM maddeleri ayrıca getir
         // Hem string '278' hem de integer 278 olarak dene, ayrıca riskNo ile de kontrol et
@@ -238,9 +278,11 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             results: formattedResults,
-            method: 'sector_tags_search',
+            method: searchMethod,
             matchedTags: matchingTags,
-            count: formattedResults.length
+            count: formattedResults.length,
+            sectorCount: sectorResults?.length || 0,
+            generalCount: generalResults?.length || 0
         });
 
     } catch (error: any) {

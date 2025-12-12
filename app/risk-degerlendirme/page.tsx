@@ -436,9 +436,9 @@ export default function Home() {
       }
 
       const data = await response.json();
-      const { results, method } = data;
+      const { results, method, sectorCount, generalCount } = data;
 
-      console.log(`Arama yöntemi: ${method}, Sonuç sayısı: ${results?.length || 0}`);
+      console.log(`Arama: "${sectorSearch}", Yöntem: ${method}, Toplam: ${results?.length || 0}, Sektör: ${sectorCount || 0}, Genel: ${generalCount || 0}`);
 
       if (!results || results.length === 0) {
         showNotification(`"${sectorSearch}" için uygun risk bulunamadı.`, 'error');
