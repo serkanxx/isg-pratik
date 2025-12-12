@@ -1,0 +1,8 @@
+Fetching risk_items from Supabase with pagination...
+Fetched batch: 1000, Total: 1000
+Fetched batch: 1000, Total: 2000
+Fetched batch: 235, Total: 2235
+Total Fetched: 2235 items.
+Total Categories: 163
+Local backup created: risks.json.bak
+SUCCESS: risks.json updated from Supabase source.

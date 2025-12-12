@@ -42,3 +42,33 @@ export const formatDate = (dateStr: string): string => {
     }
     return dateStr;
 };
+
+
+// Değer Seçenekleri (Dropdown için)
+export const P_VALUES = [
+    { value: 0.2, label: '0.2 - Pratik olarak imkansız' },
+    { value: 0.5, label: '0.5 - Zayıf ihtimal' },
+    { value: 1, label: '1 - Oldukça düşük ihtimal' },
+    { value: 3, label: '3 - Nadir' },
+    { value: 6, label: '6 - Kuvvetle muhtemel' },
+    { value: 10, label: '10 - Beklenir' }
+];
+
+export const F_VALUES = [
+    { value: 0.5, label: '0.5 - Çok nadir (Yılda bir)' },
+    { value: 1, label: '1 - Oldukça seyrek (Yılda birkaç)' },
+    { value: 2, label: '2 - Seyrek (Ayda bir)' },
+    { value: 3, label: '3 - Ara sıra (Haftada bir)' },
+    { value: 6, label: '6 - Sıklıkla (Günde bir)' },
+    { value: 10, label: '10 - Sürekli (Saatte bir)' }
+];
+
+export const S_VALUES = [
+    { value: 1, label: '1 - Hafif' },
+    { value: 3, label: '3 - Düşük' },
+    { value: 7, label: '7 - Önemli' },
+    { value: 15, label: '15 - Ciddi' },
+    { value: 40, label: '40 - Çok Ciddi' },
+    { value: 70, label: '70 - Yıkıcı' },
+    { value: 100, label: '100 - Felaket' }
+];

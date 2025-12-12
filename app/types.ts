@@ -47,6 +47,7 @@ export interface RiskLibraryItem {
     s2: number;
     measures: string;
     responsible?: string;
+    sector_tags?: string[];
 }
 
 export interface HeaderInfo {

@@ -78,6 +78,11 @@ export const metadata: Metadata = {
     canonical: "https://www.isgpratik.com",
   },
   category: "İş Güvenliği",
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 
   viewport: {
     width: "device-width",
@@ -126,9 +131,6 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" href="/isgpratik.png" />
-        <link rel="apple-touch-icon" href="/isgpratik.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
