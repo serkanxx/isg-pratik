@@ -436,9 +436,10 @@ export default function Home() {
       }
 
       const data = await response.json();
-      const { results, method, sectorCount, generalCount } = data;
+      const { results, method, sectorCount, generalCount, matchedTags } = data;
 
-      console.log(`Arama: "${sectorSearch}", Yöntem: ${method}, Toplam: ${results?.length || 0}, Sektör: ${sectorCount || 0}, Genel: ${generalCount || 0}`);
+      // Debug log - query ve matched tags
+      console.log(`Query: "${sectorSearch}", Matched Tags: ${JSON.stringify(matchedTags)}, Yöntem: ${method}, Sektör: ${sectorCount || 0}, Genel: ${generalCount || 0}`);
 
       if (!results || results.length === 0) {
         showNotification(`"${sectorSearch}" için uygun risk bulunamadı.`, 'error');
@@ -486,8 +487,8 @@ export default function Home() {
         setPreviewRisks(previewList);
         setSelectedPreviewRisks(new Set(previewList.map(r => r.tempId))); // Hepsi tikli başlasın
         setShowAIPreview(true);
-        // Debug: Sektör ve genel sonuç sayısını göster
-        showNotification(`${previewList.length} risk bulundu (Sektör: ${sectorCount || 0}, Genel: ${generalCount || 0}, Yöntem: ${method})`, 'success');
+        // Debug: Sektör, genel ve matched tag göster
+        showNotification(`S:${sectorCount || 0} G:${generalCount || 0} Tag:${matchedTags?.[0] || 'yok'}`, 'success');
       } else {
         showNotification(`"${sectorSearch}" için tabloda riskler zaten mevcut.`, 'error');
       }
