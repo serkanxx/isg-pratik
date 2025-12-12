@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
             // Önce overlaps ile dene (PostgreSQL array intersection)
             const { data: overlapsResults, error: overlapsError } = await supabase
                 .from('risk_items')
-                .select('id,riskNo,sub_category,source,hazard,risk,affected,responsible,p,f,s,p2,f2,s2,measures,category_code,main_category,sector_tags')
+                .select('*')
                 .overlaps('sector_tags', matchingTags)
                 .limit(limit);
 
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
                 for (const tag of matchingTags.slice(0, 3)) { // İlk 3 tag ile sınırla
                     const { data: containsResults, error: containsError } = await supabase
                         .from('risk_items')
-                        .select('id,riskNo,sub_category,source,hazard,risk,affected,responsible,p,f,s,p2,f2,s2,measures,category_code,main_category,sector_tags')
+                        .select('*')
                         .contains('sector_tags', [tag])
                         .limit(500);
 
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
                     searchMethod = 'text_search_fallback';
                     const { data: textResults, error: textError } = await supabase
                         .from('risk_items')
-                        .select('id,riskNo,sub_category,source,hazard,risk,affected,responsible,p,f,s,p2,f2,s2,measures,category_code,main_category,sector_tags')
+                        .select('*')
                         .or(`main_category.ilike.%${matchingTags[0]}%,sub_category.ilike.%${matchingTags[0]}%,source.ilike.%${matchingTags[0]}%`)
                         .limit(500);
 
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
         if (generalResults.length === 0) {
             const { data: generalIntResults, error: generalIntError } = await supabase
                 .from('risk_items')
-                .select('id,riskNo,sub_category,source,hazard,risk,affected,responsible,p,f,s,p2,f2,s2,measures,category_code,main_category,sector_tags')
+                .select('*')
                 .eq('category_code', 278);
 
             if (generalIntError) {
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
         if (generalResults.length === 0) {
             const { data: riskNoResults, error: riskNoError } = await supabase
                 .from('risk_items')
-                .select('id,riskNo,sub_category,source,hazard,risk,affected,responsible,p,f,s,p2,f2,s2,measures,category_code,main_category,sector_tags')
+                .select('*')
                 .ilike('riskNo', '278.%');
 
             if (riskNoError) {
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
         if (generalResults.length === 0) {
             const { data: mainCatResults, error: mainCatError } = await supabase
                 .from('risk_items')
-                .select('id,riskNo,sub_category,source,hazard,risk,affected,responsible,p,f,s,p2,f2,s2,measures,category_code,main_category,sector_tags')
+                .select('*')
                 .ilike('main_category', '%GENEL%');
 
             if (mainCatError) {
