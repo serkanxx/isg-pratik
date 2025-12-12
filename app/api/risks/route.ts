@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { supabase } from '@/lib/supabase';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const dataFilePath = path.join(process.cwd(), 'app/data/risks.json');
 
 export async function GET() {
     try {
-        const fileContents = fs.readFileSync(dataFilePath, 'utf8');
+        const fileContents = await fs.promises.readFile(dataFilePath, 'utf8');
         const data = JSON.parse(fileContents);
         return NextResponse.json(data);
     } catch (error) {
@@ -15,12 +17,21 @@ export async function GET() {
     }
 }
 
+
+
 export async function POST(request: Request) {
+    const session = await getServerSession(authOptions);
+
+    // @ts-ignore
+    if (!session || session.user?.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
 
         // 1. JSON dosyasına kaydet
-        fs.writeFileSync(dataFilePath, JSON.stringify(body, null, 2), 'utf8');
+        await fs.promises.writeFile(dataFilePath, JSON.stringify(body, null, 2), 'utf8');
 
         // 2. Supabase'e senkronize et (arka planda)
         syncToSupabase(body).catch(err => {

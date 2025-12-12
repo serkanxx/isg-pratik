@@ -86,8 +86,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        /*
         console.log('=== Sector Tags Arama ===');
         console.log('Aranan sektör:', sectorInput);
+        */
 
         // Kullanıcı girdisine TAM eşleşen veya başlayan sektör etiketlerini bul
         let matchingTags = SECTOR_TAGS.filter(tag =>
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
             matchingTags = [sectorInput];
         }
 
-        console.log('Eşleşen etiketler:', matchingTags);
+        // console.log('Eşleşen etiketler:', matchingTags);
 
         // 1. Sektör etiketleriyle eşleşen kayıtları bul
         const { data: sectorResults, error: sectorError } = await supabase
@@ -132,7 +134,7 @@ export async function POST(request: NextRequest) {
             console.error('Genel kategori (string) arama hatası:', generalStringError);
         } else if (generalStringResults && generalStringResults.length > 0) {
             generalResults = generalStringResults;
-            console.log('Genel sonuçları (string 278):', generalResults.length);
+            // console.log('Genel sonuçları (string 278):', generalResults.length);
         }
 
         // Eğer string sonuç boşsa, integer olarak dene
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
                 console.error('Genel kategori (int) arama hatası:', generalIntError);
             } else if (generalIntResults && generalIntResults.length > 0) {
                 generalResults = generalIntResults;
-                console.log('Genel sonuçları (int 278):', generalResults.length);
+                // console.log('Genel sonuçları (int 278):', generalResults.length);
             }
         }
 
@@ -161,7 +163,7 @@ export async function POST(request: NextRequest) {
                 console.error('Genel kategori (riskNo) arama hatası:', riskNoError);
             } else if (riskNoResults && riskNoResults.length > 0) {
                 generalResults = riskNoResults;
-                console.log('Genel sonuçları (riskNo 278.%):', generalResults.length);
+                // console.log('Genel sonuçları (riskNo 278.%):', generalResults.length);
             }
         }
 
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
                 console.error('Genel kategori (main_category) arama hatası:', mainCatError);
             } else if (mainCatResults && mainCatResults.length > 0) {
                 generalResults = mainCatResults;
-                console.log('Genel sonuçları (main_category GENEL):', generalResults.length);
+                // console.log('Genel sonuçları (main_category GENEL):', generalResults.length);
             }
         }
 
@@ -206,10 +208,12 @@ export async function POST(request: NextRequest) {
             }
         });
 
+        /*
         console.log('Sektör sonuçları:', sectorResults?.length || 0);
         console.log('Genel sonuçları (final):', generalResults?.length || 0);
         console.log('Genel kategori eklenen:', generalAddedCount);
         console.log('Toplam sonuç:', allResults.length);
+        */
 
         // Sonuçları düzenle
         const formattedResults = (allResults || []).map((item: any) => ({

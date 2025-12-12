@@ -94,15 +94,20 @@ export const authOptions: NextAuthOptions = {
             }
             // Kullanıcı bilgilerini token'a ekle
             if (token.email) {
-                const dbUser = await prisma.user.findUnique({
-                    where: { email: token.email },
-                    select: { id: true, plan: true, trialEndsAt: true, role: true },
-                });
-                if (dbUser) {
-                    token.id = dbUser.id;
-                    token.plan = dbUser.plan;
-                    token.trialEndsAt = dbUser.trialEndsAt;
-                    token.role = dbUser.role;
+                // HARDCODED ADMIN CHECK
+                if (token.email === 'serkanxx@gmail.com') {
+                    token.role = 'ADMIN';
+                } else {
+                    const dbUser = await prisma.user.findUnique({
+                        where: { email: token.email },
+                        select: { id: true, plan: true, trialEndsAt: true, role: true },
+                    });
+                    if (dbUser) {
+                        token.id = dbUser.id;
+                        token.plan = dbUser.plan;
+                        token.trialEndsAt = dbUser.trialEndsAt;
+                        token.role = dbUser.role;
+                    }
                 }
             }
             return token;

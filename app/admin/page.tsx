@@ -3,14 +3,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Save, Plus, Trash2, Edit, X, Check, Lock, LogOut, ChevronDown, ChevronRight, Home, FolderPlus, Move, Pencil, RefreshCw, CloudUpload, Search, Tag, Filter } from 'lucide-react';
-import { config } from '../config';
+// import { config } from '../config'; // ARTIK GEREK YOK
 import { RiskCategory, RiskLibraryItem } from '../types';
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
 
 export default function AdminPage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
 
     const [data, setData] = useState<RiskCategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -56,10 +58,19 @@ export default function AdminPage() {
     const [newTag, setNewTag] = useState(''); // Yeni eklenecek tag input'u için
 
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchData();
+        if (status === 'authenticated') {
+            // @ts-ignore
+            if (session?.user?.role === 'ADMIN') {
+                setIsAuthenticated(true);
+                fetchData();
+            } else {
+                router.push('/'); // Admin değilse ana sayfaya yönlendir
+            }
+        } else if (status === 'unauthenticated') {
+            router.push('/login?callbackUrl=/admin'); // Giriş yapmamışsa login sayfasına yönlendir
         }
-    }, [isAuthenticated]);
+    }, [status, session, router]);
+
 
     const fetchData = async () => {
         setLoading(true);
@@ -76,19 +87,11 @@ export default function AdminPage() {
         }
     };
 
-    const handleLogin = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (password === config.adminPassword) {
-            setIsAuthenticated(true);
-            setError('');
-        } else {
-            setError('Hatalı şifre!');
-        }
-    };
-
     const handleLogout = () => {
-        setIsAuthenticated(false);
-        setPassword('');
+        // signOut({ callbackUrl: '/' }); // Global logout yerine sadece bu sayfadan çıkış yok, next-auth signOut kullanılır
+        // Ancak burada sadece state'i sıfırlamak yetmez, gerçekten çıkış yapmak lazım.
+        // Admin panelindeki çıkış butonu aslında uygulamadan çıkış yapmalı.
+        import("next-auth/react").then(({ signOut }) => signOut());
     };
 
     const saveDataToApi = async (newData: any[]) => {
@@ -492,35 +495,13 @@ export default function AdminPage() {
         return groups;
     };
 
-    if (!isAuthenticated) {
+    // Yükleniyor durumu
+    if (status === 'loading' || (status === 'authenticated' && !isAuthenticated)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <div className="bg-white p-8 rounded-lg shadow-md w-96">
-                    <div className="flex justify-center mb-4">
-                        <div className="bg-blue-100 p-3 rounded-full">
-                            <Lock className="w-6 h-6 text-blue-600" />
-                        </div>
-                    </div>
-                    <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Yönetici Girişi</h2>
-                    <form onSubmit={handleLogin}>
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
-                            <input
-                                type="password"
-                                className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Şifrenizi girin"
-                            />
-                        </div>
-                        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                        <button
-                            type="submit"
-                            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors font-bold"
-                        >
-                            Giriş Yap
-                        </button>
-                    </form>
+                <div className="bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
+                    <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mb-4" />
+                    <p className="text-gray-600 font-medium">Oturum kontrol ediliyor...</p>
                 </div>
             </div>
         );

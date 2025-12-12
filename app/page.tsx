@@ -6,10 +6,12 @@ import {
   Shield, Brain, AlertTriangle, Calendar, BookOpen, Eye, FileText, Users, Building,
   CheckCircle, Clock, ChevronRight, Star, Zap, Target, BarChart3, FileCheck, Map, LogOut, User
 } from 'lucide-react';
+import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import LiveDashboard from './components/LiveDashboard';
 
 export default function LandingPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const features = [
     {
@@ -225,7 +227,7 @@ export default function LandingPage() {
                   ? 'border-indigo-200 bg-white shadow-lg hover:shadow-xl cursor-pointer hover:border-indigo-400'
                   : 'border-gray-100 bg-gray-50 hover:bg-white hover:border-gray-200'
                   }`}
-                onClick={() => feature.active && feature.href && (window.location.href = feature.href)}
+                onClick={() => feature.active && feature.href && router.push(feature.href)}
               >
                 {!feature.active && (
                   <span className="absolute -top-2 right-4 bg-gray-400 text-white text-xs px-2 py-0.5 rounded-full font-bold">
@@ -321,6 +323,7 @@ export default function LandingPage() {
               <span className="text-xl font-bold text-gray-300 group-hover:text-white transition-colors">İSG Pratik</span>
             </div>
             <div className="flex gap-6 text-sm">
+              <Link href="/risk-degerlendirme-nedir" className="hover:text-white font-medium text-indigo-400">Risk Değerlendirme Nedir?</Link>
               <Link href="/gizlilik-politikasi" className="hover:text-white">Gizlilik Politikası</Link>
               <Link href="/kullanim-kosullari" className="hover:text-white">Kullanım Koşulları</Link>
               <Link href="/kvkk" className="hover:text-white">KVKK</Link>

@@ -11,6 +11,7 @@ import { RiskItem, RiskCategory, RiskLibraryItem, HeaderInfo, RiskForm, Notifica
 import { calculateRiskScore, getRiskLevel, formatDate, P_VALUES, F_VALUES, S_VALUES } from '../utils';
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { SECTOR_SUGGESTIONS } from '../data/constants';
 
 // --- 1. RİSK KÜTÜPHANESİ ---
 // --- 1. RİSK KÜTÜPHANESİ ---
@@ -70,13 +71,8 @@ export default function Home() {
   const [selectedPreviewRisks, setSelectedPreviewRisks] = useState<Set<number>>(new Set()); // Tikli olanlar
 
   // Yaygın sektörler listesi
-  const sectorSuggestions = [
-    'İnşaat', 'Nakliye', 'Lojistik', 'Fabrika', 'Üretim', 'Tekstil', 'Metal', 'Otomotiv',
-    'Gıda', 'Restoran', 'Otel', 'Hastane', 'Sağlık', 'Eğitim', 'Okul', 'Market', 'Mağaza',
-    'Depo', 'Antrepo', 'Tarım', 'Hayvancılık', 'Madencilik', 'Enerji', 'Elektrik',
-    'Kimya', 'İlaç', 'Plastik', 'Mobilya', 'Ahşap', 'Cam', 'Seramik', 'Matbaa',
-    'Temizlik', 'Güvenlik', 'İnsan Kaynakları', 'Bilişim', 'Yazılım', 'Çağrı Merkezi'
-  ];
+  // Yaygın sektörler listesi -> constants.ts dosyasından geliyor
+  const sectorSuggestions = SECTOR_SUGGESTIONS;
 
   const [showScrollTop, setShowScrollTop] = useState(false); // Yukarı git butonu
   const [showPremiumModal, setShowPremiumModal] = useState(false); // Premium teşvik modal
@@ -2131,7 +2127,7 @@ export default function Home() {
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
             <h2 className="text-xs font-bold text-indigo-700 uppercase flex items-center mb-2">
               <Zap className="w-4 h-4 mr-2" />
-              ⚡ Hızlı Sektör Ekle (Beta)
+              ⚡ Yapay Zeka Risk Analizi
             </h2>
             <div className="relative">
               <input
@@ -2422,7 +2418,7 @@ export default function Home() {
                     <div className="border-2 border-dashed border-gray-300 rounded p-2 flex items-center justify-between bg-gray-50 text-xs">
                       {form.image ? (
                         <div className="flex items-center w-full">
-                          <img src={form.image} className="h-10 w-10 object-cover rounded mr-3 border" />
+                          <img src={form.image} alt="Risk Fotoğrafı" className="h-10 w-10 object-cover rounded mr-3 border" />
                           <div className="flex-1">
                             <span className="text-green-600 font-bold block">Fotoğraf Yüklendi</span>
                             <span className="text-gray-400 text-[10px]">Değiştirmek için tıklayın</span>

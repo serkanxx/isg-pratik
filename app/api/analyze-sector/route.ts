@@ -183,8 +183,10 @@ export async function POST(request: NextRequest) {
     try {
         const { sector, categories } = await request.json();
 
+        /*
         console.log('=== Sektör Analizi ===');
         console.log('Aranan sektör:', sector);
+        */
 
         // Sektörü normalize et
         const normalizedSector = sector.toLowerCase().trim();
@@ -199,8 +201,10 @@ export async function POST(request: NextRequest) {
         // Tüm anahtar kelimeleri birleştir
         const allKeywords = [...sectorKeywords, ...generalKeywords];
 
+        /*
         console.log('Eşleşen sektör:', mainSector);
         console.log('Anahtar kelime sayısı:', allKeywords.length);
+        */
 
         // Benzersiz source'ları topla ve eşleştir
         const matchedSources: string[] = [];
@@ -240,7 +244,7 @@ export async function POST(request: NextRequest) {
             });
         });
 
-        console.log('Eşleşen kaynak sayısı:', matchedSources.length);
+        // console.log('Eşleşen kaynak sayısı:', matchedSources.length);
 
         return NextResponse.json({ selectedSources: matchedSources });
 
