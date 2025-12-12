@@ -486,7 +486,8 @@ export default function Home() {
         setPreviewRisks(previewList);
         setSelectedPreviewRisks(new Set(previewList.map(r => r.tempId))); // Hepsi tikli başlasın
         setShowAIPreview(true);
-        showNotification(`${previewList.length} risk maddesi bulundu.`, 'success');
+        // Debug: Sektör ve genel sonuç sayısını göster
+        showNotification(`${previewList.length} risk bulundu (Sektör: ${sectorCount || 0}, Genel: ${generalCount || 0}, Yöntem: ${method})`, 'success');
       } else {
         showNotification(`"${sectorSearch}" için tabloda riskler zaten mevcut.`, 'error');
       }
