@@ -487,8 +487,7 @@ export default function Home() {
         setPreviewRisks(previewList);
         setSelectedPreviewRisks(new Set(previewList.map(r => r.tempId))); // Hepsi tikli başlasın
         setShowAIPreview(true);
-        // Debug: Sektör, genel ve matched tag göster
-        showNotification(`S:${sectorCount || 0} G:${generalCount || 0} Tag:${matchedTags?.[0] || 'yok'}`, 'success');
+        showNotification(`${previewList.length} risk maddesi bulundu.`, 'success');
       } else {
         showNotification(`"${sectorSearch}" için tabloda riskler zaten mevcut.`, 'error');
       }

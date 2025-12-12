@@ -239,7 +239,7 @@ export default function KVKKPage() {
                             KVKK kapsamındaki haklarınızı kullanmak için aşağıdaki kanallardan bize ulaşabilirsiniz:
                         </p>
                         <div className="space-y-2">
-                            <p className="text-indigo-600 font-medium">📧 kvkk@isgpratik.com</p>
+                            <p className="text-indigo-600 font-medium">📧 info@isgpratik.com.tr</p>
                             <p className="text-gray-500 text-sm">
                                 Başvurularınız en geç 30 gün içinde sonuçlandırılacaktır.
                             </p>

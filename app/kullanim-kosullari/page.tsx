@@ -166,7 +166,7 @@ export default function KullanimKosullariPage() {
                         <p className="text-gray-600">
                             Kullanım koşullarıyla ilgili sorularınız için bizimle iletişime geçebilirsiniz:
                         </p>
-                        <p className="text-indigo-600 font-medium mt-2">destek@isgpratik.com</p>
+                        <p className="text-indigo-600 font-medium mt-2">info@isgpratik.com.tr</p>
                     </section>
 
                 </div>

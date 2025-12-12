@@ -246,7 +246,7 @@ export default function GizlilikPolitikasiPage() {
                         </p>
                         <div className="flex items-center gap-2">
                             <Mail className="w-5 h-5 text-indigo-600" />
-                            <p className="text-indigo-600 font-medium">gizlilik@isgpratik.com</p>
+                            <p className="text-indigo-600 font-medium">info@isgpratik.com.tr</p>
                         </div>
                     </section>
 
