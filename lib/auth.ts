@@ -37,11 +37,6 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Şifre hatalı");
                 }
 
-                // Telefon doğrulaması kontrolü
-                if (!user.phoneVerified) {
-                    throw new Error("PHONE_NOT_VERIFIED");
-                }
-
                 // Email doğrulaması kontrolü
                 if (!user.emailVerified) {
                     throw new Error("EMAIL_NOT_VERIFIED");

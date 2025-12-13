@@ -26,9 +26,7 @@ export default function LoginPage() {
             });
 
             if (result?.error) {
-                if (result.error === "PHONE_NOT_VERIFIED") {
-                    setError("Telefon numaranız doğrulanmamış. Lütfen SMS kodunu girin.");
-                } else if (result.error?.includes("EMAIL_NOT_VERIFIED")) {
+                if (result.error?.includes("EMAIL_NOT_VERIFIED")) {
                     setError("Email adresiniz doğrulanmamış. Lütfen email'inizi kontrol edin ve doğrulama linkine tıklayın.");
                 } else {
                     setError(result.error);

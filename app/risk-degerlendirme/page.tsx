@@ -2275,10 +2275,6 @@ export default function Home() {
                     <span className="text-xs font-bold text-blue-100">
                       {session.user?.name || session.user?.email}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-sm font-bold tracking-wide mt-0.5">
-                      {(session.user as any)?.plan === 'premium_trial' ? 'PREMIUM DENEME' :
-                        (session.user as any)?.plan === 'premium' ? 'PREMIUM' : 'FREE PAKET'}
-                    </span>
                   </div>
                   <button
                     onClick={() => signOut()}

@@ -174,14 +174,6 @@ export default function LandingPage() {
                 )}
               </div>
 
-              {/* 3 Ay Premium Ücretsiz Banner */}
-              <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-3 rounded-xl mb-6 max-w-md">
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 fill-white" />
-                  <span className="font-bold">3 AY PREMİUM ÜCRETSİZ!</span>
-                </div>
-                <p className="text-sm mt-1 opacity-90">Kayıt olan herkese tüm özellikler açık</p>
-              </div>
 
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-300">
                 <div className="flex items-center gap-1">
@@ -286,15 +278,7 @@ export default function LandingPage() {
             Hemen Risk Analizlerinizi Oluşturmaya Başlayın
           </h2>
 
-          {/* 3 Ay Premium Banner */}
-          <div className="bg-white/20 backdrop-blur-sm border border-white/30 text-white px-6 py-4 rounded-xl mb-8 inline-block">
-            <div className="flex items-center gap-2 justify-center">
-              <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-              <span className="font-bold text-xl">3 AY PREMİUM ÜCRETSİZ!</span>
-              <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-            </div>
-            <p className="text-sm mt-2 opacity-90">Kayıt olan herkese tüm özellikler açık • Kredi kartı gerekmez</p>
-          </div>
+
 
           <div>
             <Link

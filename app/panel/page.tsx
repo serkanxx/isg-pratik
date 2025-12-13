@@ -65,29 +65,6 @@ export default function PanelPage() {
         return 'İyi Akşamlar';
     };
 
-    const getPlanInfo = () => {
-        const plan = (session?.user as any)?.plan;
-        if (plan === 'premium_trial') return { label: 'Premium Deneme', color: 'from-amber-500 to-orange-500' };
-        if (plan === 'premium') return { label: 'Premium', color: 'from-indigo-500 to-purple-500' };
-        return { label: 'Free Paket', color: 'from-slate-500 to-slate-600' };
-    };
-
-    const planInfo = getPlanInfo();
-
-    // Premium bitiş tarihi bilgisi
-    const getPremiumExpiryText = () => {
-        const plan = (session?.user as any)?.plan;
-        const trialEndsAt = (session?.user as any)?.trialEndsAt;
-
-        if (plan === 'premium_trial' && trialEndsAt) {
-            const endDate = new Date(trialEndsAt);
-            const now = new Date();
-            const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            return `${daysLeft} gün kaldı (${endDate.toLocaleDateString('tr-TR')})`;
-        }
-        return '';
-    };
-
     return (
         <div className="p-8">
             {/* Hoşgeldin Kartı */}
@@ -98,25 +75,16 @@ export default function PanelPage() {
                         <h1 className="text-3xl font-bold mb-2">
                             {session?.user?.name || 'Kullanıcı'}
                         </h1>
-                        <p className="text-indigo-200 flex items-center gap-2">
-                            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${planInfo.color} shadow-lg`}>
-                                {planInfo.label}
-                            </span>
+                        <p className="text-indigo-200">
+                            İSG Pratik Risk Yönetim Sistemi
                         </p>
                     </div>
                     <div className="hidden md:flex items-center gap-4">
-                        {/* Premium Bilgisi */}
-                        {getPremiumExpiryText() && (
-                            <div className="text-right">
-                                <p className="text-indigo-200 text-xs font-medium">Deneme Süresi</p>
-                                <p className="text-white font-bold text-sm">{getPremiumExpiryText()}</p>
-                            </div>
-                        )}
                         <img src="/logo.png" alt="Logo" className="w-20 h-20 opacity-80" />
                     </div>
                 </div>
             </div>
+
 
             {/* Hızlı Erişim Butonları */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

@@ -188,28 +188,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         return date.toLocaleDateString('tr-TR');
     };
 
-    const getPremiumExpiryInfo = () => {
-        const plan = (session?.user as any)?.plan;
-        const trialEndsAt = (session?.user as any)?.trialEndsAt;
-
-        if (plan === 'premium_trial' && trialEndsAt) {
-            const endDate = new Date(trialEndsAt);
-            const now = new Date();
-            const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            return {
-                label: `Premium Deneme - ${daysLeft} gün kaldı`,
-                date: formatDate(trialEndsAt),
-                color: daysLeft <= 7 ? 'text-red-600' : daysLeft <= 30 ? 'text-amber-600' : 'text-emerald-600'
-            };
-        }
-        if (plan === 'premium') {
-            return { label: 'Premium Üye', date: '', color: 'text-indigo-600' };
-        }
-        return { label: 'Free Paket', date: '', color: 'text-slate-500' };
-    };
-
-    const premiumInfo = getPremiumExpiryInfo();
-
     if (status === 'loading') {
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -272,10 +250,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                             <p className="text-sm font-medium text-white truncate">
                                 {session.user?.name || session.user?.email}
                             </p>
-                            <span className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full font-bold">
-                                {(session.user as any)?.plan === 'premium_trial' ? 'PREMIUM DENEME' :
-                                    (session.user as any)?.plan === 'premium' ? 'PREMIUM' : 'FREE'}
-                            </span>
+                            <p className="text-xs text-slate-400">Kullanıcı</p>
                         </div>
                     </div>
                 </div>
