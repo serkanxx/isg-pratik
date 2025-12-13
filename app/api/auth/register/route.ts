@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
     try {
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
         const trialEndsAt = new Date();
         trialEndsAt.setMonth(trialEndsAt.getMonth() + 3);
 
-        // Kullanıcı oluştur
+        // Kullanıcı oluştur (emailVerified = null)
         const user = await prisma.user.create({
             data: {
                 name,
@@ -58,23 +60,40 @@ export async function POST(request: NextRequest) {
                 phone,
                 phoneCode,
                 phoneCodeExp,
-                phoneVerified: true, // GEÇİCİ: SMS doğrulama devre dışı
+                phoneVerified: true, // SMS doğrulama devre dışı
+                emailVerified: null, // Email doğrulanmamış
                 plan: "premium_trial",
                 trialEndsAt,
             },
         });
 
-        // SMS gönder (Netgsm entegrasyonu burada olacak)
-        // Şimdilik console'a yazdırıyoruz
+        // Email doğrulama token'ı oluştur
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 saat
+
+        // Token'ı veritabanına kaydet
+        await prisma.verificationToken.create({
+            data: {
+                identifier: email,
+                token: verificationToken,
+                expires: tokenExpires,
+            },
+        });
+
+        // Doğrulama emaili gönder
+        const emailResult = await sendVerificationEmail(email, verificationToken);
+
+        if (!emailResult.success) {
+            console.error("Email gönderilemedi:", emailResult.error);
+            // Email gönderilemese bile kayıt başarılı sayılsın
+        }
+
         console.log(`SMS Kodu: ${phoneCode} -> +90${phone}`);
 
-        // TODO: Netgsm SMS gönderimi
-        // await sendSms(phone, `İSG-PRO doğrulama kodunuz: ${phoneCode}`);
-
         return NextResponse.json({
-            message: "Kayıt başarılı! Giriş yapabilirsiniz.",
+            message: "Kayıt başarılı! Email adresinize doğrulama linki gönderildi.",
             userId: user.id,
-            skipSms: true, // SMS atlandı
+            requiresEmailVerification: true,
         });
     } catch (error: any) {
         console.error("Register error:", error);
@@ -84,3 +103,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+

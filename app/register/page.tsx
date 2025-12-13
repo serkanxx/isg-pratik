@@ -57,8 +57,10 @@ export default function RegisterPage() {
                 throw new Error(data.error || "Kayıt başarısız");
             }
 
-            // SMS devre dışı - direkt login sayfasına yönlendir
-            if (data.skipSms) {
+            // Email doğrulama gerekiyorsa step 3'e geç
+            if (data.requiresEmailVerification) {
+                setStep(3); // Email doğrulama bekleme ekranı
+            } else if (data.skipSms) {
                 router.push("/login?registered=true");
             } else {
                 setUserId(data.userId);
@@ -336,6 +338,39 @@ export default function RegisterPage() {
                             SMS tekrar gönder
                         </button>
                     </form>
+                )}
+
+                {step === 3 && (
+                    /* Email Doğrulama Bekleme Ekranı */
+                    <div className="text-center">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                            Email Adresinizi Kontrol Edin 📧
+                        </h2>
+                        <p className="text-gray-600 mb-2">
+                            <strong>{formData.email}</strong> adresine doğrulama linki gönderdik.
+                        </p>
+                        <p className="text-gray-500 text-sm mb-6">
+                            Gelen kutunuzu kontrol edin ve linke tıklayarak hesabınızı aktifleştirin.
+                        </p>
+
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                            <p className="text-amber-800 text-sm">
+                                <strong>💡 İpucu:</strong> Email gelmediyse spam/istenmeyen klasörünü kontrol edin.
+                            </p>
+                        </div>
+
+                        <Link
+                            href="/login"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
+                        >
+                            Giriş Sayfasına Git
+                        </Link>
+                    </div>
                 )}
 
                 {/* Giriş Yap Linki */}
