@@ -32,6 +32,9 @@ export async function POST(request: Request) {
         text = text.replace(/\[GECERLILIK TARIHI\]/g, validityDate || '');
 
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 15;
 
         // Turkce karakter destegi icin Roboto fontunu yukle
         try {
@@ -46,87 +49,207 @@ export async function POST(request: Request) {
             const fontBuffer = await fontRes.arrayBuffer();
             const fontBoldBuffer = await fontBoldRes.arrayBuffer();
 
-            // Server-side base64 encoding
-            const toBase64 = (buffer: ArrayBuffer) => {
-                return Buffer.from(buffer).toString('base64');
-            };
+            const toBase64 = (buffer: ArrayBuffer) => Buffer.from(buffer).toString('base64');
 
             doc.addFileToVFS('Roboto-Regular.ttf', toBase64(fontBuffer));
             doc.addFileToVFS('Roboto-Bold.ttf', toBase64(fontBoldBuffer));
-
             doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
             doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
-
             doc.setFont('Roboto');
         } catch (fontError) {
             console.error('Font yukleme hatasi:', fontError);
             doc.setFont('helvetica');
         }
 
-        // Baslik sayfasi
-        doc.setFontSize(18);
+        // ========== SAYFA 1: KAPAK SAYFASI ==========
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
         doc.setTextColor(0, 0, 0);
-        const nameWidth = doc.getTextWidth(companyName);
-        doc.text(companyName, (210 - nameWidth) / 2, 60);
 
-        if (registrationNumber) {
-            doc.setFontSize(12);
-            const regText = 'Sicil No: ' + registrationNumber;
-            doc.text(regText, (210 - doc.getTextWidth(regText)) / 2, 75);
-        }
+        // Firma Adi - Ust kisim ortalanmis
+        doc.setFontSize(24);
+        doc.setFont('Roboto', 'bold');
+        doc.text(companyName || '[FİRMA ADI]', pageWidth / 2, 50, { align: 'center' });
 
+        // Sicil No
+        doc.setFontSize(16);
+        doc.setFont('Roboto', 'normal');
+        doc.text(registrationNumber ? `[${registrationNumber}]` : '[SİCİL NO]', pageWidth / 2, 80, { align: 'center' });
+
+        // Ana Baslik
         doc.setFontSize(28);
-        doc.setTextColor(200, 50, 0);
-        const title = 'ACİL DURUM EYLEM PLANI';
-        doc.text(title, (210 - doc.getTextWidth(title)) / 2, 120);
+        doc.setFont('Roboto', 'bold');
+        doc.text('ACİL DURUM EYLEM PLANI', pageWidth / 2, 120, { align: 'center' });
 
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.text('Yapılış Tarihi: ' + reportDate, 30, 180);
-        doc.text('Geçerlilik Tarihi: ' + validityDate, 30, 190);
-        doc.text('Hazırlayan: İSG Uzmanı', 30, 210);
-        doc.text('Onaylayan: ' + (employer || 'İşveren'), 30, 220);
+        // Hazirlayan / Onaylayan Kutulari
+        const boxY = 160;
+        const boxWidth = 80;
+        const boxHeight = 40;
+        const boxGap = 20;
 
-        doc.addPage();
-
-        const lines = text.split('\n').filter((line: string) => line.trim() !== '');
-        let y = 20;
-        const lineHeight = 6;
-        const pageHeight = 280;
-
+        // Hazirlayan kutusu
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.rect(margin + 5, boxY, boxWidth, boxHeight);
         doc.setFontSize(10);
+        doc.setFont('Roboto', 'bold');
+        doc.text('HAZIRLAYAN', margin + 5 + boxWidth / 2, boxY + 8, { align: 'center' });
+
+        // Onaylayan kutusu
+        doc.rect(pageWidth - margin - boxWidth - 5, boxY, boxWidth, boxHeight);
+        doc.text('ONAYLAYAN', pageWidth - margin - boxWidth / 2 - 5, boxY + 8, { align: 'center' });
+
+        // Tarih tablosu
+        const tableY = 230;
+        const tableWidth = 140;
+        const tableX = (pageWidth - tableWidth) / 2;
+        const rowHeight = 12;
+        const col1Width = 70;
+
+        doc.setLineWidth(0.3);
+
+        // Yapildigi Tarih satiri
+        doc.rect(tableX, tableY, col1Width, rowHeight);
+        doc.rect(tableX + col1Width, tableY, tableWidth - col1Width, rowHeight);
+        doc.setFontSize(9);
+        doc.setFont('Roboto', 'bold');
+        doc.text('YAPILDIĞI TARİH', tableX + 3, tableY + 8);
+        doc.setFont('Roboto', 'normal');
+        doc.text(reportDate || '[YAPILDIĞI TARİH]', tableX + col1Width + 3, tableY + 8);
+
+        // Gecerlilik Suresi satiri
+        doc.rect(tableX, tableY + rowHeight, col1Width, rowHeight);
+        doc.rect(tableX + col1Width, tableY + rowHeight, tableWidth - col1Width, rowHeight);
+        doc.setFont('Roboto', 'bold');
+        doc.text('GEÇERLİLİK SÜRESİ', tableX + 3, tableY + rowHeight + 8);
+        doc.setFont('Roboto', 'normal');
+        doc.text(validityDate || '[GEÇERLİLİK TARİHİ]', tableX + col1Width + 3, tableY + rowHeight + 8);
+
+        // ========== ICERIK SAYFALARI ==========
+        const lines = text.split('\n').filter((line: string) => line.trim() !== '');
+        let currentPage = 1;
+        const totalPages = Math.ceil(lines.length / 45) + 1; // Tahmini sayfa sayisi
+
+        // Header cizim fonksiyonu
+        const drawHeader = () => {
+            const headerY = 10;
+            const headerHeight = 20;
+
+            // Sol kutu - Firma Logo
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.3);
+            doc.rect(margin, headerY, 35, headerHeight);
+            doc.setFontSize(7);
+            doc.setFont('Roboto', 'normal');
+            doc.text('[FİRMA LOGO]', margin + 17.5, headerY + 12, { align: 'center' });
+
+            // Orta kutu - Firma Adi
+            doc.rect(margin + 35, headerY, 90, headerHeight);
+            doc.setFontSize(10);
+            doc.setFont('Roboto', 'bold');
+            doc.text(companyName || '[FİRMA ADI]', margin + 80, headerY + 12, { align: 'center' });
+
+            // Sag kutu - Dokuman bilgileri
+            const rightBoxX = margin + 125;
+            const rightBoxWidth = 55;
+            const smallRowHeight = 5;
+
+            doc.rect(rightBoxX, headerY, rightBoxWidth, headerHeight);
+
+            // Ic cizgiler
+            doc.setFontSize(6);
+            doc.setFont('Roboto', 'normal');
+
+            const infoLabels = ['Doküman No', 'Yayın Tarihi', 'Revizyon Tarihi', 'Revizyon No'];
+            for (let i = 0; i < 4; i++) {
+                const rowY = headerY + (i * smallRowHeight);
+                if (i < 3) {
+                    doc.line(rightBoxX, rowY + smallRowHeight, rightBoxX + rightBoxWidth, rowY + smallRowHeight);
+                }
+                doc.text(infoLabels[i], rightBoxX + 2, rowY + 4);
+            }
+        };
+
+        // Footer cizim fonksiyonu
+        const drawFooter = (pageNum: number, total: number) => {
+            doc.setFontSize(8);
+            doc.setFont('Roboto', 'normal');
+            doc.text(`Sayfa ${pageNum} / ${total}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        };
+
+        // Yeni sayfa olustur
+        doc.addPage();
+        currentPage++;
+        drawHeader();
+
+        let y = 40;
+        const contentWidth = pageWidth - (2 * margin);
+        const lineHeight = 5;
+        let lineCount = 0;
+
+        doc.setFontSize(9);
         doc.setTextColor(0, 0, 0);
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-            if (y > pageHeight - 20) {
+
+            // Sayfa kontrolu
+            if (y > pageHeight - 25) {
+                drawFooter(currentPage, totalPages);
                 doc.addPage();
-                y = 20;
+                currentPage++;
+                drawHeader();
+                y = 40;
             }
 
-            if (line === line.toUpperCase() && line.length > 3 && line.length < 100) {
-                doc.setFontSize(12);
+            // Baslik kontrolu (buyuk harfle baslayan veya numara ile baslayan)
+            const isMainHeading = /^[0-9]+\.?\s+[A-ZİĞÜŞÖÇ]/.test(line) && line.length < 80;
+            const isSubHeading = /^[0-9]+\.[0-9]+\.?\s+/.test(line);
+            const isSubSubHeading = /^[0-9]+\.[0-9]+\.[0-9]+/.test(line);
+
+            if (isMainHeading || (line === line.toUpperCase() && line.length > 3 && line.length < 60)) {
+                y += 3;
+                doc.setFontSize(11);
                 doc.setFont('Roboto', 'bold');
-                y += 4;
-            } else {
+            } else if (isSubHeading) {
+                y += 2;
                 doc.setFontSize(10);
+                doc.setFont('Roboto', 'bold');
+            } else if (isSubSubHeading) {
+                doc.setFontSize(9);
+                doc.setFont('Roboto', 'bold');
+            } else {
+                doc.setFontSize(9);
                 doc.setFont('Roboto', 'normal');
             }
 
-            const splitLines = doc.splitTextToSize(line, 170);
+            // Madde isareti kontrolu
+            let indent = 0;
+            if (line.startsWith('•') || line.startsWith('-') || line.startsWith('·')) {
+                indent = 5;
+            }
+
+            const splitLines = doc.splitTextToSize(line, contentWidth - indent);
             for (const splitLine of splitLines) {
-                if (y > pageHeight - 20) {
+                if (y > pageHeight - 25) {
+                    drawFooter(currentPage, totalPages);
                     doc.addPage();
-                    y = 20;
+                    currentPage++;
+                    drawHeader();
+                    y = 40;
                 }
-                doc.text(splitLine, 20, y);
+                doc.text(splitLine, margin + indent, y);
                 y += lineHeight;
             }
+
+            lineCount++;
         }
+
+        // Son sayfaya footer ekle
+        drawFooter(currentPage, currentPage);
 
         const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 
-        // Dosya adini ASCII karakterlerle sinirla
         const sanitizeFilename = (name: string) => {
             return name
                 .replace(/İ/g, 'I').replace(/ı/g, 'i')
