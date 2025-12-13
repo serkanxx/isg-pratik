@@ -78,6 +78,18 @@ export default function PanelPage() {
                         <p className="text-indigo-200">
                             İSG Pratik Risk Yönetim Sistemi
                         </p>
+
+                        {/* Admin Risk Önerileri Butonu */}
+                        {/* @ts-ignore */}
+                        {session?.user?.role === 'ADMIN' && (
+                            <Link
+                                href="/panel?showRiskSuggestions=true"
+                                className="inline-flex items-center mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-sm transition-colors shadow-lg"
+                            >
+                                <span className="mr-2">📥</span>
+                                Risk Önerileri
+                            </Link>
+                        )}
                     </div>
                     <div className="hidden md:flex items-center gap-4">
                         <img src="/logo.png" alt="Logo" className="w-20 h-20 opacity-80" />

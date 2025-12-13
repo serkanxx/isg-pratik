@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -75,6 +75,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     const { data: session, status } = useSession();
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     // Admin Risk Önerileri State
     const [pendingRisksCount, setPendingRisksCount] = useState(0);
@@ -93,6 +94,16 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             router.push('/login');
         }
     }, [status, router]);
+
+    // Query param ile Risk Önerileri modal'ını aç
+    useEffect(() => {
+        if (searchParams?.get('showRiskSuggestions') === 'true' && isAdmin) {
+            setShowRiskSuggestions(true);
+            fetchPendingRisks();
+            // URL'den query param'ı temizle
+            router.replace('/panel');
+        }
+    }, [searchParams, isAdmin]);
 
     // Admin için bekleyen önerileri çek
     useEffect(() => {
@@ -349,24 +360,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                     <div className="hidden md:block" />
 
                     <div className="flex items-center gap-3">
-                        {/* Admin Öneriler Butonu */}
-                        {isAdmin && (
-                            <button
-                                onClick={() => { setShowRiskSuggestions(true); fetchPendingRisks(); }}
-                                className={`flex items-center px-4 py-2 rounded-lg font-bold text-sm transition-colors ${pendingRisksCount > 0
-                                    ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
-                            >
-                                <span className="mr-2">📥</span>
-                                Risk Önerileri
-                                {pendingRisksCount > 0 && (
-                                    <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded-full text-xs font-bold">
-                                        {pendingRisksCount}
-                                    </span>
-                                )}
-                            </button>
-                        )}
+                        {/* Risk Önerileri butonu panel sayfasına taşındı */}
                     </div>
                 </div>
 
