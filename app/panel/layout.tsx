@@ -48,11 +48,10 @@ const menuItems = [
         highlight: true
     },
     {
-        name: 'Acil Durum Planları',
-        href: '#',
+        name: 'Acil Durum Eylem Planı',
+        href: '/panel/acil-durum',
         icon: AlertTriangle,
-        active: false,
-        badge: 'YAKINDA'
+        active: true
     },
     {
         name: 'Saha Gözlem Formları',

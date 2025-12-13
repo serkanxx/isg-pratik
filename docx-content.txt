@@ -1,0 +1,2408 @@
+
+
+
+
+[FİRMA ADI]
+
+
+
+
+
+
+
+[SİCİL NO]
+
+
+
+ACİL DURUM EYLAM PLANI
+
+
+
+
+
+
+
+
+
+
+
+
+
+HAZIRLAYAN
+
+
+
+ONAYLAYAN
+
+
+
+
+
+
+
+
+
+
+
+
+
+YAPILDIĞI TARİH
+
+[YAPILDIĞI TARİH]
+
+GEÇERLİLİK SÜRESİ
+
+[GEÇERLİLİK TARİHİ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GİRİŞ
+
+AMAÇ
+
+Acil Durum Planı, herhangi bir acil durum oluştuğunda, panik yapmadan, organize olarak, düzenli bir şekilde müdahale etmek, ortaya çıkabilecek olan zararları en az seviyeye düşürmek maksadıyla hazırlanmıştır. 
+
+Bu plan, [FİRMA ADI] ‘nde meydana gelebilecek yangın, doğal afetler, sabotaj, zehirlenme, travma, ekipman hasar, çevresel kazalar ve iş kazalarına karşı alınacak önlemlerle, [FİRMA ADI]  personelinin yapacakları işleri ve eğitim takvimini belirtmektedir. Ayrıca acil durum ekipmanlarının hazır halde tutulması için gerekli bakımların yapılmasını sağlamaktadır.
+
+ACİL DURUM YÖNETİMİ POLİTİKASI
+
+Acil durumlar, bir işletmenin başına gelebilecek en kötü olaylardandır. Tesisde, malzemede, cihazlarda hasar yaratarak, müşteri, tedarikçi ve itibar kaybına neden olarak maddi; personel zaiyatına neden olarak, manevi zararlar verir. Bu nedenle, acil durumlara hazırlıklı olmak, çok büyük bir önceliktir. Bu plan içinde verilmiş olan görevler titizlikle uygulanacak, bu konuda eğitimler yapılacak ve hiçbir şekilde taviz verilmeyecektir.
+
+KAPSAM
+
+Acil Durum Planı tüm çalışanlar, tesiste bulunan tüm ziyaretçiler, müşteriler ve taşeron firmalar için geçerlidir.
+
+Bu planın geçerli olduğu bölge [FİRMA ADI]  faaliyet/işletme sahasıdır. 
+
+TANIMLAR
+
+ACİL DURUM
+
+Acil durum, çalışanlar, müşteriler, tedarikçiler, ziyaretçiler veya çevre halkı arasında, ölüm ve ciddi yaralanmaya neden olabilecek veya işin durmasına, faaliyetlerin aksamasına, fiziksel veya çevresel olarak zarar görmesine, tesisin mali yapısının bozulmasına ve toplum içinde itibarının düşmesine neden olabilecek, plan ve istem dışı olaylardır.
+
+ACİL DURUM PLANI
+
+Acil durumların engellenmesi, her şeye rağmen ortaya çıktığında, oluşabilecek zararların önlenmesi veya hafifletilmesi için yapılan plandır.
+
+İLK YARDIM
+
+Herhangi bir kaza veya yaşamı tehlikeye düşüren bir durumda, sağlık görevlilerinin yardımı sağlanıncaya kadar, hayatın kurtarılması ya da durumun kötüye gitmesini önleyebilmek amacıyla, olay yerinde, tıbbi araç gereç aranmaksızın, mevcut araç ve gereçlerle yapılan ilaçsız uygulamalardır.
+
+ACİL DURUM MÜDAHALESİ
+
+Acil durumların ortaya çıkmasından sonra yapılacak müdahaledir.	
+
+ORGANİZASYON
+
+ORGANİZASYON ŞEMASI
+
+Destek elemanı tahliye,ilkyardım, yangın söndürme ve koruma, kurtarma görevlerinde çalışmaları yürütecek ve İşveren onayı ile işlemleri gerçekleştirecektir. 
+
+GÖREV YETKİ SORUMLULUKLAR
+
+Acil durum ekibinde bulunan kişiler aynı zamanda mevzuatta destek elemanı olarak tanımlanırlar.
+
+Acil Durum Koordinatörü 
+
+Firma bünyesinde bulunan işyerlerindeki en üst sorumlu olup meydana gelebilecek tüm acil durumların yönetilmesinde ekip liderliği görevini üstlenerek görevli herkesten sorumlu olacaktır. Acil durum sırasında yapılacak her işlem onayından geçecektir.
+
+Acil durum faaliyet ve hazırlıklarını koordine eder. Acil durum planında belirtilmiş acil durum uygulama prosedürlerini uygulamaya koyar, uygulama sırasında tespit edilen veya meydana gelen değişik durumlar karşısında uygulama yöntemlerini değiştirir. 
+
+Gerekli araç gereçleri sağlar, bakım ve kontrolleri yapar/yaptırır. Acil durum koordinatörü ……………………………………………………………….  ‘dir. Yokluğunda, yerine atadığı sorumlu bakar.
+
+
+
+İlkyardım Ekibi 
+
+İlkyardım ekibi, tesis personelinden ilkyardımcı eğitimi almış personelden oluşturulur. Ekip amiri ve ilk yardım ekibindeki diğer personelin tamamının eğitim alması istenir, fakat olmadığı durumlarda sedyeciler, ilkyardımcı eğitimi almış kişilerce sedye ile yaralı taşıma hususunda eğitilmelidir. İlk yardım ekibinin kullanacağı malzeme ve teçhizat ortak sağlık birimi veya iş yeri hekimi tarafından belirlenmelidir. 
+
+İlkyardım Ekip Liderinin Görevleri
+
+Ekibi koordine eder ve yönetir.
+
+İş kazalarında kaza raporu düzenlemeye yardımcı olur ve kaza raporu işlemlerini takip eder.
+
+Koordinatörün talimatlarına göre ekibini sevk ve idare eder.
+
+İlkyardım Ekibin Görevleri
+
+Acil durum halinde acil durum koordinatörünün vereceği direktifler doğrultusunda çalışır.
+
+Acil durum haberinin alır almaz ilk yardım malzemelerini alarak olay yerine gider.
+
+Kaza sonucu ya da bir başka nedenden ötürü meydana gelen yaralanmalara ilk müdahalede bulunur.
+
+Yetkisiz kişilerin yaralılara müdahale etmesini engeller.
+
+İlkyardım malzemelerinin kontrollerini yapmak, eksik ve kullanılmaz durumda malzeme varsa banka yetkililerine bildirir.
+
+Sevk edilen hasta / yaralıların durumlarını takip eder.
+
+Toplantı, eğitim ve tatbikatlara katılır.
+
+
+
+Yangınla Mücadele Ekibi
+
+Ekibin üyeleri İleri Yangın Eğitimi almış olmalı ve yangınla mücadele teçhizatını ve malzemesinin her şartta kullanmasını, bilmelidir. Malzemenin Bakım tutum ve İdamesi ekip başı tarafından yapılmalıdır. 
+
+Yangınla Mücadele Ekip Üyelerinin Görevleri
+
+Acil durum halinde acil durum sorumlusunun vereceği direktifler doğrultusunda çalışır.
+
+Yangın emrine göre uygun teçhizatın kullanılmasını sağlar.
+
+Yangın alarmı alır almaz bölgesinde bulunan yangın söndürücüyü alarak yangın yerine gelmek amirin talimatları doğrultusunda hareket eder.
+
+Yangında kurtarma gerekiyorsa önce kendi güvenliğini sağlayarak kurtarma işlemini yürütür.
+
+Kurtarılan kişileri ilk yardım ekibine teslim eder
+
+Söndürme işlemi sonrası kullanılan ve boşalan tüpleri ekip sorumlusuna teslim etmek.
+
+Tatbikat eğitim ve toplantılara katılır.
+
+Yangına Müdahale ve Söndürme Ekibinin ihtiyaç duyacağı malzeme ve teçhizat bu amaçla tesis edilmiş yangın İstasyonunda kullanıma hazır bulundurulmalıdır. Kullanılan ekipman bakım ve idamesi aksi belirtilmedikçe yangın sorumlusu koordinesinde Yangına Müdahale ve Söndürme Ekibi tarafından yapılmalıdır. 
+
+
+
+Arama Ekibi Görevleri
+
+Arama ekibinin görevi, herhangi bir acil durumda, tehlike altındaki insanları ve diğer canlıları aramak
+
+Kurtarma ekibi ve tahliye ekibi ile işbirliği içinde çalışmaktır.
+
+
+
+Kurtarma Ekibi
+
+Herhangi bir acil durumda, tehlike altındaki insanları ve diğer canlıları kurtarmaktır. 
+
+Tehlike altında canlı bulunmaması durumunda malzemeleri öncelik sırasına göre kurtarır. (Öncelikle bilgisayarlar, sonra evraklar ve büro mobilyaları)
+
+Arama ekibi ile işbirliği içindedir.
+
+
+
+
+
+Tahliye Ekibi
+
+Acil durumlarda bölüm tahliye sorumluları acil duruma göre bölüm çalışanlarını acil çıkış kapılarına panik yapmadan dışarıya çıkışlarını organize eder.
+
+Tek bir kapıda yığılmanın olmaması için gerekirse diğer çıkış kapıları güvenli olup olmamasına bakarak diğer kapılara personeli yönlendirir ve kendisi de dışarı çıkar.
+
+Dışarı çıkan personelin Toplanma bölgesinde toplanmasını sağlar.
+
+Personelin yoklamasını yaparak Acil durum Koordinatörüne rapor verir.
+
+İçerde kalan, yaralanan var ise diğer ekipler tarafından müdahale yapılır.
+
+
+
+Koruma (Güvenlik) Ekibi Görevleri
+
+Koruma ekibi tehlike altındaki bölgenin etrafını çevirerek dışarıdan ilgili olmayan kişilerin tehlikeli bölgeye girmesini engeller.
+
+Tehlikeden kurtarılan malzemeleri ilgili olmayan kişilerin zarar vermesine veya başka sebeplerle zarar görmesini engellemek amacı ile hareket eder.
+
+Mümkün olduğu takdirde diğer ekiplere destek verir.
+
+
+
+Haberleşme Ekibi Görevleri
+
+Acil durumlarda dış ve iç haberleşmeyi sağlayan ekiptir. 
+
+Haberleşme ekip elemanlarında ilgili yerlere ait acil durum telefonlarının listesi bulunur.
+
+İlgili yerlerin aranması konusunda acil durum koordinatöründen talimat aldıktan sonra arama yaparlar.
+
+Olay esnasındaki haberleşmede acil durumda haberleşme şemasına uygun olarak hareket edilir.
+
+
+
+Teknik Kontrol Ekibi Görevleri
+
+Acil durumlarda hidrofor, doğalgaz, elektrik ve jeneratör sorumlusu ana pano ve jeneratörün kapalı olup olmadığını kontrol eder, gerekirse kapatır.
+
+Kazan ve doğalgaz sorumlusu, kazan ve doğalgazı faaliyet dışı bırakır.
+
+Hidrofor dairesi sorumlusu hidroforun çalışıp çalışmadığını kontrol eder.
+
+Sorumlu yardımcıları, ihtiyaç halinde sorumlulara yardım eder, sorumlunun firma içerisinde olmaması durumunda sorumlunun görevini yapar.
+
+
+
+Kimyasal Kirlenme Ekibi Görevleri			
+
+Herhangi bir acil durum sebebi ile veya iş kazası sonucu, kullandığımız kimyasal malzemelerin dökülmesi durumunda bu malzemenin yayılmasını, kanalizasyona akmasını ve çevreye verebileceği muhtemel zararları kontrol altına almak için çalışır.
+
+Dökülen kimyasal malzemeyi uygun şekilde temizlemek ve tehlike riskini ortadan kaldırır.
+
+Kimyasalların taşınması ve depolanması esnasında ortaya çıkabilecek tehlike risklerine karşı gerekli önlemleri almak ve alınmasını sağlar.			
+
+Müdahale esnasında koruyucu malzeme giymelidir (çizme, elbise, maske, eldiven, gözlük)
+
+Ekibin sevk ve idaresi ekip başı ve güvenlik amiri tarafından yapılır. Ekip başlarının olmaması durumunda ise ekipteki ilk kişi ekip başı görevini üstlenir.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OLASI ACİL DURUMLAR ve RİSK DEĞERLENDİRMESİ
+
+SIRA NO
+
+RİSKLER
+
+MEYDANA GELME OLASILIĞI
+
+ETKİLERİ
+
+MÜCADELE
+
+TOPLAM
+
+İnsan
+
+Tesis
+
+İş
+
+Çevre
+
+İç Kaynak
+
+Dış Kaynak
+
+
+
+Deprem
+
+1
+
+5
+
+5
+
+5
+
+5
+
+2
+
+5
+
+28
+
+
+
+Yangın
+
+2
+
+3
+
+5
+
+5
+
+2
+
+5
+
+5
+
+27
+
+
+
+Bomba İhbarı, Patlaması
+
+1
+
+5
+
+3
+
+4
+
+2
+
+1
+
+5
+
+21
+
+
+
+Sel ve Ani Su Basması
+
+1
+
+2
+
+4
+
+4
+
+3
+
+2
+
+4
+
+20
+
+
+
+Şiddetli Rüzgar ve Fırtına 
+
+1
+
+2
+
+4
+
+4
+
+3
+
+2
+
+4
+
+20
+
+
+
+Şüpheli Paket
+
+1
+
+5
+
+1
+
+4
+
+3
+
+1
+
+4
+
+19
+
+
+
+Terör Dışı Patlama
+
+1
+
+3
+
+3
+
+5
+
+2
+
+2
+
+3
+
+19
+
+
+
+Kar ve Don
+
+2
+
+2
+
+2
+
+3
+
+3
+
+2
+
+4
+
+18
+
+
+
+Zehirlenme
+
+1
+
+3
+
+3
+
+3
+
+1
+
+1
+
+5
+
+17
+
+
+
+İş Kazası
+
+2
+
+3
+
+2
+
+3
+
+1
+
+3
+
+3
+
+17
+
+
+
+Bulaşıcı Hastalıklar
+
+1
+
+3
+
+2
+
+3
+
+2
+
+1
+
+5
+
+17
+
+
+
+Kimyasal Kirlilik
+
+1
+
+2
+
+2
+
+2
+
+2
+
+3
+
+3
+
+15
+
+
+
+Toplu Kavga
+
+1
+
+3
+
+1
+
+2
+
+1
+
+2
+
+4
+
+14
+
+
+
+Trafik Kazası
+
+1
+
+3
+
+2
+
+2
+
+1
+
+1
+
+4
+
+14
+
+
+
+İntihar
+
+1
+
+3
+
+1
+
+3
+
+1
+
+1
+
+3
+
+13
+
+
+
+Ziyaretçi Hastalanması, Ölmesi
+
+1
+
+3
+
+1
+
+1
+
+1
+
+2
+
+4
+
+13
+
+
+
+Kemirgen
+
+1
+
+1
+
+2
+
+1
+
+2
+
+2
+
+4
+
+13
+
+
+
+Haşarat
+
+1
+
+1
+
+2
+
+1
+
+2
+
+2
+
+4
+
+13
+
+
+
+Hırsızlık
+
+1
+
+1
+
+1
+
+3
+
+1
+
+3
+
+3
+
+13
+
+
+
+GAZ PATLAMASI
+
+1
+
+5
+
+4
+
+5
+
+3
+
+2
+
+3
+
+23
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1
+
+
+
+
+
+
+
+
+
+5
+
+
+
+
+
+
+
+
+
+
+
+En iyi
+
+
+
+
+
+
+
+En kötü
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+İLETİŞİM 
+
+Sayfa 1
+
+Acil durumlarda, her türlü iletişim kanalı, acil durum maksatlı, kritik konular için kullanılacağından, zorunlu bir neden olmadıkça iletişim kanalları başka maksatla kullanılmamalıdır. Bu nedenle, acil durum sırasında, iletişim kanalları öncelikle destek elemanının ihtiyaçları için kullanılacaktır. Sabit telefonlarla tesis dışı iletişim zorunlu haller dışında yapılmayacaktır. Sabit telefon sisteminin çalışmaması durumunda, tesis dışı iletişim, öncelikle data hatları üzerinden bilgisayarlarla, bu da mümkün değilse cep telefonlarıyla sağlanacaktır.
+
+AİLELERLE İLETİŞİM
+
+Acil durum koordinatörü ve destek elemanı, ilk fırsatta personel aileleri ile temasa geçerek, acil durum hakkında bilgi verecek, aileleri hakkında öğrendiği bilgileri çalışanlara iletecektir. İletişim için öncelik sırası Acil durum koordinatörü tarafından saptanır. Ailelerin dışarıdan araması durumunda, aksine bir talimat verilmediği takdirde, telefonlar kişilere değil, Acil durum koordinatörüne bağlanacaktır.
+
+DUYURULAR
+
+Civarı etkileyen genel bir acil durum (afet) sözkonusu olduğu takdirde, Acil durum koordinatörü tarafından radyo ve televizyonları takip etmek üzere personel görevlendirilir ve konu hakkında gelişmeler izlenir.Acil durum sırasında, mümkün olan her fırsatta personele bilgi verilmelidir, aksi takdirde dedikodu ve yanlış duyumlar dolaşmaya başlar ki, bu durumu daha da kötüleştirir. Ne zaman ve ne kadar bilgi verileceğinin kararını, Acil durum koordinatörü verir. 
+
+ALARM VE UYARILAR
+
+Yangını ilk gören kişi:
+
+“ Yangın, yangın, yangın” diye bağıracak,
+
+En yakın söndürücüyü alarak yangına ilk müdahaleye başlayacak,
+
+Yangın müdahale ekibi gelene kadar müdahaleye devam edecektir.
+
+Yangın çıktığını duyan kişi yukarıda belirtilen işlemleri yapar.
+
+Olayı ilk gören Acil durum koordinatörünü arar,
+
+Adını Soyadını
+
+Olay tanımı
+
+Olayın olduğu yer/ünite
+
+Bulunduğu yerin telefon numarasını bildirir.
+
+Acil durum ihbarı, işin kısmen de olsa durmasını ve konsantrasyonun başka işlere kaymasını gerektirir. Bu nedenle hatalı alarmlar yanlış anlamalar olmamalıdır. Bu tür sorunlara engel olmak maksadıyla alarm yöntemleri sürekli olarak kontrol edilecektir.
+
+ ALARMIN VERİLMESİ
+
+Yangın durumunda otomatik alarm sistemi devreye girer. Otomatik alarm sistemi devreye girmediği durumlarda ihbar butonuna basılarak yangın ihbarı verilir.
+
+İNSAN HAYATI
+
+Bir acil durumda, insan hayatı birinci önceliktir. Bu nedenle yapılacak herşey insan hayatını korumak içindir.
+
+TAHLİYE
+
+Tahliyenin amacı, düzenli ve emniyetli olarak işletmeyı boşaltmaktır. Bu maksatla mümkün olan en yakın emniyetli çıkış kullanılmalıdır. Tahliye sırasında ilave bir acil durum yaratmamak için mutlaka kurallara uyulmalıdır. Yangın durumunda, acil çıkış kapıları kullanılarak yangının çıktığı yönün ters tarafından çıkış ve merdivenlerden işletme tahliye edilmelidir.
+
+Tahliye eden personel toplanma bölgesinden sayım yapılana kadar ayrılmayacaktır. Toplanma bölgesinde, ziyaretçilerin de sayımları yapılarak Acil durum koordinatörü ’ne bilgi verilecektir.
+
+İşletmedeki ziyaretçilerin sayımının sağlıklı yapılabilmesi için her ziyaretçi için üzerinde acil durumlardaki davranışlarını belirten ziyaretçi giriş kartı uygulamasının sağlıklı yürütülmesi gerekmektedir.
+
+
+
+
+
+
+
+
+
+TAHLİYE YOLLARI VE ÇIKIŞLAR
+
+Alarm alındığında çalışanlar kapama planını uygulayarak işi emniyetli bir şekilde durdurup bırakarak aşağıda belirtilen toplanma noktasından yakın olanına giderler. 
+
+Tahliye yollarını ve acil çıkışları belirten tahliye planları personelin görebileceği yerlerde asılı bulundurulmalıdır. 
+
+TOPLANMA NOKTA/BÖLGELERİ VE MEVCUT ALMA/PERSONEL TESPİTİ
+
+Toplanma noktaları:
+
+TOPLANMA NOKTASI : 
+
+Toplanma bölgesine gelen personel bir araya gelerek mevcutları alınacaktır. Mevcut alınırken tesise gelmiş olan ziyaretçi, satıcı, tedarikçi ilgili kişinin yanına giderek mevcuda kaydedilecektir. 
+
+Alınan mevcutlar, Koruma Ekibi tarafından birleştirilip, kontrol edilerek, eksik personel Acil durum koordinatörü’ne bildirilir. 
+
+Mevcut alma işlemi, içeride personel kalıp kalmadığını anlamak için yapılmaktadır. Hatalı bir sonuç, ya bir veya birkaç kişinin hasar içinde unutulmasına, ya da içeride kaldığı sanılan birini müdahale ekibini tehlikeye atarak boşu boşuna aratmak, demektir. Bu işlem mümkün olduğu kadar kısa sürede yapılmalıdır.
+
+EĞİTİM VE BİLGİ
+
+Personele, acil durumlarda ne yapacağını bildiren eğitimler İş sağlığı ve güvenliği eğitimi kapsamında anlatılacaktır.
+
+Aşağıda açıklanan Acil durum eğitimleri, İş Güvenliği Uzmanı / Serkan YURDAKUL  ve İşveren / İşveren Vekili  ………………………………………………  tarafından koordine edilir. 
+
+Oryantasyon Eğitimleri
+
+Oryantasyon eğitimleri Acil Durum Planı’nın anlatılması için yapılan toplu eğitimlerdir. Yeni işe başlayan personele ilk fırsatta, çalışan personele Acil Durum Planı’nda  değişiklik yapıldığında, acil durum oryantasyon eğitimi verilir.
+
+Yenileme Eğitimleri
+
+Tazeleme eğitimleri daha önce öğrenilmiş olan bilgileri hatırlatmak için yapılan eğitimlerdir. Tüm personele her sene 1 kez veya ihtiyaç duyulduğunda hatırlatma amaçlı tazeleme eğitimi verilir. Bu eğitimler Acil Durum Ekipleri için 4 saat sürelidir.
+
+Masabaşı Eğitimleri
+
+Destek elemanı eğitimi, çeşitli faraziyelerle, hangi durumda ne tür reaksiyon göstereceklerinin tartışıldığı eğitimlerdir. Eğitim sonunda, eğitimin kritiği yapılır. ADYE üyeleri her yıl 1 kez masabaşı eğitimi yaparlar. Müdahale ekipleri, kendi aralarında toplanarak her yıl en az 1 kez masabaşı eğitimi yaparlar. Bu eğitim yenileme eğitiminin hemen sonrasında yapılır.
+
+ Fonksiyonel Eğitimler
+
+Müdahale ekiplerinin alacakları eğitmlerdir. Bu eğitimler;
+
+Yangın / Müdahale ekibi			Gelişmiş yangına müdahale eğitimi
+
+Fiziki koruma ekibi			Yangına müdahale eğitimi
+
+Tahliye / Kurtarma ekibi			Temel İlkyardım ve Yangına müdahale eğitimleri
+
+İlkyardım ekibi			 Temel ilkyardım eğitimi
+
+Teknik bakım ve kontrol ekibi			 Yangına müdahale eğitimi
+
+Kimyasal Sızıntı ve Kirlilik Kontrol Ekibi   	                Kimyasal madde temizliği ve Yangına Müdahale eğitimi
+
+Fonksiyonel Gözden Geçirme Eğitimleri
+
+Müdahale ekiplerinin kendi aralarında yapacakları fiili eğitimdir. Masabaşı eğitimleri yapıldıktan sonra yapılır.
+
+
+
+
+
+
+
+
+
+ Genel Tahliye Eğitimi
+
+Tüm personelin katıldığı, hiçbir senaryo olmaksızın, sadece bina tahliyesi ve mevcut alma eğitimidir. Böyle bir eğitime ihtiyaç duyulduğu her an yapılabilir. İhtiyaç olduğu kararı destek elemanı tarafından verilir.
+
+
+
+ Simülasyonlu Uygulama Eğitimi
+
+Tüm personelin katıldığı, bir senaryo dahilinde gelişen, peşpeşe birkaç olayın olabileceği, simülasyon yapılan eğitimlerdir.Eğitimin sonunda uygun görülecek katılımcılarla birlikte kritik yapılır.
+
+KORUYUCU EKİPMAN KULLANIMI
+
+Hangi faaliyetlerde ne tür kişisel koruyucular kullanılacağı Acil Durum Planı EK   5 ‘te verilmiştir.
+
+TESİS KORUNMASI
+
+KORUMA SİSTEMLERİ
+
+Tesisde bulunan alarm ve koruma sistemleri
+
+1 adet ana giriş olarak bulundurulmaktadır.
+
+1 adet KKT tip yangın söndürücü bulundurulmaktadır.
+
+TESİSİN KAPATILMASI
+
+Tesisin kapatılması düşünülecek en son yöntemdir. Bir acil durum sırasında, her ne kadar otomatik kesme sistemleri bulunsa da gaz derhal kesilecektir. Su ve elektriğin kesilmesi için görevlendirilecek teknisyenler Acil durum koordinatörü den bu konuda talimat bekleyeceklerdir. 
+
+Tesisin kapanması ise:
+
+Kapama kararı verecek kişi: Kapama talimatı Acil durum koordinatörü tarafından verilecektir.
+
+Kapama işlemini yerine getirecek kişiler: Herkes kullandığı cihazı kapatacaktır.
+
+KAYITLARIN MUHAFAZASI
+
+Acil durum sırasında hasar görmemesi, acil durumdan sonra kolay toparlanabilmek için bilgisayar sistemi, çelik kasalar içinde yedeklenmektedir. Bilgisayar ortamında olmayan her tür kritik kayıt ya bilgisayar ortamına transfer edilip yedeklenecek, ya da bu mümkün değilse kopyaları (fotokopi, fotoğraf veya video) çıkarılarak yedeklenecektir.
+
+HALKLA İLİŞKİLER
+
+Bir acil durumda, her türlü halkla ilişkiler faaliyeti, destek elemanı tarafından kontrol ve koordine edilecektir. Acil durum koordinatörü’de alınan kararlar ve hazırlanan bilgi dışında bir bilgi verilmeyecektir.
+
+RESMİ KURULUŞLARLA İLİŞKİLER
+
+Hangi acil durumda hangi resmi kurumun aranacağını gösterir liste ve aranan kuruma verilecek bilgiler “Ek-3 İletişim Bilgileri”nde yer almaktadır. 
+
+KARŞILIKLI DAYANIŞMA ANLAŞMASI
+
+Firma çevresinde bulunan komşu işletmeler ile acil durumlar halinde yönetimin talebine göre karşılıklı dayanışma anlaşması yapılır. Anlaşmanın ayrıntıları firmada bulundurulacaktır. Dayanışma gerek tesislerde oluşan acil durumlar, gerekse genel acil durumları içermektedir. Bu tesisler ve anlaşma konuları aşağıdadır. Karşılıklı dayanışma protokol örneği Ek-6 dadır.
+
+TESİS		SAĞLAYACAĞI/SAĞLANACAK DESTEK	
+
+      A.Ş /      Ltd Şti/ 	Yangınla mücadele, enkaz kaldırma ve kurtarma, alarm ve irtibat, sağlık hizmetleri konusunda Ek-6 da örneği verilen Karşılıklı yardımlaşma protokolü formatına uygun karşılıklı yardımlaşma yapılacak, 
+
+
+
+
+
+TOPLUMSAL HİZMETLER
+
+Genel bir acil durumda öncelikle personel aileleri olmak üzere, çevre topluma destek verilecektir. Bu destek, üretim devam edebiliyorsa, üretimi kesintiye uğratmadan, üretim kesilmişse, toparlanma faaliyetlerine engel olmadan verilmelidir. Bu durum önceden öngörülebilecek bir durum olmadığından, ne şekilde destek verileceği destek elemanının yetki ve sorumluluğundadır. 
+
+Acil durumlarda verilebilecek destekler işletme imkanları da dikkate alınarak ulaşım, barındırma ve sıcak yemek de dahil olmak üzere  ön hazırlık yapılması ve sayının belirlenmesi faydalı olacaktır.
+
+TOPLUMU BİLGİLENDİRME
+
+Tesis içinde ortaya çıkan bir acil durum, tesis sınırları dışına taşıyorsa; resmi makamlar, olayın yapısını, toplum sağlığı veya güvenliğinin tehlikede olup olmadığını, sorunu çözmek için ne yapıldığını ve bu durumun ortaya çıkmaması için neler yapılmış olduğunu öğrenmek isteyeceklerdir. Bu nedenle, bir acil durumdan etkilenecekler ve bunların ihtiyaç duyacakları bilgi destek elemanı tarafından belirlenir ve Basın Sözcüsü tarafından açıklanır. Aşağıdaki liste bilgi verilecek kişilere örnektir:
+
+
+
+Çevre halkı
+
+Basın yayın kuruluşları
+
+Çalışanlar ve emekliler
+
+Sendikalar
+
+Satıcılar ve tedarikçiler
+
+Müşteriler
+
+Ortaklar
+
+Acil durum müdahale organizasyonları
+
+Resmi makamlar
+
+Mülki amir ve belediye başkanı
+
+Özel ilgi grupları
+
+Komşu kuruluşlar
+
+
+
+TOPARLANMA VE TEKRAR BAŞLAMA
+
+Bir acil durum sonrası mümkün olduğu kadar kısa sürede toparlanarak, tekrar işe dönmek gerekir. Aksi takdirde, çalışanlar motivasyonlarını, tesis müşteri ve tedarikçilerini kaybetmeye başlar. 
+
+SİGORTA
+
+Acil durum sonrası sigortayla yapılacak tüm işlemlerde İşveren birlikte çalışacaklardır. Olan biten tüm olay eksiksiz olarak, fakat abartılmadan ekspere gösterilecektir. Hatta bu maksatla, mümkün olduğu takdirde, acil durum sırasında fotoğraf çekimi ve video kaydı yapılacaktır.
+
+FAALİYETE TEKRAR BAŞLAMA
+
+Toparlanma ve faaliyete tekrar başlama, Acil durum koordinatörü koordinatörlüğünde yapılacak planlamayla yürütülecektir.
+
+Toparlanma Ekibi kurulur. Toparlanma için öncelikler saptanır.
+
+Tesisdeki personelin emniyeti sağlanmaya devam edilir. Olay yerinin güvenliğini sağlanır.
+
+Ayrıntılı kayıt tutulur, tüm kararların mümkünse sesli kaydı tutulur. Hasarın fotoğrafları çekilir veya video kaydı yapılır.
+
+Hasar maliyetleri çıkarılır. Alımlar için özel bütçe kodları ayarlanır.
+
+Hasar görmemiş kısımlar korunur. Açık yerleri kapanır. Duman ve su tahliye edilip, molozlar temizlenir. Cihazlar nemden korunur. Güç sistemleri faal hale getirilir.
+
+Enkaz kaldırma faaliyetlerine başlanır. Hasarlı kısımlar hasar görmemiş kısımlardan ayırılır. Hasarlı malzeme sigorta eksperi gelene kadar muhafaza edilir. Ancak faaliyetleri engelliyor ve dışarı çıkarılması bir sorun yaratmıyorsa, fotoğrafları çekildikten sonra  dışarı çıkartılabilir.
+
+Hasarlı malzemenin envanterini çıkarılır. Bu iş hasarlı malzemenin değeri saptamak içindir ve genellikle eksper veya eksperin görevlendireceği birinin gözetiminde yapılmalıdır.
+
+Hasarlı malzemenin değerlendirilmesi konusunda sigortayla görüştükten sonra karar verilir. Eğer sigorta almayacaksa bir hurdacıya verilebilir. Ancak hurdacıdan malzemenin tipini, durumunu ve adedini gösteren imzalı bir envanter alınmalıdır.
+
+Cihazlar, sistemler ve tesis tekrar çalıştırılmaya başlanır.
+
+Büyük onarım ve restorasyon faaliyetlerine, resmi makamlarla ve sigorta şirketiyle görüştükten sonra başlanır.
+
+Hasarlı kısmın değeri çıkarılır, işin kesilmesinin verdiği zarar hesaplanır.
+
+Müşteriler ve tedarikçilerle temasa geçilir.
+
+
+
+
+
+
+
+
+
+
+
+
+
+EK-1 ACİL DURUMLAR VE MÜDAHALE YÖNTEMLERİ 
+
+ACİL DURUM :YANGIN 
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM : DEPREM
+
+
+
+
+
+HIZLI VE GÜVENLİ BİR ŞEKİLDE BULUNDUĞUN YERDEN UZAKLAŞ
+
+İLK SARSINTI GEÇTİ Mİ?
+
+KORUNMA BÖLGESİNDE KALMAYA DEVAM ET
+
+PANİK YAPMADAN YETERLİ BİLGİYE ULAŞANA KADAR TOPLANMA BÖLGESİNDE KALMAYA DEVAM ET
+
+KORUNMA BÖLGESİNDE KALMAYA DEVAM ET
+
+EVET
+
+HAYIR
+
+HAYIR
+
+HAYIR
+
+EVET
+
+EVET
+
+DEPREM GEÇTİ Mİ?
+
+PANİĞİ YATIŞTIR, 
+
+ÇEVRE GÜVENLİĞİNİ SAĞLA
+
+
+
+ELEKTRİK VE GAZI KES
+
+
+
+DIŞARIYA AÇILAN KAPIYA YAKIN MISIN ?
+
+DÜŞEBİLECEK CİSİMLERDEN KORUNARAK, BİNAYI TERK ET
+
+TOPLANMA BÖLGESİNE GİT
+
+YARALI ARAŞTIRMASI YAP,
+
+GEREKİRSE İLK YARDIM UYGULA 
+
+
+
+KAZA, YANGIN, SIZINTI, VB. DURUMLAR VARSA İLGİLİ ACİL DURUM PLANLARINA GÖRE HAREKET ET 
+
+ETKİ GEÇTİKTEN SONRA HASAR ARAŞTIRMASI YAP
+
+MAKİNE VE EKİPMANDAN UZAKLAŞ VE EN YAKIN İLK KORUNMA BÖLGESİNE YÖNEL (MASA ALTI, KOLON VB. BÖLGELER) 
+
+DEPREM ANINDA ETRAFINDAKİLERİ SESLİ UYAR
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM : SABOTAJ
+
+
+
+
+
+
+
+SABOTAJ OLAYLARINA KARŞI 
+
+ACİL EYLEM PLANI
+
+SABOTAJ ŞEKLİNİ BELİRLE
+
+PATLAYICI MADDE
+
+BAKTERİYEL / KİMYASAL
+
+FİKRİ / PSİKOLOJİK
+
+MEKANİK
+
+YANGIN
+
+116 JANDARMA, 112 ACİL SERVİS VE 110 İTFAİYEYE HABER VER
+
+ÖZEL GÜVENLİK GÖREVLİLERİNE HABER VER
+
+GEREKTİĞİNDE YANGIN, SIZINTI VE DİĞER ACİL DURUM PLANLARINDAN YARARLAN
+
+CAN GÜVENLİĞİNİ TEHLİKEYE ATMADAN FABRİKA ÇEVRESİNİ GÜVENCEYE AL
+
+FABRİKA SAHASINI AYNDINLAT
+
+GİRİŞ ÇIKIŞ KAPILARINI KONTROL ALTINDA TUT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM :  İŞ KAZASI VE SAĞLIK OLAYLARI 
+
+
+
+KAZA – SAĞLIK OLAYLARI ACİL EYLEM PLANI
+
+(Travma, Yaralanma, Yanık, Elektrik Çarpması, Zehirlenme vb.)
+
+
+
+KAZA – OLAYIN GERÇEKLEŞMESİ
+
+
+
+İLKYARDIM SERTİFİKAN VAR MI?
+
+Ortam Değerlendirmesi Yap
+
+(Ortam ve Kendi Güvenliği Sağla)
+
+Gerekiyorsa İlkyardım Uygula
+
+
+
+Yaşam Desteği Ver
+
+Hasta/Yaralıya Müdahale Etme
+
+
+
+112 Yİ ara
+
+
+
+112’yi Ara
+
+Ambulans Çağır
+
+Birim Amirine  ve Güvenlik Birimine Bildir / Bildirilmesini Sağla
+
+EVET
+
+HAYIR
+
+Kazazede ölmüş ise savcılık gelene kadar olay yerine müdahale etme
+
+Olay Elektrik Çarpması ise; 
+
+önce elektrik akımını kes, akımı kesmek mümkün değil ise kazazedeyi yalıtkan bir madde (tahta, ip, plastik vb.) kullanarak ortamdan uzaklaştır 
+
+Ambulans Çağır
+
+Birim Amirine  ve Güvenlik Birimine Bildir / Bildirilmesini Sağla
+
+İşyeri Sağlık Birimine Bildir / Bildirilmesini Sağla (….)
+
+Sağlıkçı (Hekim-Hemşire) Gelince Onun Yardımcısı Konumuna Geç
+
+Güvenlik Birimine Bildir / Bildirilmesini Sağla (…..)
+
+İş Güvenliği Sorumlusuna Bildir / Bildirilmesini Sağla
+
+İşyeri Sağlık Birimi 
+
+AÇIK
+
+İşyeri Sağlık Birimi 
+
+KAPALI
+
+
+
+ACİL DURUM :KİMYASAL DÖKÜLME SIZINTI
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM : ELEKTRİK ÇARPMASI
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM : ZEHİRLENME 
+
+
+
+
+
+BESİN YOLU İLE OLAN ZEHİRLENMELERDE KUSMA, BULANTI, KARIN AĞIRISI, İSHAL GÖRÜLÜYOR MU?
+
+SİNDİRİM YOLU İLE OLAN HAP İLE ZEHİRLENME (İNTİHAR AMAÇLI, BİLİNÇSİZCE) VAR MI?
+
+ZEHİRLENMEDEN SONRA YARIM SAAT GEÇTİ Mİ?
+
+HASTANEYE KALDIR. MÜMKÜNSE İÇTİĞİ HAPI YANINA AL.
+
+EVET
+
+EVET
+
+HAYIR
+
+112’Yİ ARA.
+
+HASTANEYE KALDIR.
+
+EVET
+
+PARMAK İLE DİLİN ARKA TARAFINI UYARARAK KUSTUR.
+
+ZEHİRLENMELER
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM: PATLAMA 
+
+
+
+
+
+PATLAMANIN TÜRÜNÜ BELİRLE
+
+
+
+
+
+
+
+
+
+
+
+
+
+LPG, TRAFO, TANK , TÜP VEYA KAZAN PATLAMASI
+
+SABOTAJ ACİL DURUM PLANINA GÖRE HAREKET ET.
+
+
+
+
+
+
+
+ATEŞLEME YAPAN TÜM EKİPMANLAR KAPATILMALI VE ATEŞLİ CİHAZLARIN KULLANILMAMASI KONUSUNDA DUYURU YAPILMASI SAĞLANMALIDIR ( İLETİŞİM GÖREVLİSİ )
+
+
+
+
+
+
+
+
+
+
+
+
+
+ACİL DURUM EKİBİ YÖNETİMİN FİKİRLERİNİ ALARAK FABRİKAYI KAPATIR, PROTOKOL KARŞILIĞINDA GELEN YARDIMLARI KABUL EDER
+
+( ACİL DURUM KOORDİNATÖRÜ )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+YARALILARA İLKYARDIMCILARIN MÜDAHALESİ YETERLİ DEĞİLSE 112 ARANIR VE HASTANEYE SEVKİ SAĞLANIR 
+
+(İLKYARDIM EKİBİ )
+
+
+
+
+
+
+
+
+
+
+
+
+
+YANGIN ACİL DURUM PLANI BASAMAKLARI SIRASIYLA UYGULANACAKTIR.
+
+
+
+
+
+
+
+
+
+
+
+
+
+HASAR RAPORU
+
+OLAY İLE İLGİLİ RAPOR VE TUTANAK HAZIRLA
+
+( İŞ GÜVENLİĞİ SORUMLUSU )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+EK-2  ACİL İLETİŞİM LİSTESİ
+
+İÇ İLETİŞİM LİSTESİ	
+
+
+
+
+
+İSİM SOYİSİM
+
+İLETİŞİM BİLGİLERİ
+
+İŞVEREN 
+
+
+
+
+
+İŞVEREN VEKİLİ
+
+
+
+
+
+DESTEK ELEMANI
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DIŞ İLETİŞİM LİSTESİ
+
+BİRİM ADI 
+
+TELEFON NUMARASI
+
+ADRES-TELEFON BİLGİLERİ
+
+İTFAİYE
+
+110
+
+
+
+AMBULANS İLKYARDIM
+
+112
+
+
+
+POLİS
+
+112
+
+
+
+JANDARMA
+
+156
+
+
+
+DOĞALGAZ
+
+187
+
+
+
+ELEKTRİK
+
+186
+
+
+
+EN YAKIN HASTANE
+
+
+
+
+
+ZEHİR DANIŞMA MERKEZİ
+
+114
+
+
+
+
+
+ÇEVRE İL MÜDÜRLÜĞÜ
+
+
+
+
+
+
+
+EK –4  FAALİYETLERE GÖRE KİŞİSEL KORUYUCU EKİPMAN LİSTESİ
+
+
+
+ELEKTRİK TAMİR
+
+KAYNAK
+
+KİMYASALLA ÇALIŞMA
+
+MEKANİK TAMİR
+
+ARITMA BÖLGESİ
+
+YÜKLEME BOŞALTMA
+
+TEMİZLİK
+
+GÜVENLİK
+
+TANK/SİLO GİRİŞ
+
+YÜKSEKTE ÇALIŞMA
+
+İŞ AYAKKABISI
+
+
+
+√
+
+
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+ELEKTRİKÇİ AYAKKABISI
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PVC ÇİZME
+
+√
+
+
+
+
+
+√
+
+√
+
+
+
+√
+
+
+
+√
+
+
+
+ÇİZME – KİMYASAL
+
+√
+
+
+
+√
+
+
+
+√
+
+
+
+
+
+
+
+√
+
+
+
+TOZ MASKESİ
+
+√
+
+
+
+
+
+√
+
+
+
+√
+
+√
+
+
+
+√
+
+
+
+KAYNAK MASKESİ
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GAZ MASKESİ
+
+√
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+√
+
+
+
+KULAKLIK
+
+√
+
+
+
+√
+
+√
+
+√
+
+√
+
+√
+
+
+
+√
+
+
+
+BARET
+
+√
+
+
+
+√
+
+√
+
+√
+
+
+
+
+
+
+
+
+
+
+
+GÖZLÜK
+
+√
+
+
+
+√
+
+√
+
+√
+
+
+
+
+
+
+
+
+
+
+
+İŞ ELBİSESİ
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+√
+
+KİMYASAL ELBİSESİ
+
+
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+KAYNAKÇI ÖNLÜĞÜ
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+EMNİYET KEMERİ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+√
+
+ELDİVEN – KİMYASAL
+
+
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CAN YELEĞİ /SİMİDİ
+
+
+
+
+
+
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+ELDİVEN – MONTAJ
+
+√
+
+
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+ELDİVEN–Y.GERİLİM
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ELDİVEN – TEMİZLİK
+
+√
+
+
+
+
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+ELEKTRİKÇİ MASKESİ
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BEL KEMERİ
+
+
+
+
+
+
+
+
+
+
+
+√
+
+
+
+
+
+
+
+
+
+TOPRAKLAMAISTAKASI
+
+√
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+EK – 5	 KARŞILIKLI DAYANIŞMA VE İŞBİRLİĞİ PROTOKOLÜ
+
+	
+
+……………………………………..…..……….. İLE …………………………………….…………..…… ARASINDAKİ KARŞILIKLI YARDIMLAŞMA VE İŞBİRLİĞİ PROTOKOLU TANZİM EDİLMİŞ  VE TARAFLARCA  İMZA ALTINA ALINMIŞTIR.
+
+
+
+
+
+SIĞINAK KONUSUNDA
+
+Taraflar kendi sığınağını kullanacak, ancak talep halinde imkanlar nispetinde birbirlerinin sığınaklarından yararlanacaklardır..
+
+
+
+YANGINLARA KARŞI KORUMA VE SÖNDÜRME
+
+
+
+Bir yangın vukuunda kurulmuş olan ekipler birbirlerinin yardımına koşacaktır. Ortak hizmet ve tatbikat hususları karşılıklı olarak koordine edilecektir. 
+
+
+
+MAKİNE-MALZEME VE MALLARIN KORUNMASI VE YEDEKLENMESİ
+
+
+
+
+
+Mevcut imkanlar doğrultusunda taraflar birbirlerine yardım edecektir.
+
+
+
+GİZLEME-GÖMME VE YEDEKLEME KONUSUNDA
+
+
+
+Mevcut imkanlar doğrultusunda taraflar birbirlerine yardım edecektir.
+
+
+
+ALARM VE İRTİBAT KONUSUNDA
+
+
+
+
+
+İkaz alarm haberleri karşılıklı olarak teyit edilecektir.
+
+
+
+SAĞLIK VE SOSYAL YARDIM KONUSUNDA
+
+
+
+Her iki taraf imkanları ölçüsünde karşılıklı yardımda bulunacaktır.
+
+
+
+DİĞER SİVİL SAVUNMA SERVİS HİZMETLERİ KONUSUNDA
+
+Her iki taraf kendi oluşturdukları sivil savunma ekiplerini gerektiğinde karşılıklı olarak kullanacaklardır.
+
+
+
+TAHLİYE VE SEYREKLEŞTİRME
+
+Tahliye ve seyrekleştirme konusunda YERİNDE KAL prensibi uygulanacaktır. Ancak üst makamlardan gelen talimata göre hareket edilecek ve mevcut duruma göre karşılıklı yardım ve işbirliği yapılacaktır
+
+
+
+
+
+
+
+
+
+	Onaylayan 	Onaylayan
+
+	Adı Soyadı		Adı Soyadı                                                                        
+
+	Unvanı		Unvanı
+
+	Kaşe / İmza		Kaşe/İmza
+
+EK – 6  DESTEK ELEMANI ATAMA YAZISI
+
+
+
+
+
+[FİRMA ADI] ‘ne Arama, Kurtarma ve Tahliye, Yangınla mücadele görevlerini yerine getirmek üzere gerekli eğitimleri almış ve  Acil Durumlar Hakkında Yönetmelik ve İlk Yardım Yönetmeliği’ne göre ; “Destek Elemanı” olarak atanmıştır.
+
+
+
+Ad / Soyad
+
+Görevi ( Acil Durum Ekibi )
+
+İMZA
+
+
+
+KURTARMA EKİBİ
+
+
+
+
+
+ARAMA VE TAHLİYE  EKİBİ
+
+
+
+
+
+YANGIN İLE MÜCADELE EKİBİ
+
+
+
+
+
+İLK YARDIM EKİBİ
+
+
+
+
+
+
+
+
+
+EK -7 FİRMA BİLGİLERİ 
+
+
+
+İŞYERİNİN
+
+Ünvanı: [FİRMA ADI]
+
+Adresi: [FİRMA ADRES]
+
+İşveren : 
+
+ÇALIŞAN SAYISI  : 
+
+İŞ GÜVENLİĞİ UZMANI
+
+  [İŞ GÜVENLİK UZMANI]
+
+   
+
+
+
+FAALİYETİN
+
+TÜRÜ
+
+
+
+ 
+
+
+
+
+
+
+
+EK -8 TAHLİYE VE ÇIKIŞ PLANI 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DEĞİŞME VE DÜZELTMELER
+
+
+
+SIRA NO
+
+DEĞİŞME/ DÜZELTME KONUSU
+
+DEĞİŞME/DÜZELTMEYİ YAPAN
+
+TARİH
+
+00
+
+İLK YAYIN 
+
+[İŞ GÜVENLİK UZMANI]
+
+[YAPILDIĞI TARİH]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[FİRMA ADI]HAZIRLANMIŞ OLAN ACİL DURUM PLANI 23 SAYFADAN OLUŞMAKTADIR. DOKÜMANI OKUDUĞUMU VE KABUL ETTİĞİMİ BEYAN EDERİM.
+

@@ -2255,12 +2255,11 @@ export default function Home() {
                   <Shield className="w-4 h-4" />
                   <span>Risk Değerlendirmesi</span>
                 </Link>
-                {/* Acil Durum Planları - Yakında */}
-                <div className="px-3 py-2 text-xs font-medium text-blue-300/50 flex items-center cursor-not-allowed bg-white/5 rounded-xl border border-white/5 gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Acil Durum</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-white/10 text-blue-200 font-bold">YAKINDA</span>
-                </div>
+                {/* Acil Durum Eylem Planı */}
+                <Link href="/panel/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Acil Durum Planı</span>
+                </Link>
               </div>
 
               {session ? (
@@ -2495,7 +2494,7 @@ export default function Home() {
 
             {/* --- 1. FİRMA VE RAPOR BİLGİLERİ --- */}
             <div className="bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between -mx-6 -mt-6 mb-6">
+              <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between rounded-t-xl">
                 <div className="flex items-center">
                   <div className="bg-white/10 p-2 rounded-lg mr-3">
                     <Briefcase className="w-5 h-5 text-blue-200" />
@@ -2517,7 +2516,7 @@ export default function Home() {
               </div>
 
               {!session ? (
-                <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <div className="text-center py-8 mx-6 my-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   <Lock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-500 mb-4">Firma seçimi için giriş yapmanız gerekiyor</p>
                   <Link
@@ -2529,7 +2528,7 @@ export default function Home() {
                   </Link>
                 </div>
               ) : companies.length === 0 ? (
-                <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <div className="text-center py-8 mx-6 my-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   <Briefcase className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-500 mb-4">Henüz kayıtlı firmanız yok</p>
                   <Link
@@ -2541,7 +2540,7 @@ export default function Home() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                   {/* Sol: Firma Seçimi */}
                   <div className="space-y-4">
                     <div>
