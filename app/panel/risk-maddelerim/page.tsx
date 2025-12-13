@@ -67,7 +67,7 @@ export default function RiskMaddelerimPage() {
                 const data = await res.json();
                 setRisks(data);
                 // Tüm kategorileri başlangıçta açık yap
-                const categories = new Set(data.map((r: UserRisk) => r.category_name));
+                const categories = new Set<string>(data.map((r: UserRisk) => r.category_name));
                 setExpandedCategories(categories);
             }
         } catch (error) {
