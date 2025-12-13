@@ -93,11 +93,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#ozellikler" className="text-blue-100/80 hover:text-white text-sm font-medium transition-colors hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">Özellikler</a>
-              <a href="#moduller" className="text-blue-100/80 hover:text-white text-sm font-medium transition-colors hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">Modüller</a>
-              <a href="#" className="text-blue-100/80 hover:text-white text-sm font-medium transition-colors hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]">SSS</a>
-            </div>
+
 
             {session ? (
               <div className="flex items-center space-x-3 gap-2">
@@ -315,20 +311,32 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2 group">
-              <div className="transition-transform duration-300 group-hover:scale-110">
-                <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+            {/* Sol: Logo ve Copyright */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 group">
+                <div className="transition-transform duration-300 group-hover:scale-110">
+                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                </div>
+                <span className="text-xl font-bold text-gray-300 group-hover:text-white transition-colors">İSG Pratik</span>
               </div>
-              <span className="text-xl font-bold text-gray-300 group-hover:text-white transition-colors">İSG Pratik</span>
+              <p className="text-sm">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
             </div>
-            <div className="flex gap-6 text-sm">
-              <Link href="/risk-degerlendirme-nedir" className="hover:text-white font-medium text-indigo-400">Risk Değerlendirme Nedir?</Link>
+
+            {/* Orta: Risk Değerlendirme Nedir? */}
+            <div className="flex flex-col items-center">
+              <Link href="/risk-degerlendirme-nedir" className="hover:text-white text-sm">
+                Risk Değerlendirme Nedir?
+              </Link>
+            </div>
+
+            {/* Sağ: Gizlilik, Kullanım, KVKK alt alta */}
+            <div className="flex flex-col gap-2 text-sm text-right">
               <Link href="/gizlilik-politikasi" className="hover:text-white">Gizlilik Politikası</Link>
               <Link href="/kullanim-kosullari" className="hover:text-white">Kullanım Koşulları</Link>
               <Link href="/kvkk" className="hover:text-white">KVKK</Link>
+              <Link href="/iletisim" className="hover:text-white">İletişim</Link>
             </div>
-            <p className="text-sm">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </footer>
