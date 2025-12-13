@@ -2494,21 +2494,21 @@ export default function Home() {
           <div className="max-w-7xl mx-auto space-y-8">
 
             {/* --- 1. FİRMA VE RAPOR BİLGİLERİ --- */}
-            <div className="bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 p-6">
-              <div className="flex items-center mb-6 pb-4 border-b border-slate-100 justify-between">
+            <div className="bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between -mx-6 -mt-6 mb-6">
                 <div className="flex items-center">
-                  <div className="bg-indigo-50 p-2 rounded-lg mr-3">
-                    <Briefcase className="w-5 h-5 text-indigo-600" />
+                  <div className="bg-white/10 p-2 rounded-lg mr-3">
+                    <Briefcase className="w-5 h-5 text-blue-200" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-800">1. Firma & Rapor Bilgileri</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Kayıtlı firmalarınızdan birini seçin ve rapor tarihini girin</p>
+                    <h3 className="text-lg font-bold text-white">1. Firma & Rapor Bilgileri</h3>
+                    <p className="text-xs text-blue-200 mt-0.5">Kayıtlı firmalarınızdan birini seçin ve rapor tarihini girin</p>
                   </div>
                 </div>
                 {session && (
                   <Link
                     href="/panel/firmalar?new=true"
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg text-sm font-bold hover:bg-white/20 transition-colors border border-white/20"
                   >
                     <Plus className="w-4 h-4" />
                     Yeni Firma Ekle
@@ -2747,19 +2747,19 @@ export default function Home() {
             {/* --- 3. DÜZENLEME FORMU --- */}
             <div id="risk-form" className="bg-white shadow-lg shadow-slate-200/50 rounded-xl border border-slate-200 overflow-hidden mb-8 transition-all duration-300">
               <div
-                className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between cursor-pointer hover:from-slate-800 hover:via-blue-800 hover:to-slate-800 transition-colors"
                 onClick={() => setIsFormCollapsed(!isFormCollapsed)}
               >
                 <div className="flex items-center">
-                  <div className="bg-blue-600 p-1.5 rounded-lg mr-3 shadow-sm shadow-blue-200">
-                    <Plus className="w-5 h-5 text-white" />
+                  <div className="bg-white/10 p-1.5 rounded-lg mr-3">
+                    <Plus className="w-5 h-5 text-blue-200" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-lg">2. Risk Giriş Paneli</h3>
-                    <p className="text-xs text-slate-500">Manuel risk ekleme veya düzenleme</p>
+                    <h3 className="font-bold text-white text-lg">2. Risk Giriş Paneli</h3>
+                    <p className="text-xs text-blue-200">Manuel risk ekleme veya düzenleme</p>
                   </div>
                 </div>
-                <div className="bg-white p-1 rounded-full border border-slate-200 shadow-sm text-slate-400">
+                <div className="bg-white/10 p-1 rounded-full border border-white/20 text-blue-200">
                   {isFormCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                 </div>
               </div>
@@ -2988,37 +2988,38 @@ export default function Home() {
               </div>
             </div>
 
+
             {/* --- ACTION BAR --- */}
-            <div className="flex flex-col md:flex-row justify-between items-center bg-white border border-slate-200 p-4 rounded-t-xl md:rounded-xl shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 p-4 rounded-t-xl md:rounded-xl shadow-sm gap-4">
               <div className="flex items-center" ref={tableTopRef}>
-                <div className="bg-slate-100 p-2 rounded-lg mr-3">
-                  <FileText className="w-6 h-6 text-slate-700" />
+                <div className="bg-white/10 p-2 rounded-lg mr-3">
+                  <FileText className="w-6 h-6 text-blue-200" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">3. Risk Analiz Tablosu</h2>
-                  <p className="text-xs text-slate-500">Hazırlanan raporun önizlemesi</p>
+                  <h2 className="text-lg font-bold text-white">3. Risk Analiz Tablosu</h2>
+                  <p className="text-xs text-blue-200">Hazırlanan raporun önizlemesi</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handleDeleteAll}
-                  className="inline-flex items-center px-4 py-2 border border-red-200 shadow-sm text-sm font-medium rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                  className="inline-flex items-center px-4 py-2 border border-red-400/50 shadow-sm text-sm font-medium rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 transition-colors"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Tümünü Sil
                 </button>
-                <label className="inline-flex items-center cursor-pointer px-4 py-2 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 select-none transition-colors">
+                <label className="inline-flex items-center cursor-pointer px-4 py-2 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 select-none transition-colors">
                   <input
                     type="checkbox"
                     checked={includeProcedure}
                     onChange={(e) => setIncludeProcedure(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
                   />
-                  <span className="ml-2 text-sm font-bold text-slate-600">Prosedür Ekle</span>
+                  <span className="ml-2 text-sm font-bold text-white">Prosedür Ekle</span>
                 </label>
                 <button
                   onClick={generatePDF}
-                  className="inline-flex items-center px-5 py-2 border border-transparent shadow-lg shadow-blue-900/10 text-sm font-bold rounded-lg text-white bg-slate-900 hover:bg-slate-800 transition-all hover:scale-105"
+                  className="inline-flex items-center px-5 py-2 border border-emerald-400/50 shadow-lg shadow-emerald-500/20 text-sm font-bold rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 transition-all hover:scale-105"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   PDF İndir
