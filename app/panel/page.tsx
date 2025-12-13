@@ -74,6 +74,20 @@ export default function PanelPage() {
 
     const planInfo = getPlanInfo();
 
+    // Premium bitiş tarihi bilgisi
+    const getPremiumExpiryText = () => {
+        const plan = (session?.user as any)?.plan;
+        const trialEndsAt = (session?.user as any)?.trialEndsAt;
+
+        if (plan === 'premium_trial' && trialEndsAt) {
+            const endDate = new Date(trialEndsAt);
+            const now = new Date();
+            const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            return `${daysLeft} gün kaldı (${endDate.toLocaleDateString('tr-TR')})`;
+        }
+        return '';
+    };
+
     return (
         <div className="p-8">
             {/* Hoşgeldin Kartı */}
@@ -91,7 +105,14 @@ export default function PanelPage() {
                             </span>
                         </p>
                     </div>
-                    <div className="hidden md:block">
+                    <div className="hidden md:flex items-center gap-4">
+                        {/* Premium Bilgisi */}
+                        {getPremiumExpiryText() && (
+                            <div className="text-right">
+                                <p className="text-indigo-200 text-xs font-medium">Deneme Süresi</p>
+                                <p className="text-white font-bold text-sm">{getPremiumExpiryText()}</p>
+                            </div>
+                        )}
                         <img src="/logo.png" alt="Logo" className="w-20 h-20 opacity-80" />
                     </div>
                 </div>
@@ -183,21 +204,6 @@ export default function PanelPage() {
                     </div>
                     <h3 className="text-3xl font-bold text-slate-800 mb-1">0</h3>
                     <p className="text-sm text-slate-500">Oluşturulan Rapor</p>
-                </div>
-
-                {/* Üyelik Bilgisi */}
-                <div className="bg-white rounded-xl p-6 border border-slate-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${planInfo.color} flex items-center justify-center text-white`}>
-                            <Users className="w-6 h-6" />
-                        </div>
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-1">{planInfo.label}</h3>
-                    <p className="text-sm text-slate-500">
-                        {(session?.user as any)?.plan === 'premium_trial'
-                            ? 'Deneme süreniz devam ediyor'
-                            : 'Aktif üyelik'}
-                    </p>
                 </div>
             </div>
 
@@ -310,10 +316,10 @@ export default function PanelPage() {
                                         <p className="text-sm text-slate-500 truncate">{risk.risk}</p>
                                     </div>
                                     <span className={`text-xs px-2 py-1 rounded-full font-bold ${risk.status === 'approved'
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : risk.status === 'rejected'
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-amber-100 text-amber-700'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : risk.status === 'rejected'
+                                            ? 'bg-red-100 text-red-700'
+                                            : 'bg-amber-100 text-amber-700'
                                         }`}>
                                         {risk.status === 'approved' ? 'Onaylandı' : risk.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}
                                     </span>

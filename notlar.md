@@ -15,3 +15,4 @@ Buraya istediğiniz metni yazın...
 -panel sayfasındaki üstteki navbar da kullanıcının ne zaman premium üyelikten free üyeliğe geçeceği yani premium üyeliğin bitiş tarihi yazsın.
 -risk değerlendirme sayfasındaki risk sınıflarındaki başlıklar daha sıkı birbirine yakın olsun
 -Yapay Zeka Risk Analiz (Beta)  yazsın
+-risk giriş panelinden risk eklendiğinde risklerim sayfasına eklenmiyor.

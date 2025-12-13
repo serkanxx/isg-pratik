@@ -32,7 +32,7 @@ export default function LoginPage() {
                     setError(result.error);
                 }
             } else {
-                router.push("/");
+                router.push("/panel");
                 router.refresh();
             }
         } catch (err) {
@@ -43,7 +43,7 @@ export default function LoginPage() {
     };
 
     const handleGoogleSignIn = () => {
-        signIn("google", { callbackUrl: "/" });
+        signIn("google", { callbackUrl: "/panel" });
     };
 
     return (

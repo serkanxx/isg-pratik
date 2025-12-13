@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// PUT - Admin risk maddesini onayla/reddet
+// PUT - Admin risk maddesini onayla/reddet + düzenle
 export async function PUT(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
@@ -49,13 +49,39 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { id, status } = body;
+        const { id, status, editedRisk } = body;
 
         if (!id || !['approved', 'rejected'].includes(status)) {
             return NextResponse.json({ error: 'Geçersiz parametreler' }, { status: 400 });
         }
 
-        // Risk maddesini güncelle
+        // Düzenleme varsa önce user_risks tablosundaki riski güncelle
+        if (editedRisk && status === 'approved') {
+            const { error: editError } = await supabase
+                .from('user_risks')
+                .update({
+                    hazard: editedRisk.hazard,
+                    risk: editedRisk.risk,
+                    measures: editedRisk.measures,
+                    sub_category: editedRisk.sub_category,
+                    source: editedRisk.source,
+                    affected: editedRisk.affected,
+                    probability: editedRisk.probability,
+                    frequency: editedRisk.frequency,
+                    severity: editedRisk.severity,
+                    probability2: editedRisk.probability2,
+                    frequency2: editedRisk.frequency2,
+                    severity2: editedRisk.severity2,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id);
+
+            if (editError) {
+                console.error('Risk düzenleme hatası:', editError);
+            }
+        }
+
+        // Risk maddesini güncelle (status değişikliği)
         const { data: riskData, error: updateError } = await supabase
             .from('user_risks')
             .update({ status, updated_at: new Date().toISOString() })
@@ -66,6 +92,7 @@ export async function PUT(request: NextRequest) {
         if (updateError) throw updateError;
 
         // Eğer onaylandıysa, risk_items'a ekle
+        // Reddedildiyse risk_items'a EKLENMİYOR - kullanıcının riski user_risks'te kalıyor
         if (status === 'approved' && riskData) {
             const { error: insertError } = await supabase
                 .from('risk_items')
@@ -97,3 +124,4 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

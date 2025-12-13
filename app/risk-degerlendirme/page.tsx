@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   AlertTriangle, Download, Save, Plus, Trash2, CheckCircle, Shield,
-  Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut
+  Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut, MinusCircle, Building2, Eye, FileCheck, LayoutDashboard
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -402,7 +402,7 @@ export default function Home() {
     return risks.some((r: any) => r.hazard === newHazard && r.risk === newRiskText);
   };
 
-  const handleAddRisk = () => {
+  const handleAddRisk = async () => {
     // Free kullanıcı limit kontrolü
     if (!canAddMoreRisks()) {
       showPremiumLimitWarning();
@@ -429,6 +429,34 @@ export default function Home() {
     };
 
     setRisks([...risks, newRisk]);
+
+    // Kullanıcı giriş yapmışsa user_risks'e de kaydet
+    if (session) {
+      try {
+        await fetch('/api/user-risks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category_name: 'Manuel Eklenen',
+            sub_category: form.sub_category,
+            source: form.source,
+            hazard: form.hazard,
+            risk: form.risk,
+            affected: form.affected,
+            probability: form.probability,
+            frequency: form.frequency,
+            severity: form.severity,
+            probability2: form.probability2,
+            frequency2: form.frequency2,
+            severity2: form.severity2,
+            measures: form.measures
+          })
+        });
+      } catch (err) {
+        console.error('User risk kaydetme hatası:', err);
+      }
+    }
+
     setForm({ ...form, source: '', hazard: '', risk: '', measures: '', image: null, riskNo: '' });
     showNotification("Risk eklendi.");
   };
@@ -535,6 +563,19 @@ export default function Home() {
   const deleteRisk = (id: any) => {
     setRisks(risks.filter((r: any) => r.id !== id));
   };
+
+  // Kategorideki tüm riskleri sil
+  const handleRemoveAllFromCategory = (e: any, cat: any) => {
+    if (e) e.stopPropagation();
+    const removedCount = risks.filter((r: any) => r.categoryCode === cat.code).length;
+    if (removedCount === 0) {
+      showNotification("Bu kategoride silinecek madde yok.", "error");
+      return;
+    }
+    setRisks(risks.filter((r: any) => r.categoryCode !== cat.code));
+    showNotification(`${removedCount} madde silindi.`);
+  };
+
 
   // Sektör Analizi - OpenAI Vektör Arama ile
   const handleSectorAnalysis = async () => {
@@ -2193,17 +2234,32 @@ export default function Home() {
             </div>
 
             <div className="flex items-center space-x-1 sm:space-x-4">
-              <div className="hidden md:flex items-center space-x-2">
-                <Link href="/" className="px-4 py-2 rounded-xl bg-white/10 text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 shadow-sm">
-                  Risk Değerlendirmesi
+              <div className="hidden md:flex items-center space-x-1.5">
+                {/* Panel Dashboard */}
+                <Link href="/panel" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Dashboard</span>
                 </Link>
-                <div className="px-3 py-2 text-xs font-medium text-blue-300/50 flex items-center cursor-not-allowed group relative bg-white/5 rounded-xl border border-white/5">
-                  <span>Acil Durum Planı</span>
-                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-white/10 text-blue-200 font-bold">YAKINDA</span>
-                </div>
-                <div className="px-3 py-2 text-xs font-medium text-blue-300/50 flex items-center cursor-not-allowed bg-white/5 rounded-xl border border-white/5">
-                  <span>Yıllık Planlar</span>
-                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-white/10 text-blue-200 font-bold">YAKINDA</span>
+                {/* Firmalarım */}
+                <Link href="/panel/firmalar" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  <span>Firmalarım</span>
+                </Link>
+                {/* Risklerim */}
+                <Link href="/panel/risk-maddelerim" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Risklerim</span>
+                </Link>
+                {/* Risk Değerlendirmesi - Aktif */}
+                <Link href="/risk-degerlendirme" className="px-3 py-2 rounded-xl bg-indigo-600/80 text-sm font-semibold text-white border border-indigo-500 shadow-sm flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Risk Değerlendirmesi</span>
+                </Link>
+                {/* Acil Durum Planları - Yakında */}
+                <div className="px-3 py-2 text-xs font-medium text-blue-300/50 flex items-center cursor-not-allowed bg-white/5 rounded-xl border border-white/5 gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Acil Durum</span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-white/10 text-blue-200 font-bold">YAKINDA</span>
                 </div>
               </div>
 
@@ -2282,7 +2338,7 @@ export default function Home() {
           <div className="p-5 border-b border-slate-200">
             <h2 className="text-xs font-bold text-indigo-600 uppercase flex items-center mb-3 tracking-wider">
               <Zap className="w-4 h-4 mr-2" />
-              Yapay Zeka Risk Analizi
+              Yapay Zeka Risk Analiz (Beta)
             </h2>
             <div className="relative">
               <input
@@ -2375,7 +2431,7 @@ export default function Home() {
 
 
           {/* RİSK SINIFLARI BÖLÜMÜ */}
-          <div className="px-5 py-4">
+          <div className="px-5 py-3">
             <h2 className="text-xs font-bold text-slate-500 uppercase flex items-center mb-3 tracking-wider">
               <BookOpen className="w-4 h-4 mr-2" />
               Risk Kütüphanesi
@@ -2393,7 +2449,7 @@ export default function Home() {
           </div>
           <ul className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-4">
             {filteredCategories.map((cat: any, index: any) => (
-              <li key={index} className="mb-1">
+              <li key={index} className="mb-0.5">
                 <div className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group cursor-pointer border border-transparent ${risks.some((r: any) => r.categoryCode === cat.code)
                   ? 'bg-green-50 border-green-200'
                   : selectedCategory?.category === cat.category
@@ -2410,13 +2466,28 @@ export default function Home() {
                       <span className="text-[9px] text-slate-400 font-medium">{cat.items.length} Risk Maddesi</span>
                     </div>
                   </button>
-                  <button
-                    onClick={(e) => handleAddAllFromCategory(e, cat)}
-                    title="Tümünü Ekle"
-                    className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-0.5">
+                    {/* - Butonu: Kategoride ekli risk varsa göster */}
+                    {risks.some((r: any) => r.categoryCode === cat.code) && (
+                      <button
+                        onClick={(e) => handleRemoveAllFromCategory(e, cat)}
+                        title="Tümünü Çıkar"
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                      >
+                        <MinusCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                    {/* + Butonu: Kategoride eklenecek madde varsa göster */}
+                    {cat.items.some((item: any) => !risks.some((r: any) => r.hazard === item.hazard && r.risk === item.risk)) && (
+                      <button
+                        onClick={(e) => handleAddAllFromCategory(e, cat)}
+                        title="Tümünü Ekle"
+                        className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-100 rounded-lg transition-all"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}
