@@ -166,7 +166,7 @@ export default function AcilDurumPage() {
                                     <span>Risk Değerlendirmesi</span>
                                 </Link>
                                 {/* Acil Durum Eylem Planı - Aktif */}
-                                <Link href="/panel/acil-durum" className="px-3 py-2 rounded-xl bg-orange-600/80 text-sm font-semibold text-white border border-orange-500 shadow-sm flex items-center gap-2">
+                                <Link href="/acil-durum" className="px-3 py-2 rounded-xl bg-orange-600/80 text-sm font-semibold text-white border border-orange-500 shadow-sm flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4" />
                                     <span>Acil Durum Planı</span>
                                 </Link>

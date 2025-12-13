@@ -49,7 +49,7 @@ const menuItems = [
     },
     {
         name: 'Acil Durum Eylem Planı',
-        href: '/panel/acil-durum',
+        href: '/acil-durum',
         icon: AlertTriangle,
         active: true
     },

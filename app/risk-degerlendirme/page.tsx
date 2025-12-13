@@ -2256,7 +2256,7 @@ export default function Home() {
                   <span>Risk Değerlendirmesi</span>
                 </Link>
                 {/* Acil Durum Eylem Planı */}
-                <Link href="/panel/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                <Link href="/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
                   <span>Acil Durum Planı</span>
                 </Link>
