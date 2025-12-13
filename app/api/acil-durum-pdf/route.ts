@@ -4,16 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import { jsPDF } from 'jspdf';
 
-const turkishToAscii = (str: string): string => {
-    return str
-        .replace(/İ/g, 'I').replace(/ı/g, 'i')
-        .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-        .replace(/Ü/g, 'U').replace(/ü/g, 'u')
-        .replace(/Ş/g, 'S').replace(/ş/g, 's')
-        .replace(/Ö/g, 'O').replace(/ö/g, 'o')
-        .replace(/Ç/g, 'C').replace(/ç/g, 'c');
-};
-
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -29,44 +19,73 @@ export async function POST(request: Request) {
 
         const docxBuffer = fs.readFileSync(docxPath);
         const result = await mammoth.extractRawText({ buffer: docxBuffer });
-        let text = turkishToAscii(result.value);
+        let text = result.value;
 
-        text = text.replace(/\[FİRMA ADI\]/g, turkishToAscii(companyName || ''));
-        text = text.replace(/\[FIRMA ADI\]/g, turkishToAscii(companyName || ''));
-        text = text.replace(/\[SİCİL NO\]/g, turkishToAscii(registrationNumber || ''));
-        text = text.replace(/\[SICIL NO\]/g, turkishToAscii(registrationNumber || ''));
-        text = text.replace(/\[YAPILDIĞI TARİH\]/g, turkishToAscii(reportDate || ''));
-        text = text.replace(/\[YAPILDIGI TARIH\]/g, turkishToAscii(reportDate || ''));
-        text = text.replace(/\[GEÇERLİLİK TARİHİ\]/g, turkishToAscii(validityDate || ''));
-        text = text.replace(/\[GECERLILIK TARIHI\]/g, turkishToAscii(validityDate || ''));
+        // Placeholder'lari degistir
+        text = text.replace(/\[FİRMA ADI\]/g, companyName || '');
+        text = text.replace(/\[FIRMA ADI\]/g, companyName || '');
+        text = text.replace(/\[SİCİL NO\]/g, registrationNumber || '');
+        text = text.replace(/\[SICIL NO\]/g, registrationNumber || '');
+        text = text.replace(/\[YAPILDIĞI TARİH\]/g, reportDate || '');
+        text = text.replace(/\[YAPILDIGI TARIH\]/g, reportDate || '');
+        text = text.replace(/\[GEÇERLİLİK TARİHİ\]/g, validityDate || '');
+        text = text.replace(/\[GECERLILIK TARIHI\]/g, validityDate || '');
 
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        doc.setFont('helvetica');
+
+        // Turkce karakter destegi icin Roboto fontunu yukle
+        try {
+            const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
+            const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf';
+
+            const [fontRes, fontBoldRes] = await Promise.all([
+                fetch(fontUrl),
+                fetch(fontUrlBold)
+            ]);
+
+            const fontBuffer = await fontRes.arrayBuffer();
+            const fontBoldBuffer = await fontBoldRes.arrayBuffer();
+
+            // Server-side base64 encoding
+            const toBase64 = (buffer: ArrayBuffer) => {
+                return Buffer.from(buffer).toString('base64');
+            };
+
+            doc.addFileToVFS('Roboto-Regular.ttf', toBase64(fontBuffer));
+            doc.addFileToVFS('Roboto-Bold.ttf', toBase64(fontBoldBuffer));
+
+            doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+            doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+
+            doc.setFont('Roboto');
+        } catch (fontError) {
+            console.error('Font yukleme hatasi:', fontError);
+            doc.setFont('helvetica');
+        }
 
         // Baslik sayfasi
         doc.setFontSize(18);
         doc.setTextColor(0, 0, 0);
-        const safeCompanyName = turkishToAscii(companyName);
-        const nameWidth = doc.getTextWidth(safeCompanyName);
-        doc.text(safeCompanyName, (210 - nameWidth) / 2, 60);
+        const nameWidth = doc.getTextWidth(companyName);
+        doc.text(companyName, (210 - nameWidth) / 2, 60);
 
         if (registrationNumber) {
             doc.setFontSize(12);
-            const regText = 'Sicil No: ' + turkishToAscii(registrationNumber);
+            const regText = 'Sicil No: ' + registrationNumber;
             doc.text(regText, (210 - doc.getTextWidth(regText)) / 2, 75);
         }
 
         doc.setFontSize(28);
         doc.setTextColor(200, 50, 0);
-        const title = 'ACIL DURUM EYLEM PLANI';
+        const title = 'ACİL DURUM EYLEM PLANI';
         doc.text(title, (210 - doc.getTextWidth(title)) / 2, 120);
 
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
-        doc.text('Yapilis Tarihi: ' + turkishToAscii(reportDate), 30, 180);
-        doc.text('Gecerlilik Tarihi: ' + turkishToAscii(validityDate), 30, 190);
-        doc.text('Hazirlayan: ISG Uzmani', 30, 210);
-        doc.text('Onaylayan: ' + turkishToAscii(employer || 'Isveren'), 30, 220);
+        doc.text('Yapılış Tarihi: ' + reportDate, 30, 180);
+        doc.text('Geçerlilik Tarihi: ' + validityDate, 30, 190);
+        doc.text('Hazırlayan: İSG Uzmanı', 30, 210);
+        doc.text('Onaylayan: ' + (employer || 'İşveren'), 30, 220);
 
         doc.addPage();
 
@@ -87,11 +106,11 @@ export async function POST(request: Request) {
 
             if (line === line.toUpperCase() && line.length > 3 && line.length < 100) {
                 doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
+                doc.setFont('Roboto', 'bold');
                 y += 4;
             } else {
                 doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
+                doc.setFont('Roboto', 'normal');
             }
 
             const splitLines = doc.splitTextToSize(line, 170);
@@ -106,7 +125,21 @@ export async function POST(request: Request) {
         }
 
         const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-        const safeFilename = safeCompanyName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+
+        // Dosya adini ASCII karakterlerle sinirla
+        const sanitizeFilename = (name: string) => {
+            return name
+                .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+                .replace(/\s+/g, '_')
+                .replace(/[^a-zA-Z0-9_-]/g, '');
+        };
+
+        const safeFilename = sanitizeFilename(companyName);
 
         return new NextResponse(pdfBuffer, {
             status: 200,
