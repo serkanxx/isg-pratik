@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { RiskItem, RiskCategory, RiskLibraryItem, HeaderInfo, RiskForm, Notification } from '../types';
+import { RiskItem, RiskCategory, RiskLibraryItem, HeaderInfo, RiskForm, Notification, Company, VALIDITY_YEARS, DangerClass, DANGER_CLASS_LABELS } from '../types';
 import { calculateRiskScore, getRiskLevel, formatDate, P_VALUES, F_VALUES, S_VALUES } from '../utils';
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
@@ -70,6 +70,11 @@ export default function Home() {
   const [previewRisks, setPreviewRisks] = useState<any[]>([]); // Önizleme risk listesi
   const [selectedPreviewRisks, setSelectedPreviewRisks] = useState<Set<number>>(new Set()); // Tikli olanlar
 
+  // Firma seçimi için state'ler
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [showRevision, setShowRevision] = useState(false); // Revizyon eklemek ister misin?
+
   // Yaygın sektörler listesi
   // Yaygın sektörler listesi -> constants.ts dosyasından geliyor
   const sectorSuggestions = SECTOR_SUGGESTIONS;
@@ -77,6 +82,10 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false); // Yukarı git butonu
   const [showPremiumModal, setShowPremiumModal] = useState(false); // Premium teşvik modal
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobil sidebar açık/kapalı
+
+  // Kullanıcı Riskleri State
+  const [userRisks, setUserRisks] = useState<any[]>([]);
+  const [showUserRisks, setShowUserRisks] = useState(false); // Risklerim paneli açık/kapalı
 
   // Free kullanıcı limiti
   const FREE_RISK_LIMIT = 20;
@@ -112,7 +121,19 @@ export default function Home() {
         }
       })
       .catch(err => console.error('Risk verileri alınamadı:', err));
-  }, []);
+
+    // Firmaları çek (giriş yapmışsa)
+    if (session?.user?.email) {
+      fetch('/api/companies')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setCompanies(data);
+          }
+        })
+        .catch(err => console.error('Firmalar alınamadı:', err));
+    }
+  }, [session]);
 
   useEffect(() => {
     try {
@@ -138,6 +159,111 @@ export default function Home() {
     setNotification({ show: true, message: msg, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 4000);
   };
+
+  // Kullanıcı risklerini çek
+  const fetchUserRisks = async () => {
+    try {
+      const res = await fetch('/api/user-risks');
+      if (res.ok) {
+        const data = await res.json();
+        setUserRisks(data);
+      }
+    } catch (error) {
+      console.error('Kullanıcı riskleri alınamadı:', error);
+    }
+  };
+
+  // Kullanıcı riskini tabloya ekle
+  const handleAddUserRisk = (userRisk: any) => {
+    if (!canAddMoreRisks()) {
+      showPremiumLimitWarning();
+      return;
+    }
+    if (isRiskDuplicate(userRisk.hazard, userRisk.risk)) {
+      showNotification("Bu madde zaten ekli!", "error");
+      return;
+    }
+
+    const p = userRisk.probability || 1;
+    const f = userRisk.frequency || 1;
+    const s = userRisk.severity || 1;
+    const p2 = userRisk.probability2 || 1;
+    const f2 = userRisk.frequency2 || 1;
+    const s2 = userRisk.severity2 || 1;
+
+    const score = calculateRiskScore(p, f, s);
+    const score2 = calculateRiskScore(p2, f2, s2);
+    const { label, color } = getRiskLevel(score);
+    const result2 = getRiskLevel(score2);
+
+    const newRisk = {
+      id: Date.now() + Math.floor(Math.random() * 100000),
+      riskNo: userRisk.risk_no,
+      categoryCode: '500',
+      sub_category: userRisk.sub_category,
+      source: userRisk.source,
+      hazard: userRisk.hazard,
+      risk: userRisk.risk,
+      affected: userRisk.affected || "Çalışanlar",
+      responsible: "İşveren Vekili",
+      probability: p, frequency: f, severity: s,
+      probability2: p2, frequency2: f2, severity2: s2,
+      measures: userRisk.measures,
+      score, level: label, color,
+      score2, level2: result2.label, color2: result2.color,
+      image: null
+    };
+
+    setRisks([...risks, newRisk]);
+    showNotification("Risk maddesi eklendi.");
+  };
+
+  // Firma seçildiğinde headerInfo'yu güncelle
+  const handleCompanySelect = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    const company = companies.find(c => c.id === companyId);
+    if (company) {
+      setHeaderInfo({
+        ...headerInfo,
+        title: company.title,
+        address: company.address,
+        registrationNumber: company.registration_number,
+        logo: company.logo,
+        employer: company.employer,
+        igu: company.igu,
+        doctor: company.doctor,
+        representative: company.representative,
+        support: company.support
+      });
+    }
+  };
+
+  // Rapor tarihi değiştiğinde geçerlilik tarihini hesapla
+  const handleReportDateChange = (dateStr: string) => {
+    setHeaderInfo(prev => {
+      const newInfo = { ...prev, date: dateStr };
+
+      // Seçili firma varsa geçerlilik tarihini hesapla
+      const company = companies.find(c => c.id === selectedCompanyId);
+      if (company && dateStr) {
+        const reportDate = new Date(dateStr);
+        // Geçerli bir tarih mi kontrol et
+        if (!isNaN(reportDate.getTime())) {
+          const years = VALIDITY_YEARS[company.danger_class];
+          reportDate.setFullYear(reportDate.getFullYear() + years);
+          newInfo.validityDate = reportDate.toISOString().split('T')[0];
+        } else {
+          // Geçersiz tarih ise geçerlilik tarihini temizle
+          newInfo.validityDate = '';
+        }
+      }
+
+      return newInfo;
+    });
+  };
+
+  // Seçili firma bilgisi
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
   // Free kullanıcı kontrolü - Giriş yapmamışsa free
   const isFreeUser = !session;
@@ -583,6 +709,12 @@ export default function Home() {
   };
 
   const generatePDF = async () => {
+    // Rapor tarihi kontrolü
+    if (!headerInfo.date) {
+      showNotification('Rapor tarihi girilmesi zorunludur!', 'error');
+      return;
+    }
+
     // Ana belge - önce dikey (portrait) prosedür sayfaları için başlat
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
@@ -1669,23 +1801,38 @@ export default function Home() {
       doc.line(infoStart, startY + 3 + rowH, col2End, startY + 3 + rowH);
       doc.line(infoStart, startY + 3 + rowH * 2, col2End, startY + 3 + rowH * 2);
 
-      // Unvan
-      doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
-      doc.text("UNVANI:", infoStart + 2, startY + 6); // Y koordinatı ayarlandı
-      doc.setFontSize(8); doc.setTextColor(0); doc.setFont("Roboto", "bold");
-      doc.text(headerInfo.title || "", infoStart + 15, startY + 6, { maxWidth: col2Width - logoWidth - 17 });
+      // Satır ortalaması için hesaplama (startY + 3 başlangıç, her satır rowH yüksekliğinde)
+      const maxTextWidth = col2Width - logoWidth - 17;
+      const lineHeight = 2.8; // Satır aralığı
 
-      // Adres
+      // Unvan - dikey ortalı (2 satır olabilir)
       doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
-      doc.text("ADRESİ:", infoStart + 2, startY + 6 + rowH);
+      const row1Top = startY + 3;
+      doc.text("UNVANI:", infoStart + 2, row1Top + rowH / 2 + 1);
       doc.setFontSize(7); doc.setTextColor(0); doc.setFont("Roboto", "bold");
-      doc.text(headerInfo.address || "", infoStart + 15, startY + 6 + rowH, { maxWidth: col2Width - logoWidth - 17 });
+      const titleLines = doc.splitTextToSize(headerInfo.title || "", maxTextWidth);
+      const titleStartY = row1Top + (rowH - titleLines.length * lineHeight) / 2 + lineHeight;
+      titleLines.slice(0, 2).forEach((line: string, i: number) => {
+        doc.text(line, infoStart + 15, titleStartY + i * lineHeight);
+      });
 
-      // Sicil
+      // Adres - dikey ortalı (2 satır olabilir)
       doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
-      doc.text("SİCİL NO:", infoStart + 2, startY + 6 + rowH * 2);
+      const row2Top = startY + 3 + rowH;
+      doc.text("ADRESİ:", infoStart + 2, row2Top + rowH / 2 + 1);
+      doc.setFontSize(6); doc.setTextColor(0); doc.setFont("Roboto", "bold");
+      const addressLines = doc.splitTextToSize(headerInfo.address || "", maxTextWidth);
+      const addressStartY = row2Top + (rowH - addressLines.length * lineHeight) / 2 + lineHeight;
+      addressLines.slice(0, 2).forEach((line: string, i: number) => {
+        doc.text(line, infoStart + 15, addressStartY + i * lineHeight);
+      });
+
+      // Sicil - dikey ortalı (tek satır)
+      doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
+      const row3Top = startY + 3 + rowH * 2;
+      doc.text("SİCİL NO:", infoStart + 2, row3Top + rowH / 2 + 1);
       doc.setFontSize(8); doc.setTextColor(0); doc.setFont("Roboto", "bold");
-      doc.text(headerInfo.registrationNumber || "", infoStart + 15, startY + 6 + rowH * 2);
+      doc.text(headerInfo.registrationNumber || "", infoStart + 15, row3Top + rowH / 2 + 1);
 
       // 3. Sağ Blok: Tarihler & Ekip (Kompakt)
       const col3Start = col2End;
@@ -1746,7 +1893,7 @@ export default function Home() {
           { content: 'Foto', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
           { content: 'Tehlike', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
           { content: 'Risk', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-          { content: 'Etkilenen', rowSpan: 2, styles: { valign: 'middle', halign: 'center', cellWidth: 8 } }, // Başlık metni normal (yatay)
+          { content: 'Etkilenen', rowSpan: 2, styles: { valign: 'middle', halign: 'center', cellWidth: 10, fontSize: 6 } }, // Başlık metni normal (yatay), font küçültüldü
           { content: '1. Aşama (Mevcut Durum)', colSpan: 5, styles: { halign: 'center', fillColor: [153, 27, 27], textColor: 255, fontStyle: 'bold' } },
           { content: 'Kontrol Tedbirleri', rowSpan: 2, styles: { valign: 'middle', cellWidth: 40, halign: 'center' } },
           { content: '2. Aşama (Tedbir Sonrası)', colSpan: 5, styles: { halign: 'center', fillColor: [20, 83, 45], textColor: 255, fontStyle: 'bold' } },
@@ -1755,12 +1902,12 @@ export default function Home() {
         [
           { content: 'O', styles: { halign: 'center', cellWidth: 8, fillColor: [59, 130, 246], textColor: 255 } },
           { content: 'F', styles: { halign: 'center', cellWidth: 8, fillColor: [34, 197, 94], textColor: 255 } },
-          { content: 'Ş', styles: { halign: 'center', cellWidth: 8, fillColor: [234, 179, 8], textColor: 255 } },
+          { content: 'Ş', styles: { halign: 'center', cellWidth: 12, fillColor: [234, 179, 8], textColor: 255 } },
           { content: 'Skor', styles: { halign: 'center', cellWidth: 10, fillColor: [220, 38, 38], textColor: 255 } },
           { content: 'Sınıf', styles: { halign: 'center', cellWidth: 15, fillColor: [220, 38, 38], textColor: 255 } },
           { content: 'O', styles: { halign: 'center', cellWidth: 8, fillColor: [59, 130, 246], textColor: 255 } },
           { content: 'F', styles: { halign: 'center', cellWidth: 8, fillColor: [34, 197, 94], textColor: 255 } },
-          { content: 'Ş', styles: { halign: 'center', cellWidth: 8, fillColor: [234, 179, 8], textColor: 255 } },
+          { content: 'Ş', styles: { halign: 'center', cellWidth: 12, fillColor: [234, 179, 8], textColor: 255 } },
           { content: 'Skor', styles: { halign: 'center', cellWidth: 10, fillColor: [220, 38, 38], textColor: 255 } },
           { content: 'Sınıf', styles: { halign: 'center', cellWidth: 15, fillColor: [220, 38, 38], textColor: 255 } },
         ]
@@ -1797,30 +1944,30 @@ export default function Home() {
         fontStyle: 'bold'
       },
       columnStyles: {
-        0: { cellWidth: 6, halign: 'center', valign: 'middle' }, // No (Metni gizle, dikey çizeceğiz)
-        1: { cellWidth: 25, valign: 'middle' }, // Bölüm
+        0: { cellWidth: 6, halign: 'center', valign: 'middle' }, // No
+        1: { cellWidth: 22, valign: 'middle', fontSize: 6.5 }, // Bölüm - Font küçüldü, genişlik azaldı (25->22)
         2: { cellWidth: 15, minCellHeight: 12, valign: 'middle' }, // Foto
-        3: { cellWidth: 35, valign: 'middle' }, // Tehlike
-        4: { cellWidth: 35, valign: 'middle' }, // Risk
-        5: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 4.8, overflow: 'linebreak' }, // Etkilenen - yatay metin, kelime kaydırma
+        3: { cellWidth: 33, valign: 'middle' }, // Tehlike - Genişlik azaldı (35->33)
+        4: { cellWidth: 33, valign: 'middle' }, // Risk - Genişlik azaldı (35->33)
+        5: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 3.8, overflow: 'linebreak' }, // Etkilenen
 
         // 1. Aşama
         6: { cellWidth: 7, halign: 'center', valign: 'middle' }, // O
         7: { cellWidth: 7, halign: 'center', valign: 'middle' }, // F
-        8: { cellWidth: 7, halign: 'center', valign: 'middle' }, // Ş
+        8: { cellWidth: 12, halign: 'center', valign: 'middle' }, // Ş
         9: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
         10: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
 
-        11: { cellWidth: 45, valign: 'middle' }, // Önlemler
+        11: { cellWidth: 43, valign: 'middle' }, // Önlemler - Genişlik azaldı (45->43)
 
         // 2. Aşama
         12: { cellWidth: 7, halign: 'center', valign: 'middle' }, // O
         13: { cellWidth: 7, halign: 'center', valign: 'middle' }, // F
-        14: { cellWidth: 7, halign: 'center', valign: 'middle' }, // Ş
+        14: { cellWidth: 12, halign: 'center', valign: 'middle' }, // Ş
         15: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
         16: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
 
-        17: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 3.4 } // Sorumlu - font %40 daha küçültüldü
+        17: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 4.1 } // Sorumlu
       },
       didDrawPage: (data) => {
         drawHeader(doc);
@@ -2019,60 +2166,67 @@ export default function Home() {
       <input type="file" accept="image/*" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
 
       {/* NAVBAR */}
-      <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white shadow-xl border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
+      {/* NAVBAR */}
+      <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md sticky top-0 z-50">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               {/* Mobil Hamburger Menü Butonu */}
               <button
                 onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-                className="md:hidden mr-3 p-2 rounded-md hover:bg-white/10 transition-colors"
+                className="md:hidden mr-3 p-2 rounded-xl text-blue-100 hover:bg-white/10 transition-colors"
                 aria-label="Menüyü Aç"
               >
                 {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
 
-              {/* Logo Alanı - İkon ve Yazı */}
+              {/* Logo Alanı */}
               <Link href="/" className="flex items-center group">
-                <div className="transition-transform duration-300 group-hover:scale-110">
-                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain drop-shadow-md" />
+                <div className="transition-transform duration-300 group-hover:scale-105">
+                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
                 </div>
                 <div className="ml-3 flex flex-col">
                   <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 group-hover:to-white transition-all">İSG Pratik</span>
-                  <span className="text-[10px] text-blue-300/80 tracking-widest uppercase group-hover:text-blue-200 transition-colors">Risk Yönetim Sistemi</span>
+                  <span className="text-[10px] text-blue-300/80 font-medium tracking-widest uppercase">Risk Yönetim Sistemi</span>
                 </div>
               </Link>
             </div>
 
             <div className="flex items-center space-x-1 sm:space-x-4">
-              <div className="hidden md:flex items-center space-x-1">
-                <Link href="/" className="px-4 py-2 rounded-lg bg-white/5 text-sm font-medium text-blue-100 hover:bg-white/10 hover:text-white transition-all border border-transparent hover:border-white/10 shadow-sm">
+              <div className="hidden md:flex items-center space-x-2">
+                <Link href="/" className="px-4 py-2 rounded-xl bg-white/10 text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 shadow-sm">
                   Risk Değerlendirmesi
                 </Link>
-                <div className="px-3 py-2 text-xs font-medium text-slate-400 flex items-center cursor-not-allowed group relative">
+                <div className="px-3 py-2 text-xs font-medium text-blue-300/50 flex items-center cursor-not-allowed group relative bg-white/5 rounded-xl border border-white/5">
                   <span>Acil Durum Planı</span>
-                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-slate-800 text-slate-500 border border-slate-700 opacity-60">YAKINDA</span>
+                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-white/10 text-blue-200 font-bold">YAKINDA</span>
                 </div>
-                <div className="px-3 py-2 text-xs font-medium text-slate-400 flex items-center cursor-not-allowed">
+                <div className="px-3 py-2 text-xs font-medium text-blue-300/50 flex items-center cursor-not-allowed bg-white/5 rounded-xl border border-white/5">
                   <span>Yıllık Planlar</span>
-                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-slate-800 text-slate-500 border border-slate-700 opacity-60">YAKINDA</span>
+                  <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] bg-white/10 text-blue-200 font-bold">YAKINDA</span>
                 </div>
               </div>
 
               {session ? (
-                <div className="flex items-center space-x-3 pl-4 border-l border-white/10">
+                <div className="flex items-center space-x-3 pl-4 md:border-l md:border-white/10">
+                  <Link
+                    href="/panel"
+                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                  >
+                    Panel
+                  </Link>
                   <div className="hidden sm:flex flex-col items-end mr-2">
-                    <span className="text-xs font-medium text-white/90">
+                    <span className="text-xs font-bold text-blue-100">
                       {session.user?.name || session.user?.email}
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg shadow-orange-500/20 font-bold tracking-wide">
+                    <span className="text-[10px] px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-sm font-bold tracking-wide mt-0.5">
                       {(session.user as any)?.plan === 'premium_trial' ? 'PREMIUM DENEME' :
                         (session.user as any)?.plan === 'premium' ? 'PREMIUM' : 'FREE PAKET'}
                     </span>
                   </div>
                   <button
                     onClick={() => signOut()}
-                    className="bg-red-500/80 hover:bg-red-600 text-white p-2 rounded-lg transition-colors border border-red-400/30 shadow-lg shadow-red-900/20 group"
+                    className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm group"
                     title="Çıkış Yap"
                   >
                     <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -2082,13 +2236,13 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <Link
                     href="/login"
-                    className="text-sm font-medium text-blue-200 hover:text-white transition-colors"
+                    className="text-sm font-medium text-blue-100 hover:text-white transition-colors"
                   >
                     Giriş
                   </Link>
                   <Link
                     href="/register"
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-900/30 transition-all hover:scale-105 active:scale-95"
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95"
                   >
                     Kayıt Ol
                   </Link>
@@ -2099,12 +2253,12 @@ export default function Home() {
         </div>
       </nav>
 
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
+      <div className="flex flex-1 overflow-hidden h-[calc(100vh-64px)] bg-slate-100">
 
         {/* Mobil Sidebar Overlay Arka Plan */}
         {isMobileSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
         )}
@@ -2117,24 +2271,24 @@ export default function Home() {
           top-16 md:top-0
           left-0
           h-[calc(100vh-64px)] md:h-auto md:min-h-[calc(100vh-64px)]
-          w-72 md:w-64
-          bg-white shadow-md flex flex-col 
-          border-r border-gray-200 overflow-y-auto md:overflow-visible
+          w-72 md:w-72
+          bg-indigo-50/30 shadow-xl md:shadow-none flex flex-col 
+          border-r border-slate-200 overflow-y-auto md:overflow-visible
           transition-transform duration-300 ease-in-out
           z-50 md:z-auto
         `}>
 
           {/* SEKTÖR SEÇ BÖLÜMÜ */}
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-            <h2 className="text-xs font-bold text-indigo-700 uppercase flex items-center mb-2">
+          <div className="p-5 border-b border-slate-200">
+            <h2 className="text-xs font-bold text-indigo-600 uppercase flex items-center mb-3 tracking-wider">
               <Zap className="w-4 h-4 mr-2" />
-              ⚡ Yapay Zeka Risk Analizi
+              Yapay Zeka Risk Analizi
             </h2>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Sektör yazın..."
-                className="w-full pl-3 pr-16 py-2 text-xs border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                placeholder="Sektör yazın (örn: İnşaat)"
+                className="w-full pl-4 pr-16 py-3 text-sm border-0 bg-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-700 placeholder:text-slate-400 font-medium transition-all"
                 value={sectorSearch}
                 onChange={(e) => {
                   setSectorSearch(e.target.value);
@@ -2148,21 +2302,21 @@ export default function Home() {
               <button
                 onClick={handleSectorAnalysis}
                 disabled={sectorLoading || !sectorSearch.trim()}
-                className="absolute right-1 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-sm shadow-indigo-200"
               >
                 {sectorLoading ? '...' : 'Ekle'}
               </button>
 
               {/* Sektör Önerileri Dropdown */}
               {showSectorSuggestions && sectorSearch.length >= 3 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 max-h-48 overflow-y-auto overflow-hidden">
                   {sectorSuggestions
                     .filter(s => s.toLowerCase().includes(sectorSearch.toLowerCase()))
                     .slice(0, 8)
                     .map((suggestion, idx) => (
                       <button
                         key={idx}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 transition-colors"
+                        className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors border-b border-slate-50 last:border-0"
                         onClick={() => {
                           setSectorSearch(suggestion);
                           setShowSectorSuggestions(false);
@@ -2173,39 +2327,39 @@ export default function Home() {
                     ))
                   }
                   {sectorSuggestions.filter(s => s.toLowerCase().includes(sectorSearch.toLowerCase())).length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-400">Öneri bulunamadı</div>
+                    <div className="px-4 py-3 text-sm text-slate-400 italic">Öneri bulunamadı</div>
                   )}
                 </div>
               )}
             </div>
 
             {/* Risk Ciddiyet Filtresi */}
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-[10px] text-gray-500">Filtre:</span>
-              <div className="flex rounded-md overflow-hidden border border-gray-300">
+            <div className="flex items-center gap-3 mt-4">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Filtrele:</span>
+              <div className="flex bg-slate-100 rounded-lg p-1 w-full">
                 <button
                   onClick={() => setSeverityFilter(0)}
-                  className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${severityFilter === 0
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${severityFilter === 0
+                    ? 'bg-white text-slate-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   Tümü
                 </button>
                 <button
                   onClick={() => setSeverityFilter(1)}
-                  className={`px-2 py-0.5 text-[10px] font-medium transition-colors border-l border-r border-gray-300 ${severityFilter === 1
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-orange-100'
+                  className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${severityFilter === 1
+                    ? 'bg-white text-orange-600 shadow-sm'
+                    : 'text-slate-500 hover:text-orange-600'
                     }`}
                 >
                   Orta+
                 </button>
                 <button
                   onClick={() => setSeverityFilter(2)}
-                  className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${severityFilter === 2
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-red-100'
+                  className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${severityFilter === 2
+                    ? 'bg-white text-red-600 shadow-sm'
+                    : 'text-slate-500 hover:text-red-600'
                     }`}
                 >
                   Yüksek
@@ -2213,52 +2367,55 @@ export default function Home() {
               </div>
             </div>
 
-            <p className="text-xs text-gray-500 mt-2">
-              Seçeceğiniz sektör ile ilgili tüm riskleri otomatik ekler
+            <p className="text-[10px] text-slate-400 mt-3 font-medium flex items-start">
+              <span className="mr-1.5 mt-0.5">•</span>
+              Seçilen sektöre uygun riskler otomatik listelenir.
             </p>
           </div>
 
 
           {/* RİSK SINIFLARI BÖLÜMÜ */}
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-sm font-bold text-gray-600 uppercase flex items-center mb-2">
+          <div className="px-5 py-4">
+            <h2 className="text-xs font-bold text-slate-500 uppercase flex items-center mb-3 tracking-wider">
               <BookOpen className="w-4 h-4 mr-2" />
-              Risk Sınıfları
+              Risk Kütüphanesi
             </h2>
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+            <div className="relative group">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
                 type="text"
-                placeholder="Ara..."
-                className="w-full pl-8 pr-2 py-2 text-sm border rounded focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Risk ara..."
+                className="w-full pl-10 pr-3 py-2 text-sm border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
-          <ul className="flex-1">
+          <ul className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-4">
             {filteredCategories.map((cat: any, index: any) => (
-              <li key={index} className="border-b border-gray-100 group">
-                <div className={`w-full flex items-center justify-between px-3 py-1 hover:bg-blue-50 transition-colors ${risks.some((r: any) => r.categoryCode === cat.code)
-                  ? 'bg-green-100 hover:bg-green-200'
+              <li key={index} className="mb-1">
+                <div className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group cursor-pointer border border-transparent ${risks.some((r: any) => r.categoryCode === cat.code)
+                  ? 'bg-green-50 border-green-200'
                   : selectedCategory?.category === cat.category
-                    ? 'bg-blue-100'
-                    : ''
+                    ? 'bg-indigo-50 border-indigo-100'
+                    : 'hover:bg-slate-50 hover:border-slate-200'
                   }`}>
                   <button
                     onClick={() => setSelectedCategory(cat)}
-                    className="flex-1 text-left text-xs font-bold uppercase text-gray-700 flex items-center"
+                    className="flex-1 text-left flex items-center"
                   >
-                    <span className="inline-block w-6 text-gray-400 text-[10px] mr-1">{cat.code}</span>
-                    {cat.category}
-                    <span className="ml-auto text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">{cat.items.length}</span>
+                    <span className={`inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-md mr-2 ${risks.some((r: any) => r.categoryCode === cat.code) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{cat.code}</span>
+                    <div className="flex flex-col">
+                      <span className={`text-xs font-bold uppercase line-clamp-1 ${risks.some((r: any) => r.categoryCode === cat.code) ? 'text-green-800' : 'text-slate-700'}`}>{cat.category}</span>
+                      <span className="text-[9px] text-slate-400 font-medium">{cat.items.length} Risk Maddesi</span>
+                    </div>
                   </button>
                   <button
                     onClick={(e) => handleAddAllFromCategory(e, cat)}
-                    title="Tüm maddeleri tabloya ekle"
-                    className="p-1 text-green-600 hover:text-white hover:bg-green-600 rounded-full transition-all opacity-50 group-hover:opacity-100"
+                    title="Tümünü Ekle"
+                    className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                   >
-                    <PlusCircle className="w-5 h-5" />
+                    <PlusCircle className="w-4 h-4" />
                   </button>
                 </div>
               </li>
@@ -2266,115 +2423,252 @@ export default function Home() {
           </ul>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-100">
-          <div className="max-w-full mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
 
-            {/* --- 1. GENEL BİLGİ GİRİŞ FORMU --- */}
-            <div className="bg-white shadow-sm rounded-lg border border-blue-200 p-4 mb-6">
-              <div className="flex items-center mb-4 border-b pb-2 justify-between">
+            {/* --- 1. FİRMA VE RAPOR BİLGİLERİ --- */}
+            <div className="bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 p-6">
+              <div className="flex items-center mb-6 pb-4 border-b border-slate-100 justify-between">
                 <div className="flex items-center">
-                  <Briefcase className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="font-bold text-gray-800">1. Genel Firma & Rapor Bilgileri</h3>
+                  <div className="bg-indigo-50 p-2 rounded-lg mr-3">
+                    <Briefcase className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800">1. Firma & Rapor Bilgileri</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Kayıtlı firmalarınızdan birini seçin ve rapor tarihini girin</p>
+                  </div>
                 </div>
+                {session && (
+                  <Link
+                    href="/panel/firmalar?new=true"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Yeni Firma Ekle
+                  </Link>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Firma Unvanı (Çok Satırlı)</label>
-                    <textarea rows={2} className="w-full border rounded p-1.5 text-xs resize-none" value={headerInfo.title} onChange={(e: any) => setHeaderInfo({ ...headerInfo, title: e.target.value })} placeholder="Firma Adı..." />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Adres</label>
-                    <textarea rows={2} className="w-full border rounded p-1.5 text-xs resize-none" value={headerInfo.address} onChange={(e: any) => setHeaderInfo({ ...headerInfo, address: e.target.value })} placeholder="Adres..." />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Sicil Numarası</label>
-                    <input type="text" className="w-full border rounded p-1.5 text-xs" value={headerInfo.registrationNumber} onChange={(e: any) => setHeaderInfo({ ...headerInfo, registrationNumber: e.target.value })} />
-                  </div>
+
+              {!session ? (
+                <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <Lock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 mb-4">Firma seçimi için giriş yapmanız gerekiyor</p>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Giriş Yap
+                  </Link>
                 </div>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
+              ) : companies.length === 0 ? (
+                <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <Briefcase className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 mb-4">Henüz kayıtlı firmanız yok</p>
+                  <Link
+                    href="/panel/firmalar?new=true"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    İlk Firmayı Ekle
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Sol: Firma Seçimi */}
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">Gerç. Tarihi</label>
-                      <input type="date" className="w-full border rounded p-1.5 text-xs" value={headerInfo.date} onChange={(e: any) => setHeaderInfo({ ...headerInfo, date: e.target.value })} />
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Firma Seçin *</label>
+                      <select
+                        value={selectedCompanyId}
+                        onChange={(e) => handleCompanySelect(e.target.value)}
+                        className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
+                      >
+                        <option value="">-- Firma Seçin --</option>
+                        {companies.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.title} ({DANGER_CLASS_LABELS[c.danger_class]})
+                          </option>
+                        ))}
+                      </select>
                     </div>
+
+                    {selectedCompany && (
+                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+                        <div className="flex items-center gap-3 mb-3">
+                          {selectedCompany.logo ? (
+                            <img src={selectedCompany.logo} alt="" className="w-12 h-12 rounded-lg object-contain border border-slate-200" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                              {selectedCompany.title.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold text-slate-800">{selectedCompany.title}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${selectedCompany.danger_class === 'az_tehlikeli'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : selectedCompany.danger_class === 'tehlikeli'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-700'
+                              }`}>
+                              {DANGER_CLASS_LABELS[selectedCompany.danger_class]}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500">{selectedCompany.address || 'Adres girilmemiş'}</p>
+                        {selectedCompany.registration_number && (
+                          <p className="text-xs text-slate-500">Sicil No: {selectedCompany.registration_number}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Risk Değerlendirme Ekibi (Salt Okunur) */}
+                    {selectedCompany && (
+                      <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100">
+                        <h4 className="text-xs font-bold text-indigo-900 border-b border-indigo-100 pb-2 mb-3 flex items-center">
+                          <User className="w-3 h-3 mr-2" />
+                          Risk Değerlendirme Ekibi
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-slate-500">İşveren:</span>
+                            <span className="ml-1 font-medium text-slate-700">{selectedCompany.employer || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">İGU:</span>
+                            <span className="ml-1 font-medium text-slate-700">{selectedCompany.igu || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Hekim:</span>
+                            <span className="ml-1 font-medium text-slate-700">{selectedCompany.doctor || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Temsilci:</span>
+                            <span className="ml-1 font-medium text-slate-700">{selectedCompany.representative || '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sağ: Rapor Bilgileri */}
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">Geçerlilik Tarihi</label>
-                      <input type="date" className="w-full border rounded p-1.5 text-xs" value={headerInfo.validityDate} onChange={(e: any) => setHeaderInfo({ ...headerInfo, validityDate: e.target.value })} />
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Rapor Tarihi *</label>
+                      <input
+                        type="date"
+                        className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
+                        value={headerInfo.date}
+                        onChange={(e) => handleReportDateChange(e.target.value)}
+                      />
+                      {headerInfo.date && (
+                        <p className="text-xs text-slate-500 mt-1">Seçilen tarih: <span className="font-medium text-slate-700">{formatDate(headerInfo.date)}</span></p>
+                      )}
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Revizyon No / Tarih</label>
-                    <input type="text" className="w-full border rounded p-1.5 text-xs" value={headerInfo.revision} onChange={(e: any) => setHeaderInfo({ ...headerInfo, revision: e.target.value })} placeholder="01 / ..." />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase flex justify-between">Logo Yükle {headerInfo.logo && <span className="text-green-600">(Yüklendi)</span>}</label>
-                    <div className="flex items-center space-x-2">
-                      <button onClick={() => logoInputRef.current.click()} className="bg-blue-50 border border-blue-200 text-blue-700 rounded px-3 py-1.5 text-xs hover:bg-blue-100 flex-1">Dosya Seç</button>
-                      {headerInfo.logo && (
-                        <button onClick={deleteLogo} className="bg-red-50 border border-red-200 text-red-600 rounded px-3 py-1.5 text-xs hover:bg-red-100 flex items-center">
-                          <Trash2 className="w-3 h-3 mr-1" /> Sil
-                        </button>
+
+                    {/* Geçerlilik Tarihi (Otomatik) */}
+                    {selectedCompany && headerInfo.date && (
+                      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-emerald-800 uppercase">Geçerlilik Tarihi</p>
+                            <p className="text-lg font-bold text-emerald-700 mt-1">
+                              {headerInfo.validityDate ? formatDate(headerInfo.validityDate) : '-'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-emerald-600">
+                              {DANGER_CLASS_LABELS[selectedCompany.danger_class]} = +{VALIDITY_YEARS[selectedCompany.danger_class]} yıl
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Revizyon Opsiyonel */}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setShowRevision(!showRevision)}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                      >
+                        <span className="text-sm font-medium text-slate-700">Revizyon eklemek ister misiniz?</span>
+                        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${showRevision ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showRevision && (
+                        <div className="p-4 border-t border-slate-200">
+                          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Revizyon No / Tarih</label>
+                          <input
+                            type="text"
+                            className="w-full border border-slate-200 bg-white rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                            value={headerInfo.revision}
+                            onChange={(e) => setHeaderInfo({ ...headerInfo, revision: e.target.value })}
+                            placeholder="Örn: 01 / 15.01.2025"
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="space-y-2 bg-gray-50 p-2 rounded border">
-                  <h4 className="text-[10px] font-bold text-blue-900 border-b pb-1 mb-1">Risk Değerlendirme Ekibi</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" className="col-span-2 border rounded p-1 text-[10px]" placeholder="İşveren / Vekili" value={headerInfo.employer} onChange={(e: any) => setHeaderInfo({ ...headerInfo, employer: e.target.value })} />
-                    <input type="text" className="col-span-2 border rounded p-1 text-[10px]" placeholder="İş Güvenliği Uzmanı" value={headerInfo.igu} onChange={(e: any) => setHeaderInfo({ ...headerInfo, igu: e.target.value })} />
-                    <input type="text" className="col-span-2 border rounded p-1 text-[10px]" placeholder="İşyeri Hekimi" value={headerInfo.doctor} onChange={(e: any) => setHeaderInfo({ ...headerInfo, doctor: e.target.value })} />
-                    <input type="text" className="col-span-2 border rounded p-1 text-[10px]" placeholder="Çalışan Temsilcisi" value={headerInfo.representative} onChange={(e: any) => setHeaderInfo({ ...headerInfo, representative: e.target.value })} />
-                    <input type="text" className="col-span-2 border rounded p-1 text-[10px]" placeholder="Destek Elemanı" value={headerInfo.support} onChange={(e: any) => setHeaderInfo({ ...headerInfo, support: e.target.value })} />
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* --- 2. KATEGORİ DETAYLARI --- */}
             {selectedCategory && (
-              <div className="bg-white border border-blue-200 rounded-lg p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
-                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                  <div className="flex items-center space-x-3">
-                    <h3 className="text-lg font-bold text-blue-900">
-                      {selectedCategory.code} - {selectedCategory.category} (Risk Kütüphanesi)
-                    </h3>
+              <div className="bg-white border border-indigo-100 rounded-xl p-6 shadow-lg shadow-indigo-100/50 animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-10 -mt-10 z-0 opacity-50"></div>
+                <div className="relative z-10 flex justify-between items-center mb-6 border-b border-indigo-50 pb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-indigo-100 p-2 rounded-lg">
+                      <BookOpen className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        {selectedCategory.category}
+                        <span className="text-sm bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 font-mono">{selectedCategory.code}</span>
+                      </h3>
+                      <p className="text-sm text-slate-500">Kütüphaneden seçim yapın veya tümünü bir kerede ekleyin.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={(e: any) => handleAddAllFromCategory(e, selectedCategory)}
-                      className="flex items-center bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded shadow-sm transition-colors"
+                      className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm shadow-emerald-200 transition-all font-bold group"
                     >
-                      <PlusCircle className="w-4 h-4 mr-1" />
+                      <PlusCircle className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
                       Tümünü Ekle
                     </button>
+                    <button onClick={() => setSelectedCategory(null)} className="p-2 bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
                   </div>
-                  <button onClick={() => setSelectedCategory(null)} className="text-gray-400 hover:text-red-500"><X className="w-5 h-5" /></button>
                 </div>
 
                 {selectedCategory.items.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">Bu kategori için henüz hazır veri girişi yapılmamış.</p>
+                  <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
+                    <p className="text-slate-400 italic">Bu kategori için henüz hazır veri girişi yapılmamış.</p>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {selectedCategory.items.map((item: any, idx: any) => (
-                      <div key={idx} onClick={() => handleSelectPreset(item, selectedCategory.code)} className="bg-gray-50 p-3 rounded border border-gray-200 hover:border-blue-500 hover:shadow-md cursor-pointer transition-all group relative">
+                      <div key={idx} onClick={() => handleSelectPreset(item, selectedCategory.code)} className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100/50 cursor-pointer transition-all group relative">
                         <button
                           onClick={(e: any) => handleQuickAdd(e, item, selectedCategory.code)}
-                          className="absolute top-2 right-2 p-1 bg-white border border-gray-300 rounded-full text-green-600 hover:bg-green-600 hover:text-white shadow-sm transition-all z-10"
+                          className="absolute top-3 right-3 p-1.5 bg-slate-50 border border-slate-200 rounded-full text-emerald-600 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white shadow-sm transition-all z-10 opacity-0 group-hover:opacity-100"
                           title="Direkt Ekle"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
 
-                        <div className="flex justify-between pr-8">
-                          <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">{item.source}</span>
+                        <div className="flex justify-between pr-8 mb-2">
+                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">{item.source}</span>
                         </div>
-                        <p className="text-xs font-bold mt-2 text-gray-800 line-clamp-2">
-                          <span className="text-blue-600 mr-1">{selectedCategory.code}.{(idx + 1).toString().padStart(2, '0')}</span>
+                        <p className="text-sm font-bold text-slate-800 line-clamp-2 mb-1 group-hover:text-indigo-700 transition-colors">
+                          <span className="text-slate-400 mr-2 font-mono text-xs font-normal">{selectedCategory.code}.{(idx + 1).toString().padStart(2, '0')}</span>
                           {item.hazard}
                         </p>
-                        <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{item.risk}</p>
-                        <div className="mt-2 text-xs text-gray-500 font-mono">
-                          Skor: <span className="font-bold text-red-600">{item.p * item.f * item.s}</span>
+                        <p className="text-xs text-slate-500 line-clamp-2 border-l-2 border-slate-200 pl-2 ml-1">{item.risk}</p>
+                        <div className="mt-3 pt-2 border-t border-slate-50 flex justify-between items-center text-xs">
+                          <span className="text-slate-400 font-mono">Skor</span>
+                          <span className="text-xs font-bold text-white bg-slate-400 px-2 py-0.5 rounded-full">{item.p * item.f * item.s}</span>
                         </div>
                       </div>
                     ))}
@@ -2384,58 +2678,122 @@ export default function Home() {
             )}
 
             {/* --- 3. DÜZENLEME FORMU --- */}
-            <div id="risk-form" className="bg-white shadow-lg rounded-lg border border-gray-200 overflow-hidden mb-8 transition-all duration-300">
+            <div id="risk-form" className="bg-white shadow-lg shadow-slate-200/50 rounded-xl border border-slate-200 overflow-hidden mb-8 transition-all duration-300">
               <div
-                className="bg-gray-50 px-6 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+                className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
                 onClick={() => setIsFormCollapsed(!isFormCollapsed)}
               >
                 <div className="flex items-center">
-                  <Plus className="w-5 h-5 text-blue-600 mr-2" />
-                  <h3 className="font-bold text-gray-800">2. Risk Giriş Paneli</h3>
-                  <span className="text-sm font-normal text-gray-500 ml-2">(Risk Maddesi Ekle)</span>
+                  <div className="bg-blue-600 p-1.5 rounded-lg mr-3 shadow-sm shadow-blue-200">
+                    <Plus className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-lg">2. Risk Giriş Paneli</h3>
+                    <p className="text-xs text-slate-500">Manuel risk ekleme veya düzenleme</p>
+                  </div>
                 </div>
-                {isFormCollapsed ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronUp className="w-5 h-5 text-gray-400" />}
+                <div className="bg-white p-1 rounded-full border border-slate-200 shadow-sm text-slate-400">
+                  {isFormCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                </div>
               </div>
 
-              <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFormCollapsed ? 'max-h-0 opacity-0' : 'max-h-[800px] opacity-100'}`}>
-                <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
+              {/* Risklerim - Hızlı Ekleme Bölümü */}
+              {session && (
+                <div className="px-6 py-4 border-b border-slate-200 bg-amber-50/50">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-amber-600" />
+                      <span className="font-bold text-slate-700 text-sm">Risklerim</span>
+                    </div>
+                    <select
+                      className="flex-1 border border-amber-200 bg-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                      id="userRiskSelect"
+                      defaultValue=""
+                      onChange={() => {
+                        if (userRisks.length === 0) fetchUserRisks();
+                      }}
+                      onFocus={() => {
+                        if (userRisks.length === 0) fetchUserRisks();
+                      }}
+                    >
+                      <option value="">Ekleyeceğiniz riski seçin...</option>
+                      {userRisks.map((r: any) => (
+                        <option key={r.id} value={r.id}>
+                          {r.risk_no} - {r.hazard?.substring(0, 35)}{r.hazard?.length > 35 ? '...' : ''} | {r.risk?.substring(0, 25)}{r.risk?.length > 25 ? '...' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        const select = document.getElementById('userRiskSelect') as HTMLSelectElement;
+                        const selectedId = select?.value;
+                        if (selectedId) {
+                          const risk = userRisks.find((r: any) => r.id === selectedId);
+                          if (risk) {
+                            handleAddUserRisk(risk);
+                            select.value = '';
+                          }
+                        } else {
+                          showNotification("Lütfen bir risk seçin.", "error");
+                        }
+                      }}
+                      className="px-4 py-2 bg-amber-500 text-white font-bold text-sm rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Tabloya Ekle
+                    </button>
+                    <Link
+                      href="/panel/risk-maddelerim"
+                      className="text-xs text-amber-700 hover:text-amber-900 hover:underline"
+                    >
+                      Düzenle
+                    </Link>
+                  </div>
+                  {userRisks.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Henüz risk eklemediniz. <Link href="/panel/risk-maddelerim" className="underline font-medium">Risk Maddelerim</Link> sayfasından ekleyebilirsiniz.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className={`transition-all duration-300 ease-in-out bg-white ${isFormCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
+                <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
                   {/* Sol Kısım */}
-                  <div className="lg:col-span-7 space-y-2">
-                    <div className="grid grid-cols-3 gap-2">
+                  <div className="lg:col-span-7 space-y-5">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Risk No</label>
-                        <input type="text" className="w-full border rounded p-2 text-sm" value={form.riskNo || ''} onChange={(e: any) => setForm({ ...form, riskNo: e.target.value })} placeholder="Otomatik" />
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Risk No</label>
+                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.riskNo || ''} onChange={(e: any) => setForm({ ...form, riskNo: e.target.value })} placeholder="Otomatik" />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Bölüm</label>
-                        <input type="text" className="w-full border rounded p-2 text-sm" value={form.sub_category} onChange={(e: any) => setForm({ ...form, sub_category: e.target.value })} />
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Bölüm</label>
+                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.sub_category} onChange={(e: any) => setForm({ ...form, sub_category: e.target.value })} />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Ortam</label>
-                        <input type="text" className="w-full border rounded p-2 text-sm" value={form.source} onChange={(e: any) => setForm({ ...form, source: e.target.value })} />
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Ortam</label>
+                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.source} onChange={(e: any) => setForm({ ...form, source: e.target.value })} />
                       </div>
                     </div>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded p-2 flex items-center justify-between bg-gray-50 text-xs">
+                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors group">
                       {form.image ? (
                         <div className="flex items-center w-full">
-                          <img src={form.image} alt="Risk Fotoğrafı" className="h-10 w-10 object-cover rounded mr-3 border" />
+                          <img src={form.image} alt="Risk Fotoğrafı" className="h-16 w-16 object-cover rounded-lg mr-4 border border-slate-200 shadow-sm" />
                           <div className="flex-1">
-                            <span className="text-green-600 font-bold block">Fotoğraf Yüklendi</span>
-                            <span className="text-gray-400 text-[10px]">Değiştirmek için tıklayın</span>
+                            <span className="text-emerald-600 font-bold block flex items-center mb-1"><CheckCircle className="w-4 h-4 mr-1" /> Fotoğraf Eklendi</span>
+                            <span className="text-slate-400 text-xs">Risk analiz tablosuna eklenecek</span>
                           </div>
                           <div className="flex space-x-2">
                             <button
                               onClick={() => { setActiveRowIdForImage(null); fileInputRef.current.click(); }}
-                              className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
-                              title="Değiştir"
+                              className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-bold hover:border-blue-500 hover:text-blue-600 shadow-sm transition-all"
                             >
-                              <RefreshCw className="w-4 h-4" />
+                              Değiştir
                             </button>
                             <button
                               onClick={() => { setForm({ ...form, image: null }); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                              className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
-                              title="Fotoğrafı Kaldır"
+                              className="p-2 bg-white border border-slate-200 text-red-500 rounded-lg hover:bg-red-50 hover:border-red-200 transition-all"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -2444,87 +2802,117 @@ export default function Home() {
                       ) : (
                         <div
                           onClick={() => { setActiveRowIdForImage(null); fileInputRef.current.click(); }}
-                          className="flex items-center justify-center w-full cursor-pointer text-gray-500 hover:text-blue-600 py-1"
+                          className="flex flex-col items-center justify-center w-full cursor-pointer py-4 text-slate-400 group-hover:text-blue-600 transition-colors"
                         >
-                          <ImageIcon className="w-4 h-4 mr-2" />
-                          <span>Fotoğraf Ekle (Opsiyonel)</span>
+                          <div className="p-3 bg-white rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                            <ImageIcon className="w-6 h-6" />
+                          </div>
+                          <span className="text-sm font-medium">Fotoğraf Yüklemek İçin Tıklayın</span>
+                          <span className="text-xs opacity-60 mt-1">İsterseniz sürükleyip bırakın (Max 1MB)</span>
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">Tehlike</label>
-                      <input type="text" className="w-full border rounded p-2 text-sm" value={form.hazard} onChange={(e: any) => setForm({ ...form, hazard: e.target.value })} />
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Tehlike</label>
+                      <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.hazard} onChange={(e: any) => setForm({ ...form, hazard: e.target.value })} placeholder="Tehlike kaynağını tanımlayın..." />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Risk</label>
-                        <textarea rows={2} className="w-full border rounded p-2 text-sm resize-none" value={form.risk} onChange={(e: any) => setForm({ ...form, risk: e.target.value })} />
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Risk</label>
+                        <textarea rows={3} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm resize-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.risk} onChange={(e: any) => setForm({ ...form, risk: e.target.value })} placeholder="Olası riskleri açıklayın..." />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Etkilenenler</label>
-                        <input type="text" className="w-full border rounded p-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed" value={form.affected} readOnly />
+                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Etkilenenler</label>
+                        <textarea rows={3} className="w-full border border-slate-200 bg-slate-100 text-slate-500 rounded-lg p-3 text-sm resize-none cursor-not-allowed font-medium" value={form.affected} readOnly />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">Sorumlu Kişi / Bölüm</label>
-                      <input type="text" className="w-full border rounded p-2 text-sm" value={form.responsible} onChange={(e: any) => setForm({ ...form, responsible: e.target.value })} placeholder="Örn: İdari İşler, İşveren Vekili" />
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Sorumlu Kişi / Bölüm</label>
+                      <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.responsible} onChange={(e: any) => setForm({ ...form, responsible: e.target.value })} placeholder="Örn: İdari İşler, İşveren Vekili" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">Önlemler</label>
-                      <textarea rows={3} className="w-full border rounded p-2 text-sm" value={form.measures} onChange={(e: any) => setForm({ ...form, measures: e.target.value })} />
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Alınacak Önlemler</label>
+                      <textarea rows={4} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.measures} onChange={(e: any) => setForm({ ...form, measures: e.target.value })} placeholder="Mevcut ve alınması gereken önlemleri sıralayın..." />
                     </div>
                   </div>
 
                   {/* Sağ Kısım: Puanlama */}
-                  <div className="lg:col-span-5 grid grid-cols-2 gap-4">
+                  <div className="lg:col-span-5 grid grid-cols-2 gap-4 content-start">
                     {/* 1. Aşama */}
-                    <div className="bg-red-50 p-3 rounded border border-red-100">
-                      <h4 className="text-xs font-bold text-red-900 mb-2 text-center border-b border-red-200 pb-1">1. Mevcut Durum</h4>
-                      <div className="space-y-2">
+                    <div className="bg-red-50/50 p-5 rounded-xl border border-red-100 shadow-sm">
+                      <h4 className="text-sm font-black text-red-900 mb-4 text-center border-b border-red-200 pb-2 uppercase tracking-wide">1. Mevcut Durum</h4>
+                      <div className="space-y-6">
                         <div>
-                          <div className="flex justify-between text-[10px]"><span className="font-bold">Olasılık</span><span className="font-mono">{form.probability}</span></div>
-                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability} onChange={(e: any) => setForm({ ...form, probability: e.target.value as any })} className="w-full h-1" />
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-xs font-bold text-red-800 uppercase">Olasılık</span>
+                            <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-red-100 text-red-600">{form.probability}</span>
+                          </div>
+                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability} onChange={(e: any) => setForm({ ...form, probability: e.target.value as any })} className="w-full h-1.5 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600" />
+                          <div className="flex justify-between text-[9px] text-red-300 mt-1"><span>Düşük</span><span>Yüksek</span></div>
                         </div>
                         <div>
-                          <div className="flex justify-between text-[10px]"><span className="font-bold">Frekans</span><span className="font-mono">{form.frequency}</span></div>
-                          <input type="range" min={0.5} max={10} step={0.5} value={form.frequency} onChange={(e: any) => setForm({ ...form, frequency: e.target.value as any })} className="w-full h-1" />
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-xs font-bold text-red-800 uppercase">Frekans</span>
+                            <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-red-100 text-red-600">{form.frequency}</span>
+                          </div>
+                          <input type="range" min={0.5} max={10} step={0.5} value={form.frequency} onChange={(e: any) => setForm({ ...form, frequency: e.target.value as any })} className="w-full h-1.5 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600" />
                         </div>
                         <div>
-                          <div className="flex justify-between text-[10px]"><span className="font-bold">Şiddet</span><span className="font-mono">{form.severity}</span></div>
-                          <input type="range" min={1} max={100} step={1} value={form.severity} onChange={(e: any) => setForm({ ...form, severity: e.target.value as any })} className="w-full h-1" />
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-xs font-bold text-red-800 uppercase">Şiddet</span>
+                            <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-red-100 text-red-600">{form.severity}</span>
+                          </div>
+                          <input type="range" min={1} max={100} step={1} value={form.severity} onChange={(e: any) => setForm({ ...form, severity: e.target.value as any })} className="w-full h-1.5 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600" />
                         </div>
-                        <div className="text-center font-bold text-xl text-red-800 mt-2">
-                          {(form.probability * form.frequency * form.severity).toFixed(1)}
+
+                        <div className="mt-6 pt-4 border-t border-red-200/60 text-center">
+                          <span className="text-[10px] uppercase font-bold text-red-400 tracking-widest block mb-1">RİSK SKORU</span>
+                          <div className="text-4xl font-black text-red-600 tracking-tight leading-none">
+                            {(form.probability * form.frequency * form.severity).toFixed(0)}
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* 2. Aşama */}
-                    <div className="bg-green-50 p-3 rounded border border-green-100">
-                      <h4 className="text-xs font-bold text-green-900 mb-2 text-center border-b border-green-200 pb-1">2. Önlem Sonrası</h4>
-                      <div className="space-y-2">
+                    <div className="bg-emerald-50/50 p-5 rounded-xl border border-emerald-100 shadow-sm">
+                      <h4 className="text-sm font-black text-emerald-900 mb-4 text-center border-b border-emerald-200 pb-2 uppercase tracking-wide">2. Önlem Sonrası</h4>
+                      <div className="space-y-6">
                         <div>
-                          <div className="flex justify-between text-[10px]"><span className="font-bold">Olasılık</span><span className="font-mono">{form.probability2}</span></div>
-                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability2} onChange={(e: any) => setForm({ ...form, probability2: e.target.value as any })} className="w-full h-1 accent-green-600" />
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-xs font-bold text-emerald-800 uppercase">Olasılık</span>
+                            <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-emerald-100 text-emerald-600">{form.probability2}</span>
+                          </div>
+                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability2} onChange={(e: any) => setForm({ ...form, probability2: e.target.value as any })} className="w-full h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
                         </div>
                         <div>
-                          <div className="flex justify-between text-[10px]"><span className="font-bold">Frekans</span><span className="font-mono">{form.frequency2}</span></div>
-                          <input type="range" min={0.5} max={10} step={0.5} value={form.frequency2} onChange={(e: any) => setForm({ ...form, frequency2: e.target.value as any })} className="w-full h-1 accent-green-600" />
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-xs font-bold text-emerald-800 uppercase">Frekans</span>
+                            <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-emerald-100 text-emerald-600">{form.frequency2}</span>
+                          </div>
+                          <input type="range" min={0.5} max={10} step={0.5} value={form.frequency2} onChange={(e: any) => setForm({ ...form, frequency2: e.target.value as any })} className="w-full h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
                         </div>
                         <div>
-                          <div className="flex justify-between text-[10px]"><span className="font-bold">Şiddet</span><span className="font-mono">{form.severity2}</span></div>
-                          <input type="range" min={1} max={100} step={1} value={form.severity2} onChange={(e: any) => setForm({ ...form, severity2: e.target.value as any })} className="w-full h-1 accent-green-600" />
+                          <div className="flex justify-between items-end mb-2">
+                            <span className="text-xs font-bold text-emerald-800 uppercase">Şiddet</span>
+                            <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-emerald-100 text-emerald-600">{form.severity2}</span>
+                          </div>
+                          <input type="range" min={1} max={100} step={1} value={form.severity2} onChange={(e: any) => setForm({ ...form, severity2: e.target.value as any })} className="w-full h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
                         </div>
-                        <div className="text-center font-bold text-xl text-green-800 mt-2">
-                          {(form.probability2 * form.frequency2 * form.severity2).toFixed(1)}
+
+                        <div className="mt-6 pt-4 border-t border-emerald-200/60 text-center">
+                          <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest block mb-1">HEDEF SKOR</span>
+                          <div className="text-4xl font-black text-emerald-600 tracking-tight leading-none">
+                            {(form.probability2 * form.frequency2 * form.severity2).toFixed(0)}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="col-span-2">
-                      <button onClick={handleAddRisk} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded shadow-sm flex items-center justify-center">
-                        <Save className="w-4 h-4 mr-2" />
+                    <div className="col-span-2 mt-2">
+                      <button onClick={handleAddRisk} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        <Save className="w-5 h-5 mr-2" />
                         Listeye Ekle
                       </button>
                     </div>
@@ -2534,65 +2922,68 @@ export default function Home() {
             </div>
 
             {/* --- ACTION BAR --- */}
-            <div className="flex justify-between items-center bg-gray-50 border border-gray-200 p-3 rounded-t-lg shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-center bg-white border border-slate-200 p-4 rounded-t-xl md:rounded-xl shadow-sm gap-4">
               <div className="flex items-center" ref={tableTopRef}>
-                <FileText className="w-5 h-5 text-blue-900 mr-2" />
+                <div className="bg-slate-100 p-2 rounded-lg mr-3">
+                  <FileText className="w-6 h-6 text-slate-700" />
+                </div>
                 <div>
-                  <h2 className="text-md font-bold text-gray-800">3. RİSK ANALİZ TABLOSU</h2>
+                  <h2 className="text-lg font-bold text-slate-800">3. Risk Analiz Tablosu</h2>
+                  <p className="text-xs text-slate-500">Hazırlanan raporun önizlemesi</p>
                 </div>
               </div>
-              <div className="flex space-x-2 items-center">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handleDeleteAll}
-                  className="inline-flex items-center px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded bg-white text-red-700 hover:bg-red-50"
+                  className="inline-flex items-center px-4 py-2 border border-red-200 shadow-sm text-sm font-medium rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Tümünü Sil
                 </button>
-                <label className="inline-flex items-center cursor-pointer px-3 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50">
+                <label className="inline-flex items-center cursor-pointer px-4 py-2 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 select-none transition-colors">
                   <input
                     type="checkbox"
                     checked={includeProcedure}
                     onChange={(e) => setIncludeProcedure(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">Risk Prosedürünüde Ekle ---&gt;</span>
+                  <span className="ml-2 text-sm font-bold text-slate-600">Prosedür Ekle</span>
                 </label>
                 <button
                   onClick={generatePDF}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded bg-white hover:bg-gray-100 text-gray-700"
+                  className="inline-flex items-center px-5 py-2 border border-transparent shadow-lg shadow-blue-900/10 text-sm font-bold rounded-lg text-white bg-slate-900 hover:bg-slate-800 transition-all hover:scale-105"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  PDF Rapor İndir
+                  PDF İndir
                 </button>
               </div>
             </div>
 
             {/* --- BİRLEŞİK TABLO (BAŞLIK + RİSK LİSTESİ) --- */}
-            <div className="bg-white border border-gray-400 shadow-lg">
+            {/* --- BİRLEŞİK TABLO (BAŞLIK + RİSK LİSTESİ) --- */}
+            <div className="bg-white border md:rounded-b-xl border-slate-300 shadow-2xl overflow-hidden mb-10">
 
               {/* 1. BAŞLIK TABLOSU (HEADER - FINAL DÜZEN) */}
-              <div className="border-b border-gray-400">
+              <div className="border-b border-slate-400 bg-white">
                 <div className="flex border-b border-gray-400 text-[9px]">
 
                   {/* SOL BLOK: DEĞERLENDİRME & YÖNTEM */}
-                  <div className="w-4 bg-gray-100 border-r border-gray-400 flex items-center justify-center p-1 font-bold rotate-180 [writing-mode:vertical-rl] text-gray-700">
+                  <div className="w-4 bg-slate-100 border-r border-gray-400 flex items-center justify-center p-1 font-bold rotate-180 [writing-mode:vertical-rl] text-slate-700 tracking-wider">
                     RİSK DEĞERLENDİRMESİ
                   </div>
                   <div className="w-48 border-r border-gray-400 flex flex-col">
                     <div className="flex-1 border-b border-gray-400 flex items-stretch">
-                      <div className="w-20 bg-gray-50 font-bold p-1 flex items-center border-r border-gray-300 text-gray-600">YÖNTEM</div>
-                      <div className="p-1 flex items-center flex-1 font-semibold text-blue-900">FINE KINNEY</div>
+                      <div className="w-20 bg-slate-50 font-bold p-1 flex items-center border-r border-gray-300 text-slate-600">YÖNTEM</div>
+                      <div className="p-1 flex items-center flex-1 font-bold text-indigo-900 bg-indigo-50/30">FINE KINNEY</div>
                     </div>
                     <div className="flex-1 flex items-stretch">
-                      <div className="w-20 bg-gray-50 font-bold p-1 flex items-center border-r border-gray-300 text-gray-600">HAZIRLAYAN</div>
+                      <div className="w-20 bg-slate-50 font-bold p-1 flex items-center border-r border-gray-300 text-slate-600">HAZIRLAYAN</div>
                       <div className="p-1 flex items-center flex-1 font-semibold">İSG RİSK EKİBİ</div>
                     </div>
                   </div>
 
-                  {/* ORTA BLOK: LOGO + FİRMA BİLGİLERİ (DARALTILMIŞ) */}
+                  {/* ORTA BLOK: LOGO + FİRMA BİLGİLERİ */}
                   <div className="flex-1 border-r border-gray-400 flex">
-                    {/* LOGO */}
                     <div className="w-24 border-r border-gray-400 flex items-center justify-center p-1 bg-white relative group">
                       {headerInfo.logo ? (
                         <>
@@ -2600,74 +2991,72 @@ export default function Home() {
                           <button onClick={deleteLogo} className="absolute top-0 right-0 p-0.5 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100" title="Logoyu Sil"><X className="w-3 h-3" /></button>
                         </>
                       ) : (
-                        <div className="w-full h-full bg-white"></div>
+                        <div className="text-[7px] text-slate-300 text-center leading-tight w-full h-full flex items-center justify-center bg-slate-50/50">Logo Yok</div>
                       )}
                     </div>
-
-                    {/* FİRMA BİLGİLERİ (Logo Yanında) */}
                     <div className="flex-1 flex flex-col">
-                      <div className="bg-gray-100 text-center border-b border-gray-400 py-0.5 font-bold text-gray-700 text-[8px]">
+                      <div className="bg-slate-100 text-center border-b border-gray-400 py-0.5 font-bold text-slate-700 text-[8px] tracking-wider">
                         ANALİZ YAPILAN İŞYERİNİN
                       </div>
                       <div className="flex-1 flex flex-col">
                         <div className="flex border-b border-gray-300 min-h-[30px]">
-                          <div className="w-14 bg-gray-50 font-bold p-1 border-r border-gray-300 flex items-center text-gray-600">UNVANI</div>
-                          <div className="p-1 flex-1 font-bold uppercase flex items-center">{headerInfo.title}</div>
+                          <div className="w-14 bg-slate-50 font-bold p-1 border-r border-gray-300 flex items-center text-slate-600">UNVANI</div>
+                          <div className="p-1 flex-1 font-bold uppercase flex items-center text-slate-800">{headerInfo.title}</div>
                         </div>
                         <div className="flex border-b border-gray-300 flex-1">
-                          <div className="w-14 bg-gray-50 font-bold p-1 border-r border-gray-300 flex items-center text-gray-600">ADRESİ</div>
-                          <div className="p-1 flex-1 uppercase flex items-center">{headerInfo.address}</div>
+                          <div className="w-14 bg-slate-50 font-bold p-1 border-r border-gray-300 flex items-center text-slate-600">ADRESİ</div>
+                          <div className="p-1 flex-1 uppercase flex items-center text-slate-700 leading-tight">{headerInfo.address}</div>
                         </div>
                         <div className="flex h-5">
-                          <div className="w-14 bg-gray-50 font-bold p-1 border-r border-gray-300 flex items-center text-gray-600">SİCİL NO</div>
-                          <div className="p-1 flex-1 font-mono flex items-center">{headerInfo.registrationNumber}</div>
+                          <div className="w-14 bg-slate-50 font-bold p-1 border-r border-gray-300 flex items-center text-slate-600">SİCİL NO</div>
+                          <div className="p-1 flex-1 font-mono flex items-center text-slate-700 tracking-wider">{headerInfo.registrationNumber}</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* SAĞ BLOK: TARİHLER & EKİP (GENİŞLETİLMİŞ) */}
+                  {/* SAĞ BLOK: TARİHLER & EKİP */}
                   <div className="w-[480px] flex text-[8px]">
                     <div className="w-[240px] border-r border-gray-400">
                       <div className="flex flex-col h-full">
-                        {/* Tarihler Yan Yana ve Büyük Font */}
                         <div className="flex-1 border-b border-gray-300 flex items-center justify-between p-2">
-                          <span className="font-bold bg-gray-50 text-gray-600 mr-2">YAPILDIĞI TARİH:</span>
-                          <span className="font-black text-[11px] text-gray-900">{headerInfo.date}</span>
+                          <span className="font-bold bg-slate-50 text-slate-600 mr-2">YAPILDIĞI TARİH:</span>
+                          <span className="font-black text-[11px] text-slate-900">{formatDate(headerInfo.date)}</span>
                         </div>
                         <div className="flex-1 border-b border-gray-300 flex items-center justify-between p-2">
-                          <span className="font-bold bg-gray-50 text-gray-600 mr-2">GEÇERLİLİK:</span>
-                          <span className="font-black text-[11px] text-gray-900">{headerInfo.validityDate}</span>
+                          <span className="font-bold bg-slate-50 text-slate-600 mr-2">GEÇERLİLİK:</span>
+                          <span className="font-black text-[11px] text-slate-900">{formatDate(headerInfo.validityDate)}</span>
                         </div>
                         <div className="flex-1 flex items-center justify-between p-2">
-                          <span className="font-bold bg-gray-50 text-gray-600 mr-2">REVİZYON:</span>
-                          <span className="font-black text-[11px] text-gray-900">{headerInfo.revision}</span>
+                          <span className="font-bold bg-slate-50 text-slate-600 mr-2">REVİZYON:</span>
+                          <span className="font-black text-[11px] text-slate-900">{headerInfo.revision}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <div className="bg-gray-100 text-center border-b border-gray-300 py-0.5 font-bold">RİSK DEĞ. EKİBİ</div>
-                      <div className="flex flex-col">
-                        <div className="border-b border-gray-300 p-0.5 flex items-center">
-                          <span className="font-bold w-14 text-gray-500">İŞVEREN:</span>
-                          <span className="uppercase truncate flex-1 font-semibold">{headerInfo.employer}</span>
-                        </div>
-                        <div className="border-b border-gray-300 p-0.5 flex items-center">
-                          <span className="font-bold w-14 text-gray-500">İGU:</span>
-                          <span className="uppercase truncate flex-1 font-semibold">{headerInfo.igu}</span>
-                        </div>
-                        <div className="border-b border-gray-300 p-0.5 flex items-center">
-                          <span className="font-bold w-14 text-gray-500">HEKİM:</span>
-                          <span className="uppercase truncate flex-1 font-semibold">{headerInfo.doctor}</span>
-                        </div>
-                        <div className="border-b border-gray-300 p-0.5 flex items-center">
-                          <span className="font-bold w-14 text-gray-500">TEMSİLCİ:</span>
-                          <span className="uppercase truncate flex-1 font-semibold">{headerInfo.representative}</span>
-                        </div>
-                        <div className="p-0.5 flex items-center">
-                          <span className="font-bold w-14 text-gray-500">DESTEK:</span>
-                          <span className="uppercase truncate flex-1 font-semibold">{headerInfo.support}</span>
-                        </div>
+                    {/* Ekip Üyeleri Grid */}
+                    <div className="flex-1 text-[7px] flex flex-col h-full bg-white">
+                      <div className="bg-slate-100 text-center border-b border-gray-300 py-0.5 font-bold text-slate-700 text-[8px] tracking-wider">
+                        RİSK DEĞERLENDİRME EKİBİ
+                      </div>
+                      <div className="flex items-center border-b border-gray-300 px-1 py-1 flex-1">
+                        <span className="font-bold w-16 text-slate-500">İŞVEREN:</span>
+                        <span className="uppercase truncate flex-1 font-semibold text-slate-800">{headerInfo.employer}</span>
+                      </div>
+                      <div className="flex items-center border-b border-gray-300 px-1 py-1 flex-1">
+                        <span className="font-bold w-16 text-slate-500">İSG UZMANI:</span>
+                        <span className="uppercase truncate flex-1 font-semibold text-slate-800">{headerInfo.igu}</span>
+                      </div>
+                      <div className="flex items-center border-b border-gray-300 px-1 py-1 flex-1">
+                        <span className="font-bold w-16 text-slate-500">HEKİM:</span>
+                        <span className="uppercase truncate flex-1 font-semibold text-slate-800">{headerInfo.doctor}</span>
+                      </div>
+                      <div className="flex items-center border-b border-gray-300 px-1 py-1 flex-1">
+                        <span className="font-bold w-16 text-slate-500">TEMSİLCİ:</span>
+                        <span className="uppercase truncate flex-1 font-semibold text-slate-800">{headerInfo.representative}</span>
+                      </div>
+                      <div className="flex items-center px-1 py-1 flex-1">
+                        <span className="font-bold w-16 text-slate-500">DESTEK EL.:</span>
+                        <span className="uppercase truncate flex-1 font-semibold text-slate-800">{headerInfo.support}</span>
                       </div>
                     </div>
                   </div>
@@ -2677,73 +3066,74 @@ export default function Home() {
               {/* 2. RİSK TABLOSU (TEK PARÇA) */}
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 text-xs border-collapse">
-                  <thead className="bg-gray-800 text-white">
+                  <thead className="bg-slate-50 text-slate-700 font-bold border-b-2 border-slate-200">
                     <tr>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 w-8">No</th>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 w-24 text-left">Bölüm / Ortam</th>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 w-20">Foto</th>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 text-left">Tehlike</th>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 text-left">Risk</th>
-                      <th rowSpan={2} className="px-1 py-2 border border-gray-600 w-6 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180">Etkilenen</th>
-                      <th colSpan={5} className="px-2 py-1 border border-gray-600 text-center bg-red-900">1. Aşama (Mevcut Durum)</th>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 text-left w-48 bg-yellow-900">Kontrol Tedbirleri (Önlemler)</th>
-                      <th colSpan={5} className="px-2 py-1 border border-gray-600 text-center bg-green-900">2. Aşama (Tedbir Sonrası)</th>
-                      <th rowSpan={2} className="px-1 py-2 border border-gray-600 w-6 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180">Sorumlu</th>
-                      <th rowSpan={2} className="px-2 py-2 border border-gray-600 w-8"></th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-8 text-center text-[10px] uppercase tracking-wider">No</th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-24 text-left text-[10px] uppercase tracking-wider">Bölüm / Ortam</th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-20 text-center text-[10px] uppercase tracking-wider">Foto</th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 text-left text-[10px] uppercase tracking-wider">Tehlike</th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 text-left text-[10px] uppercase tracking-wider">Risk</th>
+                      <th rowSpan={2} className="px-1 py-3 border border-slate-200 w-6 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 text-slate-500 tracking-widest">Etkilenen</th>
+                      <th colSpan={5} className="px-2 py-1.5 border border-red-200 text-center bg-red-50 text-red-700 text-[10px] uppercase tracking-wider">1. Aşama (Mevcut Durum)</th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 text-left w-48 bg-yellow-50/50 text-yellow-800 text-[10px] uppercase tracking-wider">Kontrol Tedbirleri (Önlemler)</th>
+                      <th colSpan={5} className="px-2 py-1.5 border border-emerald-200 text-center bg-emerald-50 text-emerald-700 text-[10px] uppercase tracking-wider">2. Aşama (Tedbir Sonrası)</th>
+                      <th rowSpan={2} className="px-1 py-3 border border-slate-200 w-6 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 text-slate-500 tracking-widest">Sorumlu</th>
+                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-8"></th>
                     </tr>
                     <tr>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-blue-500">O</th>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-green-500">F</th>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-yellow-500">Ş</th>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-red-600">Skor</th>
-                      <th className="px-1 py-1 border border-gray-600 w-16 text-center bg-red-600">Sınıf</th>
+                      <th className="px-1 py-1 border border-red-200 w-12 text-center bg-red-100/50 text-red-800 text-[9px]">O</th>
+                      <th className="px-1 py-1 border border-red-200 w-12 text-center bg-red-100/50 text-red-800 text-[9px]">F</th>
+                      <th className="px-1 py-1 border border-red-200 w-14 text-center bg-red-100/50 text-red-800 text-[9px]">Ş</th>
+                      <th className="px-1 py-1 border border-red-200 w-10 text-center bg-red-100 text-red-900 font-bold text-[9px]">Skor</th>
+                      <th className="px-1 py-1 border border-red-200 w-16 text-center bg-red-100 text-red-900 font-bold text-[9px]">Sınıf</th>
 
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-blue-500">O</th>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-green-500">F</th>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-yellow-500">Ş</th>
-                      <th className="px-1 py-1 border border-gray-600 w-10 text-center bg-red-600">Skor</th>
-                      <th className="px-1 py-1 border border-gray-600 w-16 text-center bg-red-600">Sınıf</th>
+                      <th className="px-1 py-1 border border-emerald-200 w-12 text-center bg-emerald-100/50 text-emerald-800 text-[9px]">O</th>
+                      <th className="px-1 py-1 border border-emerald-200 w-12 text-center bg-emerald-100/50 text-emerald-800 text-[9px]">F</th>
+                      <th className="px-1 py-1 border border-emerald-200 w-14 text-center bg-emerald-100/50 text-emerald-800 text-[9px]">Ş</th>
+                      <th className="px-1 py-1 border border-emerald-200 w-10 text-center bg-emerald-100 text-emerald-900 font-bold text-[9px]">Skor</th>
+                      <th className="px-1 py-1 border border-emerald-200 w-16 text-center bg-emerald-100 text-emerald-900 font-bold text-[9px]">Sınıf</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-200 bg-white">
                     {risks.map((r, idx) => (
-                      <tr key={`${r.id}-${idx}`} className="hover:bg-gray-50">
-                        <td className="px-2 py-2 border font-mono font-bold text-gray-600 text-center">{r.riskNo}</td>
-                        <td className="px-2 py-2 border align-top">
-                          <div className="font-bold">{r.sub_category}</div>
-                          <div className="text-gray-500 text-[10px]">{r.source}</div>
+                      <tr key={`${r.id}-${idx}`} className="hover:bg-indigo-50/10 transition-colors">
+                        <td className="px-2 py-3 border border-slate-200 font-mono font-bold text-slate-600 text-center text-xs">{r.riskNo}</td>
+                        <td className="px-2 py-3 border border-slate-200 align-top">
+                          <div className="font-bold text-slate-800 text-xs mb-0.5">{r.sub_category}</div>
+                          <div className="text-slate-500 text-[9px] uppercase tracking-wide">{r.source}</div>
                         </td>
 
                         {/* FOTOĞRAF */}
-                        <td className="px-1 py-2 border align-top text-center">
+                        <td className="px-1 py-1 border border-slate-200 align-top text-center">
                           <div className="flex justify-center items-center h-full w-full">
                             {r.image ? (
                               <div className="relative group">
-                                <img src={r.image} alt="Risk" className="w-12 h-12 object-cover rounded border border-gray-300 mx-auto" />
-                                <div className="absolute inset-0 bg-black bg-opacity-70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center rounded transition-opacity">
-                                  <button onClick={() => triggerTableImageUpload(r.id)} className="text-[8px] text-white hover:text-blue-300 mb-1 flex items-center"><RefreshCw className="w-3 h-3 mr-1" /> Değiş</button>
-                                  <button onClick={() => deleteImageFromRow(r.id)} className="text-[8px] text-white hover:text-red-300 flex items-center"><Trash2 className="w-3 h-3 mr-1" /> Sil</button>
+                                <img src={r.image} alt="Risk" className="w-12 h-12 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto" />
+                                <div className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center rounded-lg transition-opacity">
+                                  <button onClick={() => triggerTableImageUpload(r.id)} className="text-[10px] text-white hover:text-blue-300 mb-1 flex items-center font-bold"><RefreshCw className="w-3 h-3 mr-1" /> Değiş</button>
+                                  <button onClick={() => deleteImageFromRow(r.id)} className="text-[10px] text-white hover:text-red-300 flex items-center font-bold"><Trash2 className="w-3 h-3 mr-1" /> Sil</button>
                                 </div>
                               </div>
                             ) : (
-                              <button onClick={() => triggerTableImageUpload(r.id)} className="w-12 h-12 bg-gray-100 rounded border border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-blue-500 transition-colors mx-auto">
-                                <Upload className="w-4 h-4 mb-1" />
-                                <span className="text-[8px]">Ekle</span>
+                              <button onClick={() => triggerTableImageUpload(r.id)} className="w-12 h-12 bg-slate-50 rounded-lg border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-blue-500 transition-colors mx-auto group">
+                                <Upload className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-[8px] font-bold">Resim</span>
                               </button>
                             )}
                           </div>
                         </td>
 
-                        <td className="px-2 py-2 border align-top font-semibold text-gray-800">{r.hazard}</td>
-                        <td className="px-2 py-2 border align-top text-red-700 font-medium">{r.risk}</td>
+                        <td className="px-2 py-3 border border-slate-200 align-top font-medium text-slate-700 text-xs">{r.hazard}</td>
+                        <td className="px-2 py-3 border border-slate-200 align-top text-red-700 font-medium text-xs">{r.risk}</td>
 
-                        <td className="px-1 py-2 border align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-gray-500 bg-gray-50">
+                        <td className="px-1 py-2 border border-slate-200 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-slate-500 bg-slate-50">
                           {r.affected}
                         </td>
 
-                        <td className="px-1 py-2 border text-center p-0">
+                        {/* 1. AŞAMA SKORLAMA */}
+                        <td className="px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
                           <select
-                            className="w-full h-full text-center bg-white outline-none border border-gray-300 rounded focus:bg-blue-50 text-xs font-mono font-bold cursor-pointer"
+                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-red-800"
                             value={r.probability}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'probability', e.target.value);
@@ -2753,9 +3143,9 @@ export default function Home() {
                             {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 border text-center p-0">
+                        <td className="px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
                           <select
-                            className="w-full h-full text-center bg-white outline-none border border-gray-300 rounded focus:bg-green-50 text-xs font-mono font-bold cursor-pointer"
+                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-red-800"
                             value={r.frequency}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'frequency', e.target.value);
@@ -2765,9 +3155,9 @@ export default function Home() {
                             {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 border text-center p-0">
+                        <td className="px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
                           <select
-                            className="w-full h-full text-center bg-white outline-none border border-gray-300 rounded focus:bg-yellow-50 text-xs font-mono font-bold cursor-pointer"
+                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-red-800"
                             value={r.severity}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'severity', e.target.value);
@@ -2777,16 +3167,17 @@ export default function Home() {
                             {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 border text-center font-bold bg-red-50 text-red-900">{Math.round(r.score)}</td>
-                        <td className="px-1 py-2 border text-center">
-                          <span className={`px-1 py-0.5 rounded text-[8px] font-bold block ${r.color}`}>{r.level.split(' ')[0]}</span>
+                        <td className="px-1 py-1 border border-red-100 text-center font-bold bg-red-100 text-red-900 text-xs">{Math.round(r.score)}</td>
+                        <td className="px-1 py-1 border border-red-100 text-center p-1 bg-red-50/50">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold block shadow-sm ${r.color} text-white`}>{r.level?.split(' ')[0]}</span>
                         </td>
 
-                        <td className="px-2 py-2 border align-top text-gray-700 bg-yellow-50 text-[11px]">{r.measures}</td>
+                        <td className="px-2 py-3 border border-slate-200 align-top text-slate-700 bg-yellow-50/30 text-xs font-medium">{r.measures}</td>
 
-                        <td className="px-1 py-2 border text-center p-0">
+                        {/* 2. AŞAMA SKORLAMA (HEDEF) */}
+                        <td className="px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
                           <select
-                            className="w-full h-full text-center bg-white outline-none border border-gray-300 rounded focus:bg-blue-50 text-xs font-mono font-bold cursor-pointer"
+                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-emerald-800"
                             value={r.probability2}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'probability2', e.target.value);
@@ -2796,9 +3187,9 @@ export default function Home() {
                             {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 border text-center p-0">
+                        <td className="px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
                           <select
-                            className="w-full h-full text-center bg-white outline-none border border-gray-300 rounded focus:bg-green-50 text-xs font-mono font-bold cursor-pointer"
+                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-emerald-800"
                             value={r.frequency2}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'frequency2', e.target.value);
@@ -2808,9 +3199,9 @@ export default function Home() {
                             {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 border text-center p-0">
+                        <td className="px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
                           <select
-                            className="w-full h-full text-center bg-white outline-none border border-gray-300 rounded focus:bg-yellow-50 text-xs font-mono font-bold cursor-pointer"
+                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-emerald-800"
                             value={r.severity2}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'severity2', e.target.value);
@@ -2820,28 +3211,33 @@ export default function Home() {
                             {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 border text-center font-bold bg-green-50 text-green-900">{Math.round(r.score2)}</td>
-                        <td className="px-1 py-2 border text-center">
-                          <span className={`px-1 py-0.5 rounded text-[8px] font-bold block ${r.color2}`}>{r.level2.split(' ')[0]}</span>
+                        <td className="px-1 py-1 border border-emerald-100 text-center font-bold bg-emerald-100 text-emerald-900 text-xs">{Math.round(r.score2)}</td>
+                        <td className="px-1 py-1 border border-emerald-100 text-center p-1 bg-emerald-50/50">
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold block shadow-sm ${r.color2} text-white`}>{r.level2?.split(' ')[0]}</span>
                         </td>
 
-                        <td className="px-1 py-2 border align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-gray-500 bg-gray-50">
+                        <td className="px-1 py-2 border border-slate-200 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-slate-500 bg-slate-50">
                           {r.responsible}
                         </td>
-
-                        <td className="px-1 py-2 border text-center">
-                          <button onClick={() => deleteRisk(r.id)} className="text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                        <td className="px-1 py-1 border border-slate-200 text-center w-8">
+                          <button
+                            onClick={() => deleteRisk(r.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors mx-auto block"
+                            title="Bu satırı sil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+            </div >
 
-          </div>
-        </main>
-      </div>
+          </div >
+        </main >
+      </div >
 
       {showPaywall && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80 p-4">
@@ -2852,199 +3248,208 @@ export default function Home() {
             <button onClick={() => setShowPaywall(false)} className="bg-gray-200 px-4 py-2 rounded text-gray-800 font-bold">Kapat</button>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* SİLME ONAY MODALI */}
-      {deleteConfirmStep > 0 && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border border-gray-200 transform transition-all scale-100">
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-red-100 p-3 rounded-full mb-4">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
+      {
+        deleteConfirmStep > 0 && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border border-gray-200 transform transition-all scale-100">
+              <div className="flex flex-col items-center text-center">
+                <div className="bg-red-100 p-3 rounded-full mb-4">
+                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                </div>
+
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Tümünü Silmek İstiyor musunuz?</h3>
+                <p className="text-gray-500 mb-6">
+                  Tablodaki <span className="font-bold text-gray-800">TÜM VERİLER</span> silinecek ve bu işlem geri alınamaz.
+                </p>
+                <div className="flex space-x-3 w-full">
+                  <button
+                    onClick={() => setDeleteConfirmStep(0)}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={confirmDeleteAll}
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center justify-center"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Evet, Hepsini Sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* AI ÖNİZLEME MODAL */}
+      {
+        showAIPreview && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="p-4 border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-xl">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold flex items-center">
+                    <Zap className="w-5 h-5 mr-2" />
+                    🤖 AI Bulduğu Riskler - "{sectorSearch}"
+                  </h3>
+                  <button
+                    onClick={() => { setShowAIPreview(false); setPreviewRisks([]); }}
+                    className="text-white hover:text-gray-200"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-sm text-indigo-100 mt-1">
+                  {selectedPreviewRisks.size} / {previewRisks.length} madde seçili
+                </p>
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Tümünü Silmek İstiyor musunuz?</h3>
-              <p className="text-gray-500 mb-6">
-                Tablodaki <span className="font-bold text-gray-800">TÜM VERİLER</span> silinecek ve bu işlem geri alınamaz.
-              </p>
-              <div className="flex space-x-3 w-full">
+              {/* Modal Body - Liste */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="mb-3 flex gap-2">
+                  <button
+                    onClick={() => setSelectedPreviewRisks(new Set(previewRisks.map(r => r.tempId)))}
+                    className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                  >
+                    ✓ Tümünü Seç
+                  </button>
+                  <button
+                    onClick={() => setSelectedPreviewRisks(new Set())}
+                    className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                  >
+                    ✗ Tümünü Kaldır
+                  </button>
+                </div>
+
+                <div className="space-y-1">
+                  {previewRisks.map((risk) => (
+                    <div
+                      key={risk.tempId}
+                      className={`p-2 border rounded cursor-pointer transition-all ${selectedPreviewRisks.has(risk.tempId)
+                        ? 'bg-green-50 border-green-300'
+                        : 'bg-gray-50 border-gray-200 opacity-60'
+                        }`}
+                      onClick={() => {
+                        const newSet = new Set(selectedPreviewRisks);
+                        if (newSet.has(risk.tempId)) {
+                          newSet.delete(risk.tempId);
+                        } else {
+                          newSet.add(risk.tempId);
+                        }
+                        setSelectedPreviewRisks(newSet);
+                      }}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="mt-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedPreviewRisks.has(risk.tempId)}
+                            onChange={() => { }}
+                            className="w-3 h-3 text-green-600 rounded"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="px-1 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded">
+                              {risk.categoryCode}
+                            </span>
+                            <span className="px-1 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded">
+                              {risk.source}
+                            </span>
+                            <span className={`px-1 py-0.5 text-[10px] font-bold rounded text-white`} style={{ backgroundColor: risk.color }}>
+                              {risk.level}
+                            </span>
+                          </div>
+                          <div className="text-xs font-medium text-gray-800">
+                            {risk.hazard}
+                          </div>
+                          <div className="text-[10px] text-gray-500 truncate">
+                            {risk.risk}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
                 <button
-                  onClick={() => setDeleteConfirmStep(0)}
-                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-colors"
+                  onClick={() => { setShowAIPreview(false); setPreviewRisks([]); }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
                   İptal
                 </button>
                 <button
-                  onClick={confirmDeleteAll}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center justify-center"
+                  onClick={confirmAIPreview}
+                  disabled={selectedPreviewRisks.size === 0}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Evet, Hepsini Sil
+                  <Plus className="w-4 h-4 mr-2" />
+                  {selectedPreviewRisks.size} Maddeyi Tabloya Ekle
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* AI ÖNİZLEME MODAL */}
-      {showAIPreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="p-4 border-b bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-xl">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold flex items-center">
-                  <Zap className="w-5 h-5 mr-2" />
-                  🤖 AI Bulduğu Riskler - "{sectorSearch}"
-                </h3>
-                <button
-                  onClick={() => { setShowAIPreview(false); setPreviewRisks([]); }}
-                  className="text-white hover:text-gray-200"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-sm text-indigo-100 mt-1">
-                {selectedPreviewRisks.size} / {previewRisks.length} madde seçili
-              </p>
-            </div>
-
-            {/* Modal Body - Liste */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="mb-3 flex gap-2">
-                <button
-                  onClick={() => setSelectedPreviewRisks(new Set(previewRisks.map(r => r.tempId)))}
-                  className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-                >
-                  ✓ Tümünü Seç
-                </button>
-                <button
-                  onClick={() => setSelectedPreviewRisks(new Set())}
-                  className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                >
-                  ✗ Tümünü Kaldır
-                </button>
-              </div>
-
-              <div className="space-y-1">
-                {previewRisks.map((risk) => (
-                  <div
-                    key={risk.tempId}
-                    className={`p-2 border rounded cursor-pointer transition-all ${selectedPreviewRisks.has(risk.tempId)
-                      ? 'bg-green-50 border-green-300'
-                      : 'bg-gray-50 border-gray-200 opacity-60'
-                      }`}
-                    onClick={() => {
-                      const newSet = new Set(selectedPreviewRisks);
-                      if (newSet.has(risk.tempId)) {
-                        newSet.delete(risk.tempId);
-                      } else {
-                        newSet.add(risk.tempId);
-                      }
-                      setSelectedPreviewRisks(newSet);
-                    }}
-                  >
-                    <div className="flex items-start gap-2">
-                      <div className="mt-1">
-                        <input
-                          type="checkbox"
-                          checked={selectedPreviewRisks.has(risk.tempId)}
-                          onChange={() => { }}
-                          className="w-3 h-3 text-green-600 rounded"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <span className="px-1 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded">
-                            {risk.categoryCode}
-                          </span>
-                          <span className="px-1 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded">
-                            {risk.source}
-                          </span>
-                          <span className={`px-1 py-0.5 text-[10px] font-bold rounded text-white`} style={{ backgroundColor: risk.color }}>
-                            {risk.level}
-                          </span>
-                        </div>
-                        <div className="text-xs font-medium text-gray-800">
-                          {risk.hazard}
-                        </div>
-                        <div className="text-[10px] text-gray-500 truncate">
-                          {risk.risk}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
-              <button
-                onClick={() => { setShowAIPreview(false); setPreviewRisks([]); }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                İptal
-              </button>
-              <button
-                onClick={confirmAIPreview}
-                disabled={selectedPreviewRisks.size === 0}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {selectedPreviewRisks.size} Maddeyi Tabloya Ekle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* PREMIUM TEŞVİK MODAL */}
-      {showPremiumModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Premium Üyelik Gerekli</h2>
-            <p className="text-gray-600 mb-4">
-              Free kullanıcılar maksimum <span className="font-bold text-orange-600">{FREE_RISK_LIMIT} risk maddesi</span> ekleyebilir.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Premium üyelik ile sınırsız risk maddesi ekleyebilir, filigransız PDF alabilir ve tüm özelliklere erişebilirsiniz.
-            </p>
-            <div className="space-y-3">
-              <Link
-                href="/register"
-                className="block w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all"
-              >
-                🎁 3 Ay Ücretsiz Premium - Kayıt Ol
-              </Link>
-              <button
-                onClick={() => setShowPremiumModal(false)}
-                className="w-full py-2 text-gray-500 hover:text-gray-700 text-sm"
-              >
-                Daha Sonra
-              </button>
+      {
+        showPremiumModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Premium Üyelik Gerekli</h2>
+              <p className="text-gray-600 mb-4">
+                Free kullanıcılar maksimum <span className="font-bold text-orange-600">{FREE_RISK_LIMIT} risk maddesi</span> ekleyebilir.
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                Premium üyelik ile sınırsız risk maddesi ekleyebilir, filigransız PDF alabilir ve tüm özelliklere erişebilirsiniz.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/register"
+                  className="block w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all"
+                >
+                  🎁 3 Ay Ücretsiz Premium - Kayıt Ol
+                </Link>
+                <button
+                  onClick={() => setShowPremiumModal(false)}
+                  className="w-full py-2 text-gray-500 hover:text-gray-700 text-sm"
+                >
+                  Daha Sonra
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* YUKARI GİT BUTONU */}
-      {showScrollTop && (
-        <button
-          onClick={() => tableTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-50 bg-indigo-600 bg-opacity-70 hover:bg-opacity-100 text-white p-3 rounded-full shadow-lg transition-all duration-300 flex items-center gap-2 group"
-          title="Başa Dön"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg>
-          <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Başa Dön</span>
-        </button>
-      )}
-    </div>
+      {
+        showScrollTop && (
+          <button
+            onClick={() => tableTopRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            className="fixed bottom-6 right-6 z-50 bg-indigo-600 bg-opacity-70 hover:bg-opacity-100 text-white p-3 rounded-full shadow-lg transition-all duration-300 flex items-center gap-2 group"
+            title="Başa Dön"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+            <span className="text-xs font-medium opacity-70 group-hover:opacity-100">Başa Dön</span>
+          </button>
+        )
+      }
+    </div >
   );
 }

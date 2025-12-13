@@ -41,6 +41,12 @@ export default function AdminPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
+    // Kullanıcı Risk Önerileri State
+    const [pendingRisksCount, setPendingRisksCount] = useState(0);
+    const [showRiskSuggestions, setShowRiskSuggestions] = useState(false);
+    const [pendingRisks, setPendingRisks] = useState<any[]>([]);
+    const [loadingRisks, setLoadingRisks] = useState(false);
+
     // Form State
     const [formData, setFormData] = useState({
         riskNo: '',
@@ -80,10 +86,65 @@ export default function AdminPage() {
             if (Array.isArray(jsonData)) {
                 setData(jsonData);
             }
+            // Bekleyen önerilerin sayısını çek
+            const pendingRes = await fetch('/api/admin/user-risks?status=pending');
+            if (pendingRes.ok) {
+                const pendingData = await pendingRes.json();
+                setPendingRisksCount(pendingData.length);
+            }
         } catch (err) {
             console.error("Veri çekme hatası:", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPendingRisks = async () => {
+        setLoadingRisks(true);
+        try {
+            const res = await fetch('/api/admin/user-risks?status=pending');
+            if (res.ok) {
+                const data = await res.json();
+                setPendingRisks(data);
+            }
+        } catch (err) {
+            console.error("Öneriler çekilemedi:", err);
+        } finally {
+            setLoadingRisks(false);
+        }
+    };
+
+    const handleApproveRisk = async (id: string) => {
+        try {
+            const res = await fetch('/api/admin/user-risks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status: 'approved' })
+            });
+            if (res.ok) {
+                setPendingRisks(pendingRisks.filter(r => r.id !== id));
+                setPendingRisksCount(prev => prev - 1);
+                alert('Öneri onaylandı ve risk kütüphanesine eklendi!');
+            }
+        } catch (err) {
+            console.error("Onaylama hatası:", err);
+        }
+    };
+
+    const handleRejectRisk = async (id: string) => {
+        if (!confirm('Bu öneriyi reddetmek istediğinize emin misiniz?')) return;
+        try {
+            const res = await fetch('/api/admin/user-risks', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status: 'rejected' })
+            });
+            if (res.ok) {
+                setPendingRisks(pendingRisks.filter(r => r.id !== id));
+                setPendingRisksCount(prev => prev - 1);
+            }
+        } catch (err) {
+            console.error("Reddetme hatası:", err);
         }
     };
 
@@ -519,6 +580,22 @@ export default function AdminPage() {
                         <h1 className="text-2xl font-bold text-gray-800 border-l-2 border-gray-300 pl-4">Risk Kütüphanesi Yönetimi</h1>
                     </div>
                     <div className="flex space-x-3">
+                        {/* Bekleyen Öneriler Butonu */}
+                        <button
+                            onClick={() => { setShowRiskSuggestions(true); fetchPendingRisks(); }}
+                            className={`flex items-center px-4 py-2 rounded-md font-bold transition-colors ${pendingRisksCount > 0
+                                ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            <span className="mr-2">📥</span>
+                            Öneriler
+                            {pendingRisksCount > 0 && (
+                                <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                                    {pendingRisksCount}
+                                </span>
+                            )}
+                        </button>
                         <button
                             onClick={handleSyncToSupabase}
                             disabled={isSyncing}
@@ -1059,6 +1136,74 @@ export default function AdminPage() {
                                     <Move className="w-4 h-4 mr-2" /> Taşı
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Öneriler Modal */}
+            {showRiskSuggestions && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-amber-50">
+                            <h2 className="text-lg font-bold text-amber-800">📥 Kullanıcı Risk Önerileri</h2>
+                            <button
+                                onClick={() => setShowRiskSuggestions(false)}
+                                className="p-2 hover:bg-amber-100 rounded text-amber-700"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 overflow-y-auto max-h-[60vh]">
+                            {loadingRisks ? (
+                                <div className="text-center py-8">
+                                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+                                    <p className="text-gray-500">Yükleniyor...</p>
+                                </div>
+                            ) : pendingRisks.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-gray-500">Bekleyen öneri yok.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {pendingRisks.map((risk) => (
+                                        <div key={risk.id} className="border rounded-lg p-4 bg-gray-50">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{risk.risk_no}</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {risk.user_email}
+                                                        </span>
+                                                    </div>
+                                                    <p className="font-bold text-gray-800 mb-1">{risk.hazard}</p>
+                                                    <p className="text-sm text-gray-600 mb-2">{risk.risk}</p>
+                                                    {risk.measures && (
+                                                        <p className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                            <strong>Önlemler:</strong> {risk.measures}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col gap-2 ml-4">
+                                                    <button
+                                                        onClick={() => handleApproveRisk(risk.id)}
+                                                        className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                    >
+                                                        <Check className="w-3 h-3 mr-1" /> Onayla
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectRisk(risk.id)}
+                                                        className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                    >
+                                                        <X className="w-3 h-3 mr-1" /> Reddet
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

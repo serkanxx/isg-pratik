@@ -106,7 +106,7 @@ export default function LandingPage() {
                   {session.user?.name || session.user?.email}
                 </span>
                 <Link
-                  href="/risk-degerlendirme"
+                  href="/panel"
                   className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 border border-blue-400/20"
                 >
                   Panele Git
@@ -161,7 +161,7 @@ export default function LandingPage() {
 
               <div className="flex flex-wrap gap-4 mb-4">
                 <Link
-                  href="/risk-degerlendirme"
+                  href={session ? "/panel" : "/register"}
                   className="inline-flex items-center gap-2 bg-white text-indigo-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
                 >
                   <ChevronRight className="w-5 h-5" />

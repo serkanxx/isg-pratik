@@ -94,3 +94,52 @@ export interface RiskLevel {
     label: string;
     color: string;
 }
+
+// Tehlike Sınıfı
+export type DangerClass = 'az_tehlikeli' | 'tehlikeli' | 'cok_tehlikeli';
+
+// Firma (Company) Interface
+export interface Company {
+    id: string;
+    user_id: string;
+    title: string;
+    address: string;
+    registration_number: string;
+    danger_class: DangerClass;
+    logo: string | null;
+    employer: string;
+    igu: string; // İş Güvenliği Uzmanı
+    doctor: string; // İşyeri Hekimi
+    representative: string; // Çalışan Temsilcisi
+    support: string; // Destek Elemanı
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+// Risk Raporu Interface
+export interface RiskReport {
+    id: string;
+    user_id: string;
+    company_id: string;
+    report_date: string;
+    validity_date: string;
+    revision_no: string | null;
+    revision_date: string | null;
+    risks: RiskItem[];
+    created_at: string;
+}
+
+// Tehlike sınıfına göre geçerlilik süresi (yıl)
+export const VALIDITY_YEARS: Record<DangerClass, number> = {
+    'az_tehlikeli': 6,
+    'tehlikeli': 4,
+    'cok_tehlikeli': 2
+};
+
+// Tehlike sınıfı etiketleri
+export const DANGER_CLASS_LABELS: Record<DangerClass, string> = {
+    'az_tehlikeli': 'Az Tehlikeli',
+    'tehlikeli': 'Tehlikeli',
+    'cok_tehlikeli': 'Çok Tehlikeli'
+};
