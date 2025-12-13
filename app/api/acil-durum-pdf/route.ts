@@ -4,117 +4,87 @@ import path from 'path';
 import fs from 'fs';
 import { jsPDF } from 'jspdf';
 
+const turkishToAscii = (str: string): string => {
+    return str
+        .replace(/İ/g, 'I').replace(/ı/g, 'i')
+        .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+        .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+        .replace(/Ş/g, 'S').replace(/ş/g, 's')
+        .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+        .replace(/Ç/g, 'C').replace(/ç/g, 'c');
+};
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const {
-            companyName,
-            companyAddress,
-            registrationNumber,
-            reportDate,
-            validityDate,
-            employer,
-            dangerClass
-        } = body;
+        const { companyName, companyAddress, registrationNumber, reportDate, validityDate, employer } = body;
 
-        // DOCX dosyasını oku - farklı yolları dene
         let docxPath = path.join(process.cwd(), 'ACİL DURUM EYLEM PLANI.docx');
-
-        // Alternatif yol dene
         if (!fs.existsSync(docxPath)) {
             docxPath = path.join(process.cwd(), 'ACIL DURUM EYLEM PLANI.docx');
         }
-
-        console.log('DOCX path:', docxPath);
-        console.log('File exists:', fs.existsSync(docxPath));
-
         if (!fs.existsSync(docxPath)) {
-            console.error('DOCX dosyası bulunamadı:', docxPath);
-            return NextResponse.json({ error: 'DOCX şablonu bulunamadı: ' + docxPath }, { status: 404 });
+            return NextResponse.json({ error: 'DOCX sablonu bulunamadi' }, { status: 404 });
         }
 
         const docxBuffer = fs.readFileSync(docxPath);
-        console.log('DOCX buffer size:', docxBuffer.length);
-
-        // DOCX'i metin'e dönüştür
         const result = await mammoth.extractRawText({ buffer: docxBuffer });
-        let text = result.value;
-        console.log('Extracted text length:', text.length);
+        let text = turkishToAscii(result.value);
 
-        // Placeholder'ları değiştir
-        text = text.replace(/\[FİRMA ADI\]/g, companyName || '');
-        text = text.replace(/\[SİCİL NO\]/g, registrationNumber || '');
-        text = text.replace(/\[YAPILDIĞI TARİH\]/g, reportDate || '');
-        text = text.replace(/\[GEÇERLİLİK TARİHİ\]/g, validityDate || '');
-        text = text.replace(/\[FİRMA ADRESİ\]/g, companyAddress || '');
+        text = text.replace(/\[FİRMA ADI\]/g, turkishToAscii(companyName || ''));
+        text = text.replace(/\[FIRMA ADI\]/g, turkishToAscii(companyName || ''));
+        text = text.replace(/\[SİCİL NO\]/g, turkishToAscii(registrationNumber || ''));
+        text = text.replace(/\[SICIL NO\]/g, turkishToAscii(registrationNumber || ''));
+        text = text.replace(/\[YAPILDIĞI TARİH\]/g, turkishToAscii(reportDate || ''));
+        text = text.replace(/\[YAPILDIGI TARIH\]/g, turkishToAscii(reportDate || ''));
+        text = text.replace(/\[GEÇERLİLİK TARİHİ\]/g, turkishToAscii(validityDate || ''));
+        text = text.replace(/\[GECERLILIK TARIHI\]/g, turkishToAscii(validityDate || ''));
 
-        // PDF oluştur
-        const doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        // Türkçe karakter desteği için font ayarları
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         doc.setFont('helvetica');
 
-        // Başlık sayfası
-        doc.setFontSize(24);
-        doc.setTextColor(0, 0, 0);
-
-        // Firma adı
+        // Baslik sayfasi
         doc.setFontSize(18);
-        const companyNameWidth = doc.getTextWidth(companyName);
-        doc.text(companyName, (210 - companyNameWidth) / 2, 60);
+        doc.setTextColor(0, 0, 0);
+        const safeCompanyName = turkishToAscii(companyName);
+        const nameWidth = doc.getTextWidth(safeCompanyName);
+        doc.text(safeCompanyName, (210 - nameWidth) / 2, 60);
 
-        // Sicil No
         if (registrationNumber) {
             doc.setFontSize(12);
-            const regText = `Sicil No: ${registrationNumber}`;
-            const regWidth = doc.getTextWidth(regText);
-            doc.text(regText, (210 - regWidth) / 2, 75);
+            const regText = 'Sicil No: ' + turkishToAscii(registrationNumber);
+            doc.text(regText, (210 - doc.getTextWidth(regText)) / 2, 75);
         }
 
-        // Ana başlık
         doc.setFontSize(28);
         doc.setTextColor(200, 50, 0);
-        const titleText = 'ACIL DURUM EYLEM PLANI';
-        const titleWidth = doc.getTextWidth(titleText);
-        doc.text(titleText, (210 - titleWidth) / 2, 120);
+        const title = 'ACIL DURUM EYLEM PLANI';
+        doc.text(title, (210 - doc.getTextWidth(title)) / 2, 120);
 
-        // Tarihler
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0);
-
-        doc.text(`Yapilisi Tarihi: ${reportDate}`, 30, 180);
-        doc.text(`Gecerlilik Tarihi: ${validityDate}`, 30, 190);
-
-        // Hazirlayan
+        doc.text('Yapilis Tarihi: ' + turkishToAscii(reportDate), 30, 180);
+        doc.text('Gecerlilik Tarihi: ' + turkishToAscii(validityDate), 30, 190);
         doc.text('Hazirlayan: ISG Uzmani', 30, 210);
-        doc.text(`Onaylayan: ${employer || 'Isveren'}`, 30, 220);
+        doc.text('Onaylayan: ' + turkishToAscii(employer || 'Isveren'), 30, 220);
 
-        // İçerik sayfaları
         doc.addPage();
 
-        // İçeriği sayfalara böl
         const lines = text.split('\n').filter((line: string) => line.trim() !== '');
         let y = 20;
         const lineHeight = 6;
         const pageHeight = 280;
-        const marginBottom = 20;
 
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-
-            if (y > pageHeight - marginBottom) {
+            if (y > pageHeight - 20) {
                 doc.addPage();
                 y = 20;
             }
 
-            // Başlıkları kalın yap
             if (line === line.toUpperCase() && line.length > 3 && line.length < 100) {
                 doc.setFontSize(12);
                 doc.setFont('helvetica', 'bold');
@@ -124,12 +94,9 @@ export async function POST(request: Request) {
                 doc.setFont('helvetica', 'normal');
             }
 
-            // Uzun satırları böl
-            const maxWidth = 170;
-            const splitLines = doc.splitTextToSize(line, maxWidth);
-
+            const splitLines = doc.splitTextToSize(line, 170);
             for (const splitLine of splitLines) {
-                if (y > pageHeight - marginBottom) {
+                if (y > pageHeight - 20) {
                     doc.addPage();
                     y = 20;
                 }
@@ -138,19 +105,19 @@ export async function POST(request: Request) {
             }
         }
 
-        // PDF'i buffer olarak al
         const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+        const safeFilename = safeCompanyName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
 
         return new NextResponse(pdfBuffer, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="Acil_Durum_Eylem_Plani_${companyName.replace(/\s+/g, '_')}.pdf"`
+                'Content-Disposition': `attachment; filename="Acil_Durum_Eylem_Plani_${safeFilename}.pdf"`
             }
         });
 
     } catch (error: any) {
-        console.error('PDF oluşturma hatası:', error);
+        console.error('PDF olusturma hatasi:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

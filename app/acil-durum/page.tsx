@@ -91,11 +91,20 @@ export default function AcilDurumPage() {
                 })
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            console.log('Response headers:', response.headers.get('content-type'));
+
             if (!response.ok) {
-                throw new Error('PDF oluşturulamadı');
+                const errorText = await response.text();
+                console.error('API Error:', errorText);
+                throw new Error('PDF oluşturulamadı: ' + errorText);
             }
 
             const blob = await response.blob();
+            console.log('Blob size:', blob.size);
+            console.log('Blob type:', blob.type);
+
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -106,9 +115,9 @@ export default function AcilDurumPage() {
             window.URL.revokeObjectURL(url);
 
             showNotification('PDF başarıyla indirildi!', 'success');
-        } catch (error) {
+        } catch (error: any) {
             console.error('PDF hatası:', error);
-            showNotification('PDF oluşturulurken hata oluştu!', 'error');
+            showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
         }
     };
 
