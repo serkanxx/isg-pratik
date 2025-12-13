@@ -346,23 +346,90 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
             {/* Ana İçerik */}
             <main className="flex-1 md:ml-72 min-h-screen">
-                {/* Üst Navbar */}
-                <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-                    {/* Mobil Hamburger Menü */}
-                    <button
-                        onClick={() => setIsMobileSidebarOpen(true)}
-                        className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-                    >
-                        <Menu className="w-6 h-6" />
-                    </button>
+                {/* Üst Navbar - Tam Genişlik */}
+                <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md sticky top-0 z-40">
+                    <div className="w-full px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-14">
+                            {/* Mobil Hamburger Menü */}
+                            <button
+                                onClick={() => setIsMobileSidebarOpen(true)}
+                                className="md:hidden p-2 text-blue-100 hover:bg-white/10 rounded-lg"
+                            >
+                                <Menu className="w-6 h-6" />
+                            </button>
 
-                    {/* Masaüstü: Boş alan (premium bilgisi sidebar'da) */}
-                    <div className="hidden md:block" />
+                            {/* Desktop Nav Links */}
+                            <div className="hidden md:flex items-center space-x-1.5">
+                                <Link
+                                    href="/panel"
+                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        }`}
+                                >
+                                    <LayoutDashboard className="w-4 h-4" />
+                                    <span>Dashboard</span>
+                                </Link>
+                                <Link
+                                    href="/panel/firmalar"
+                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/firmalar'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        }`}
+                                >
+                                    <Building2 className="w-4 h-4" />
+                                    <span>Firmalarım</span>
+                                </Link>
+                                <Link
+                                    href="/panel/risklerim"
+                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/risklerim'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        }`}
+                                >
+                                    <PlusCircle className="w-4 h-4" />
+                                    <span>Risklerim</span>
+                                </Link>
+                                <Link
+                                    href="/risk-degerlendirme"
+                                    className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2"
+                                >
+                                    <Shield className="w-4 h-4" />
+                                    <span>Risk Değerlendirmesi</span>
+                                </Link>
+                                <Link
+                                    href="/acil-durum"
+                                    className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2"
+                                >
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span>Acil Durum Planı</span>
+                                </Link>
+                            </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Risk Önerileri butonu panel sayfasına taşındı */}
+                            {/* Sağ taraf - Kullanıcı bilgisi */}
+                            <div className="flex items-center gap-3">
+                                <Link
+                                    href="/panel"
+                                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                                >
+                                    Panel
+                                </Link>
+                                <div className="hidden sm:flex flex-col items-end mr-2">
+                                    <span className="text-xs font-bold text-blue-100">
+                                        {session?.user?.name || session?.user?.email}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => signOut({ callbackUrl: '/' })}
+                                    className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm"
+                                    title="Çıkış Yap"
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </nav>
 
                 {children}
             </main>
