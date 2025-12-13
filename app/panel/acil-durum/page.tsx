@@ -60,8 +60,16 @@ export default function AcilDurumPage() {
 
     // PDF oluşturma
     const generatePDF = async () => {
-        if (!selectedCompany || !reportDate) {
-            showNotification('Lütfen firma ve tarih seçin!', 'error');
+        if (!session) {
+            showNotification('PDF oluşturmak için giriş yapmalısınız!', 'error');
+            return;
+        }
+        if (!selectedCompany) {
+            showNotification('Lütfen bir firma seçin!', 'error');
+            return;
+        }
+        if (!reportDate) {
+            showNotification('Lütfen rapor tarihini girin!', 'error');
             return;
         }
 
@@ -364,18 +372,16 @@ export default function AcilDurumPage() {
                         </div>
                     </div>
 
-                    {/* PDF İndir Butonu */}
-                    {selectedCompany && reportDate && (
-                        <div className="flex justify-center">
-                            <button
-                                onClick={generatePDF}
-                                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl text-lg font-bold shadow-lg shadow-orange-600/30 hover:shadow-xl hover:shadow-orange-600/40 transition-all hover:scale-105"
-                            >
-                                <Download className="w-6 h-6 mr-3" />
-                                Acil Durum Eylem Planı PDF İndir
-                            </button>
-                        </div>
-                    )}
+                    {/* PDF İndir Butonu - Her zaman görünür */}
+                    <div className="flex justify-center">
+                        <button
+                            onClick={generatePDF}
+                            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl text-lg font-bold shadow-lg shadow-orange-600/30 hover:shadow-xl hover:shadow-orange-600/40 transition-all hover:scale-105"
+                        >
+                            <Download className="w-6 h-6 mr-3" />
+                            Acil Durum Eylem Planı PDF İndir
+                        </button>
+                    </div>
 
                     {/* Bilgi Kutusu */}
                     <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">

@@ -17,18 +17,29 @@ export async function POST(request: Request) {
             dangerClass
         } = body;
 
-        // DOCX dosyasını oku
-        const docxPath = path.join(process.cwd(), 'ACİL DURUM EYLEM PLANI.docx');
+        // DOCX dosyasını oku - farklı yolları dene
+        let docxPath = path.join(process.cwd(), 'ACİL DURUM EYLEM PLANI.docx');
+
+        // Alternatif yol dene
+        if (!fs.existsSync(docxPath)) {
+            docxPath = path.join(process.cwd(), 'ACIL DURUM EYLEM PLANI.docx');
+        }
+
+        console.log('DOCX path:', docxPath);
+        console.log('File exists:', fs.existsSync(docxPath));
 
         if (!fs.existsSync(docxPath)) {
-            return NextResponse.json({ error: 'DOCX şablonu bulunamadı' }, { status: 404 });
+            console.error('DOCX dosyası bulunamadı:', docxPath);
+            return NextResponse.json({ error: 'DOCX şablonu bulunamadı: ' + docxPath }, { status: 404 });
         }
 
         const docxBuffer = fs.readFileSync(docxPath);
+        console.log('DOCX buffer size:', docxBuffer.length);
 
-        // DOCX'i HTML'e dönüştür
+        // DOCX'i metin'e dönüştür
         const result = await mammoth.extractRawText({ buffer: docxBuffer });
         let text = result.value;
+        console.log('Extracted text length:', text.length);
 
         // Placeholder'ları değiştir
         text = text.replace(/\[FİRMA ADI\]/g, companyName || '');
