@@ -336,7 +336,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* Alt Menü */}
                 <div className="p-4 border-t border-white/10">
                     <button
-                        onClick={() => signOut({ callbackUrl: '/' })}
+                        onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
                     >
                         <LogOut className="w-5 h-5" />
@@ -415,7 +415,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     </span>
                                 </div>
                                 <button
-                                    onClick={() => signOut({ callbackUrl: '/' })}
+                                    onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                                     className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm"
                                     title="Çıkış Yap"
                                 >

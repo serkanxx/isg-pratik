@@ -2273,7 +2273,7 @@ export default function Home() {
                     </span>
                   </div>
                   <button
-                    onClick={() => signOut()}
+                    onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                     className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm group"
                     title="Çıkış Yap"
                   >

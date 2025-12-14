@@ -152,7 +152,7 @@ export default function AdminPage() {
         // signOut({ callbackUrl: '/' }); // Global logout yerine sadece bu sayfadan çıkış yok, next-auth signOut kullanılır
         // Ancak burada sadece state'i sıfırlamak yetmez, gerçekten çıkış yapmak lazım.
         // Admin panelindeki çıkış butonu aslında uygulamadan çıkış yapmalı.
-        import("next-auth/react").then(({ signOut }) => signOut());
+        import("next-auth/react").then(({ signOut }) => signOut({ callbackUrl: 'https://www.isgpratik.com/' }));
     };
 
     const saveDataToApi = async (newData: any[]) => {

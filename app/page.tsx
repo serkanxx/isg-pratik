@@ -108,7 +108,7 @@ export default function LandingPage() {
                   Panele Git
                 </Link>
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                   className="p-2 text-white/70 hover:text-red-400 hover:bg-white/5 rounded-lg transition-all"
                   title="Çıkış Yap"
                 >
