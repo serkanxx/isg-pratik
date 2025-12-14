@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
 
     // Only admin can verify emails manually
-    if (!session || session.user.email !== 'serkanxx@gmail.com') {
+    if (!session || session.user?.email !== 'serkanxx@gmail.com') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
