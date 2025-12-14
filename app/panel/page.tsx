@@ -136,15 +136,19 @@ export default function PanelPage() {
                     <ChevronRight className="w-5 h-5 ml-auto opacity-70" />
                 </Link>
 
-                <div className="flex items-center gap-4 p-5 bg-white rounded-xl border border-slate-200 opacity-60 cursor-not-allowed">
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
+                <Link
+                    href="/panel/acil-durum"
+                    className="flex items-center gap-4 p-5 bg-white rounded-xl border border-slate-200 hover:shadow-lg hover:border-orange-200 transition-all group"
+                >
+                    <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
                         <FileText className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-400">Rapor Oluştur</h3>
-                        <p className="text-sm text-slate-400">Yakında</p>
+                        <h3 className="font-bold text-slate-800">Acil Durum Planı</h3>
+                        <p className="text-sm text-slate-500">Hemen oluştur</p>
                     </div>
-                </div>
+                    <ChevronRight className="w-5 h-5 ml-auto opacity-0 group-hover:opacity-70 transition-opacity" />
+                </Link>
             </div>
 
             {/* İstatistik Kartları */}

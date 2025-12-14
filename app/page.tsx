@@ -27,7 +27,8 @@ export default function LandingPage() {
       title: "Acil Durum Planları",
       description: "İEYEP uyumlu planlar, tatbikat kayıtları, görevlendirmeler, krokiler.",
       color: "bg-orange-500",
-      active: false
+      active: true,
+      href: "/panel/acil-durum"
     },
     {
       icon: Eye,
