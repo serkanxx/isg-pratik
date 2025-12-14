@@ -66,15 +66,22 @@ export async function POST(request: Request) {
         doc.rect(0, 0, pageWidth, pageHeight, 'F');
         doc.setTextColor(0, 0, 0);
 
-        // Firma Adi - Ust kisim ortalanmis
+        // Firma Adi - Ust kisim ortalanmis (metni kaydır eğer uzunsa)
         doc.setFontSize(24);
         doc.setFont('Roboto', 'bold');
-        doc.text(companyName || '[FİRMA ADI]', pageWidth / 2, 50, { align: 'center' });
+        const companyNameText = companyName || '[FİRMA ADI]';
+        const maxCompanyNameWidth = pageWidth - 40; // sol ve sağ 20mm margin
+        const companyNameLines = doc.splitTextToSize(companyNameText, maxCompanyNameWidth);
+        let companyNameY = 50;
+        companyNameLines.forEach((line: string, index: number) => {
+            doc.text(line, pageWidth / 2, companyNameY + (index * 10), { align: 'center' });
+        });
+        const afterCompanyNameY = companyNameY + (companyNameLines.length * 10) + 10;
 
         // Sicil No
         doc.setFontSize(16);
         doc.setFont('Roboto', 'normal');
-        doc.text(registrationNumber ? `[${registrationNumber}]` : '[SİCİL NO]', pageWidth / 2, 80, { align: 'center' });
+        doc.text(registrationNumber ? `[${registrationNumber}]` : '[SİCİL NO]', pageWidth / 2, afterCompanyNameY, { align: 'center' });
 
         // Ana Baslik
         doc.setFontSize(28);
@@ -262,13 +269,20 @@ export async function POST(request: Request) {
                 .replace(/[^a-zA-Z0-9_-]/g, '');
         };
 
-        const safeFilename = sanitizeFilename(companyName);
+        // Firma adının ilk 2 kelimesini al
+        const getFirstTwoWords = (name: string) => {
+            const words = name.trim().split(/\s+/);
+            return words.slice(0, 2).join(' ');
+        };
+
+        const firstTwoWords = getFirstTwoWords(companyName);
+        const safeFilename = sanitizeFilename(firstTwoWords);
 
         return new NextResponse(pdfBuffer, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="Acil_Durum_Eylem_Plani_${safeFilename}.pdf"`
+                'Content-Disposition': `attachment; filename="${safeFilename}_Acil_Durum_Eylem_Plani.pdf"`
             }
         });
 
