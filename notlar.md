@@ -9,4 +9,5 @@ Buraya istediğiniz metni yazın...
 
 
 -Acil durum eylem planı pdf sayfaları düzenlenecek
--acil durum pdf sayfa ismi firma adının ilk 2 kelimesi + Acil Durum Eylem Planı olsun
+- acil durum eylem planı başlıklara manuel numara ekle kaydet
+

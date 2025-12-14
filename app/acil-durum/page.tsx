@@ -108,7 +108,26 @@ export default function AcilDurumPage() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Acil_Durum_Eylem_Plani_${selectedCompany.title.replace(/\s+/g, '_')}.pdf`;
+
+            // Firma adının ilk 2 kelimesini al ve dosya ismi oluştur
+            const getFirstTwoWords = (name: string) => {
+                const words = name.trim().split(/\s+/);
+                return words.slice(0, 2).join(' ');
+            };
+            const sanitizeName = (name: string) => {
+                return name
+                    .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                    .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                    .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+                    .replace(/[^a-zA-Z0-9 -]/g, '');
+            };
+            const firstTwo = getFirstTwoWords(selectedCompany.title);
+            const safeFilename = sanitizeName(firstTwo);
+            a.download = `${safeFilename} - Acil Durum Eylem Planı.pdf`;
+
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

@@ -49,10 +49,9 @@ const menuItems = [
     },
     {
         name: 'Acil Durum Eylem Planı',
-        href: '#',
+        href: '/panel/acil-durum',
         icon: AlertTriangle,
-        active: false,
-        badge: 'YAKINDA'
+        active: true
     },
     {
         name: 'Saha Gözlem Formları',
@@ -398,7 +397,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     <Shield className="w-4 h-4" />
                                     <span>Risk Değerlendirmesi</span>
                                 </Link>
-                                <div className="px-3 py-2 rounded-xl text-sm font-semibold text-slate-400 border border-white/10 bg-white/5 flex items-center gap-2 cursor-not-allowed opacity-60"><AlertTriangle className="w-4 h-4" /><span>Acil Durum Planı</span><span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded-full font-bold">YAKINDA</span></div>
+                                <Link
+                                    href="/panel/acil-durum"
+                                    className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2"
+                                >
+                                    <AlertTriangle className="w-4 h-4" />
+                                    <span>Acil Durum Planı</span>
+                                </Link>
                             </div>
 
                             {/* Sağ taraf - Kullanıcı bilgisi */}
