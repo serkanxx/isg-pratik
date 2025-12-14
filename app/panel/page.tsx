@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -79,16 +79,25 @@ export default function PanelPage() {
                             İSG Pratik Risk Yönetim Sistemi
                         </p>
 
-                        {/* Admin Risk Önerileri Butonu */}
+                        {/* Admin Butonları */}
                         {/* @ts-ignore */}
                         {session?.user?.role === 'ADMIN' && (
-                            <Link
-                                href="/panel?showRiskSuggestions=true"
-                                className="inline-flex items-center mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-sm transition-colors shadow-lg"
-                            >
-                                <span className="mr-2">📥</span>
-                                Risk Önerileri
-                            </Link>
+                            <div className="flex items-center gap-3 mt-4">
+                                <Link
+                                    href="/admin"
+                                    className="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-bold text-sm transition-colors shadow-lg"
+                                >
+                                    <span className="mr-2">⚙️</span>
+                                    Admin Paneli
+                                </Link>
+                                <Link
+                                    href="/panel?showRiskSuggestions=true"
+                                    className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-sm transition-colors shadow-lg"
+                                >
+                                    <span className="mr-2">📥</span>
+                                    Risk Önerileri
+                                </Link>
+                            </div>
                         )}
                     </div>
                     <div className="hidden md:flex items-center gap-4">
@@ -313,3 +322,4 @@ export default function PanelPage() {
         </div>
     );
 }
+
