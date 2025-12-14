@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -72,7 +72,7 @@ const menuItems = [
 
 const ADMIN_EMAIL = 'serkanxx@gmail.com';
 
-export default function PanelLayout({ children }: { children: React.ReactNode }) {
+function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const { data: session, status } = useSession();
     const router = useRouter();
     const pathname = usePathname();
@@ -364,8 +364,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                                 <Link
                                     href="/panel"
                                     className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
                                         }`}
                                 >
                                     <LayoutDashboard className="w-4 h-4" />
@@ -374,8 +374,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                                 <Link
                                     href="/panel/firmalar"
                                     className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/firmalar'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
                                         }`}
                                 >
                                     <Building2 className="w-4 h-4" />
@@ -384,8 +384,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
                                 <Link
                                     href="/panel/risklerim"
                                     className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/risklerim'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
                                         }`}
                                 >
                                     <PlusCircle className="w-4 h-4" />
@@ -582,5 +582,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     );
 }
 
-
-
+export default function PanelLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+            </div>
+        }>
+            <PanelLayoutInner>{children}</PanelLayoutInner>
+        </Suspense>
+    );
+}
