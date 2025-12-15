@@ -11,6 +11,7 @@ import { RiskItem, RiskCategory, RiskLibraryItem, HeaderInfo, RiskForm, Notifica
 import { calculateRiskScore, getRiskLevel, formatDate, P_VALUES, F_VALUES, S_VALUES } from '../utils';
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { useSearchParams } from 'next/navigation';
 import { SECTOR_SUGGESTIONS } from '../data/constants';
 
 // --- 1. RİSK KÜTÜPHANESİ ---
@@ -19,6 +20,9 @@ import { SECTOR_SUGGESTIONS } from '../data/constants';
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const reportId = searchParams.get('reportId');
+
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [riskCategories, setRiskCategories] = useState<RiskCategory[]>([]); // API'den gelen veriler için state
 
@@ -94,6 +98,8 @@ export default function Home() {
   const logoInputRef = useRef<any>(null);
   const tableTopRef = useRef<HTMLDivElement>(null);
 
+  const [loadingReport, setLoadingReport] = useState(false);
+
   // --- LOCAL STORAGE ---
   useEffect(() => {
     const savedData = localStorage.getItem('isgRisks_v10');
@@ -134,6 +140,27 @@ export default function Home() {
         .catch(err => console.error('Firmalar alınamadı:', err));
     }
   }, [session]);
+
+  // Rapor ID varsa veriyi çek ve yükle
+  useEffect(() => {
+    if (reportId && session?.user) {
+      setLoadingReport(true);
+      fetch(`/api/reports/${reportId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.data) {
+            const reportData = data.data;
+            if (reportData.risks) setRisks(reportData.risks);
+            if (reportData.headerInfo) setHeaderInfo(reportData.headerInfo);
+            // Prosedürü de isterse açsın
+            setIncludeProcedure(true);
+            showNotification('Rapor verileri başarıyla yüklendi', 'success');
+          }
+        })
+        .catch(err => console.error('Rapor yüklenemedi:', err))
+        .finally(() => setLoadingReport(false));
+    }
+  }, [reportId, session]);
 
   useEffect(() => {
     try {
@@ -233,20 +260,36 @@ export default function Home() {
         igu: company.igu,
         doctor: company.doctor,
         representative: company.representative,
-        support: company.support
+        support: company.support,
+        dangerClass: company.danger_class // Tehlike sınıfını ekle
       });
     }
   };
 
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
   // Rapor tarihi değiştiğinde geçerlilik tarihini hesapla
   const handleReportDateChange = (dateStr: string) => {
+    let finalDate = dateStr;
+    if (dateStr) {
+      const parts = dateStr.split('-');
+      if (parts[0].length > 4) {
+        parts[0] = parts[0].slice(0, 4);
+        finalDate = parts.join('-');
+        // DOM'u manuel düzelt (React state değişmediği için render tetiklenmeyebilir)
+        if (dateInputRef.current) {
+          dateInputRef.current.value = finalDate;
+        }
+      }
+    }
+
     setHeaderInfo(prev => {
-      const newInfo = { ...prev, date: dateStr };
+      const newInfo = { ...prev, date: finalDate };
 
       // Seçili firma varsa geçerlilik tarihini hesapla
       const company = companies.find(c => c.id === selectedCompanyId);
-      if (company && dateStr) {
-        const reportDate = new Date(dateStr);
+      if (company && finalDate) {
+        const reportDate = new Date(finalDate);
         // Geçerli bir tarih mi kontrol et
         if (!isNaN(reportDate.getTime())) {
           const years = VALIDITY_YEARS[company.danger_class];
@@ -2164,6 +2207,31 @@ export default function Home() {
       }
     }
 
+    // Veritabanına kaydet
+    try {
+      if (headerInfo.title) {
+        // Tüm riskleri ve header bilgisini kaydet
+        const reportData = {
+          risks,
+          headerInfo,
+          activeRiskCategories: filteredCategories.map(c => c.code)
+        };
+
+        // Asenkron kaydet (await etmeye gerek yok, UI bloklanmasın)
+        fetch('/api/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'RISK_ASSESSMENT',
+            title: headerInfo.title,
+            data: reportData
+          })
+        }).catch(err => console.error('Risk raporu kaydedilemedi:', err));
+      }
+    } catch (e) {
+      console.error('Rapor kayıt hatası:', e);
+    }
+
     doc.save(filename);
   };
 
@@ -2209,8 +2277,8 @@ export default function Home() {
       {/* NAVBAR */}
       {/* NAVBAR */}
       <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md sticky top-0 z-50">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pl-12">
+          <div className="flex items-center h-16">
             <div className="flex items-center">
               {/* Mobil Hamburger Menü Butonu */}
               <button
@@ -2233,41 +2301,38 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="flex items-center space-x-1 sm:space-x-4">
-              <div className="hidden md:flex items-center space-x-1.5">
-                {/* Panel Dashboard */}
-                <Link href="/panel" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Dashboard</span>
-                </Link>
-                {/* Firmalarım */}
-                <Link href="/panel/firmalar" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
-                  <span>Firmalarım</span>
-                </Link>
-                {/* Risklerim */}
-                <Link href="/panel/risk-maddelerim" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  <span>Risklerim</span>
-                </Link>
-                {/* Risk Değerlendirmesi - Aktif */}
-                <Link href="/risk-degerlendirme" className="px-3 py-2 rounded-xl bg-indigo-600/80 text-sm font-semibold text-white border border-indigo-500 shadow-sm flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  <span>Risk Değerlendirmesi</span>
-                </Link>
-                {/* Acil Durum Eylem Planı */}
-                <Link href="/panel/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>Acil Durum Planı</span>
-                </Link>
-              </div>
+            <div className="hidden md:flex items-center space-x-1.5 ml-28">
+              {/* Firmalarım */}
+              <Link href="/panel/firmalar" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                <span>Firmalarım</span>
+              </Link>
+              {/* Risklerim */}
+              <Link href="/panel/risk-maddelerim" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span>Risklerim</span>
+              </Link>
+              {/* Risk Değerlendirmesi - Aktif */}
+              <Link href="/risk-degerlendirme" className="px-3 py-2 rounded-xl bg-indigo-600/80 text-sm font-semibold text-white border border-indigo-500 shadow-sm flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span>Risk Değerlendirmesi</span>
+              </Link>
+              {/* Acil Durum Eylem Planı */}
+              <Link href="/panel/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Acil Durum Planı</span>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-3 ml-auto">
 
               {session ? (
-                <div className="flex items-center space-x-3 pl-4 md:border-l md:border-white/10">
+                <div className="flex items-center gap-3">
                   <Link
                     href="/panel"
                     className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
                   >
+                    <LayoutDashboard className="w-4 h-4" />
                     Panel
                   </Link>
                   <div className="hidden sm:flex flex-col items-end mr-2">
@@ -2623,6 +2688,8 @@ export default function Home() {
                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Rapor Tarihi *</label>
                       <input
                         type="date"
+                        ref={dateInputRef}
+                        max="9999-12-31"
                         className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
                         value={headerInfo.date}
                         onChange={(e) => handleReportDateChange(e.target.value)}

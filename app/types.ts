@@ -63,6 +63,7 @@ export interface HeaderInfo {
     doctor: string;
     representative: string;
     support: string;
+    dangerClass?: DangerClass; // Raporlama sayfasında görüntülemek için
 }
 
 export interface RiskForm {

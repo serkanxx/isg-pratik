@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     AlertTriangle, Download, Lock, Calendar, User, Briefcase, ChevronDown, LogIn, Building2, CheckCircle, AlertCircle
 } from 'lucide-react';
@@ -35,6 +35,9 @@ export default function AcilDurumPage() {
 
     const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
+    // React DOM sync sorunu için ref kullan
+    const dateInputRef = useRef<HTMLInputElement>(null);
+
     // Firma seçildiğinde header bilgilerini doldur
     const handleCompanySelect = (companyId: string) => {
         setSelectedCompanyId(companyId);
@@ -42,9 +45,21 @@ export default function AcilDurumPage() {
 
     // Rapor tarihi değiştiğinde geçerlilik tarihini güncelle
     const handleReportDateChange = (date: string) => {
-        setReportDate(date);
-        if (date && selectedCompany) {
-            const reportDateObj = new Date(date);
+        let finalDate = date;
+        if (date) {
+            const parts = date.split('-');
+            if (parts[0].length > 4) {
+                parts[0] = parts[0].slice(0, 4);
+                finalDate = parts.join('-');
+                // DOM'u manuel düzelt
+                if (dateInputRef.current) {
+                    dateInputRef.current.value = finalDate;
+                }
+            }
+        }
+        setReportDate(finalDate);
+        if (finalDate && selectedCompany) {
+            const reportDateObj = new Date(finalDate);
             const validityYears = VALIDITY_YEARS[selectedCompany.danger_class];
             reportDateObj.setFullYear(reportDateObj.getFullYear() + validityYears);
             setValidityDate(reportDateObj.toISOString().split('T')[0]);
@@ -74,17 +89,22 @@ export default function AcilDurumPage() {
         showNotification('PDF hazırlanıyor...', 'success');
 
         try {
+            const requestData = {
+                companyName: selectedCompany.title,
+                companyAddress: selectedCompany.address,
+                registrationNumber: selectedCompany.registration_number,
+                reportDate: formatDate(reportDate),
+                validityDate: formatDate(validityDate),
+                employer: selectedCompany.employer,
+                igu: selectedCompany.igu,
+                doctor: selectedCompany.doctor,
+                support: selectedCompany.support
+            };
+
             const response = await fetch('/api/acil-durum-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    companyName: selectedCompany.title,
-                    companyAddress: selectedCompany.address,
-                    registrationNumber: selectedCompany.registration_number,
-                    reportDate: formatDate(reportDate),
-                    validityDate: formatDate(validityDate),
-                    employer: selectedCompany.employer
-                })
+                body: JSON.stringify(requestData)
             });
 
             if (!response.ok) {
@@ -92,6 +112,8 @@ export default function AcilDurumPage() {
                 console.error('API Error:', errorText);
                 throw new Error('PDF oluşturulamadı: ' + errorText);
             }
+
+
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -123,6 +145,30 @@ export default function AcilDurumPage() {
             window.URL.revokeObjectURL(url);
 
             showNotification('PDF başarıyla indirildi!', 'success');
+
+            // Raporu veritabanına kaydet (Arka planda)
+            try {
+                // Rapor verisini hazırla (Snapshot)
+                const reportSnapshot = {
+                    company: selectedCompany,
+                    date: reportDate,
+                    validity: validityDate
+                };
+
+                await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'EMERGENCY_PLAN',
+                        title: selectedCompany.title,
+                        data: reportSnapshot
+                    })
+                });
+                console.log('Rapor geçmişe kaydedildi.');
+            } catch (saveError) {
+                console.error('Rapor kaydetme hatası:', saveError);
+                // Kullanıcıya hata göstermeye gerek yok, PDF zaten indi.
+            }
         } catch (error: any) {
             console.error('PDF hatası:', error);
             showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
@@ -146,7 +192,7 @@ export default function AcilDurumPage() {
             </div>
 
             {/* --- 1. FİRMA VE RAPOR BİLGİLERİ --- */}
-            <div className="max-w-3xl mx-auto bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 overflow-hidden">
+            <div className="max-w-5xl mx-auto bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 px-6 py-4 flex items-center justify-between rounded-t-xl">
                     <div className="flex items-center">
                         <div className="bg-white/10 p-2 rounded-lg mr-3">
@@ -260,6 +306,8 @@ export default function AcilDurumPage() {
                                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Rapor Tarihi *</label>
                                     <input
                                         type="date"
+                                        ref={dateInputRef}
+                                        max="9999-12-31"
                                         className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all focus:bg-white"
                                         value={reportDate}
                                         onChange={(e) => handleReportDateChange(e.target.value)}

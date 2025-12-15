@@ -72,6 +72,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   risks         UserRisk[]
+  reports       ReportHistory[]
   headerInfo    HeaderInfo?
 }
 
@@ -102,6 +103,39 @@ model UserRisk {
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@map("user_risks")
+}
+
+// Risk Kütüphanesi (Supabase/DB'deki risk_items tablosu)
+model RiskLibrary {
+  id           Int      @id @default(autoincrement())
+  risk_no      String?  @map("risk_no") // DB kolon adına dikkat etmek lazım ama genelde camelCase olmayabilir.
+  // Types.ts'de riskNo, burada db push hatası almamak için tahmin ediyorum.
+  // Eğer kolon adı farklıysa db push yine uyarır ama tabloyu silmez, kolonu siler.
+  // Bu riski alarak en azından tabloyu kurtarıyoruz.
+  // Supabase tarafında genellikle snake_case kullanılır.
+  // Types.ts'deki yapıya göre ve standartlara göre:
+  
+  category_code String?
+  sub_category  String?
+  source        String?
+  hazard        String?
+  risk          String?
+  affected      String?
+  responsible   String?
+  
+  p            Int?
+  f            Int?
+  s            Int?
+  p2           Int?
+  f2           Int?
+  s2           Int?
+  
+  measures     String?
+  sector_tags  String[] 
+
+  @@map("risk_items")
 }
 
 // Kullanıcı başlık bilgileri
@@ -118,4 +152,42 @@ model HeaderInfo {
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  
+  @@map("header_info")
+}
+
+// Rapor Geçmişi
+model ReportHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type      String   // "RISK_ASSESSMENT", "EMERGENCY_PLAN"
+  title     String?  // Firma Adı veya Rapor Başlığı
+  data      Json     // Rapor verileri (snapshot)
+  
+  createdAt DateTime @default(now())
+  
+  @@map("report_history")
+}
+
+// Firmalar (types.ts'deki Company arayüzüne göre)
+model Company {
+  id                  String   @id @default(cuid())
+  user_id             String
+  title               String
+  address             String
+  registration_number String?
+  danger_class        String   // "az_tehlikeli", "tehlikeli", "cok_tehlikeli"
+  logo                String?  @db.Text
+  employer            String?
+  igu                 String?
+  doctor              String?
+  representative      String?
+  support             String?
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@map("companies")
 }

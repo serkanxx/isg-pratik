@@ -33,12 +33,12 @@ const menuItems = [
         active: true
     },
     {
-        name: 'Oluşturduklarım',
-        href: '/panel/olusturduklarim',
+        name: 'Raporlarım',
+        href: '/panel/raporlarim',
         icon: FileText,
-        active: false,
-        badge: 'YAKINDA'
+        active: true
     },
+
     { type: 'divider' },
     {
         name: 'Risk Değerlendirmesi',
@@ -360,16 +360,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
 
                             {/* Desktop Nav Links */}
                             <div className="hidden md:flex items-center space-x-1.5">
-                                <Link
-                                    href="/panel"
-                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel'
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
-                                        }`}
-                                >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    <span>Dashboard</span>
-                                </Link>
+                                {/* Dashboard Link Kaldırıldı */}
                                 <Link
                                     href="/panel/firmalar"
                                     className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/firmalar'
@@ -381,8 +372,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     <span>Firmalarım</span>
                                 </Link>
                                 <Link
-                                    href="/panel/risklerim"
-                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/risklerim'
+                                    href="/panel/risk-maddelerim"
+                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/risk-maddelerim'
                                         ? 'bg-indigo-600 text-white'
                                         : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
                                         }`}
@@ -399,7 +390,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                 </Link>
                                 <Link
                                     href="/panel/acil-durum"
-                                    className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2"
+                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/acil-durum'
+                                        ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-600/30'
+                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
+                                        }`}
                                 >
                                     <AlertTriangle className="w-4 h-4" />
                                     <span>Acil Durum Planı</span>
@@ -412,6 +406,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     href="/panel"
                                     className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
                                 >
+                                    <LayoutDashboard className="w-4 h-4" />
                                     Panel
                                 </Link>
                                 <div className="hidden sm:flex flex-col items-end mr-2">
@@ -435,155 +430,157 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             </main>
 
             {/* Admin Risk Önerileri Modal */}
-            {showRiskSuggestions && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[85vh] overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-amber-50">
-                            <h2 className="text-lg font-bold text-amber-800">📥 Kullanıcı Risk Önerileri</h2>
-                            <button
-                                onClick={() => { setShowRiskSuggestions(false); setEditingRisk(null); }}
-                                className="p-2 hover:bg-amber-100 rounded text-amber-700"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
+            {
+                showRiskSuggestions && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[85vh] overflow-hidden">
+                            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-amber-50">
+                                <h2 className="text-lg font-bold text-amber-800">📥 Kullanıcı Risk Önerileri</h2>
+                                <button
+                                    onClick={() => { setShowRiskSuggestions(false); setEditingRisk(null); }}
+                                    className="p-2 hover:bg-amber-100 rounded text-amber-700"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
 
-                        <div className="p-4 overflow-y-auto max-h-[70vh]">
-                            {loadingRisks ? (
-                                <div className="text-center py-8">
-                                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
-                                    <p className="text-gray-500">Yükleniyor...</p>
-                                </div>
-                            ) : pendingRisks.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-gray-500">Bekleyen öneri yok.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {pendingRisks.map((risk) => (
-                                        <div key={risk.id} className="border rounded-lg p-4 bg-gray-50">
-                                            {editingRisk?.id === risk.id ? (
-                                                // Düzenleme Modu
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="text-xs font-bold text-slate-500 block mb-1">Alt Kategori</label>
-                                                            <input type="text" className="w-full border rounded p-2 text-sm" value={editForm.sub_category} onChange={e => setEditForm({ ...editForm, sub_category: e.target.value })} />
+                            <div className="p-4 overflow-y-auto max-h-[70vh]">
+                                {loadingRisks ? (
+                                    <div className="text-center py-8">
+                                        <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+                                        <p className="text-gray-500">Yükleniyor...</p>
+                                    </div>
+                                ) : pendingRisks.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">Bekleyen öneri yok.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingRisks.map((risk) => (
+                                            <div key={risk.id} className="border rounded-lg p-4 bg-gray-50">
+                                                {editingRisk?.id === risk.id ? (
+                                                    // Düzenleme Modu
+                                                    <div className="space-y-4">
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="text-xs font-bold text-slate-500 block mb-1">Alt Kategori</label>
+                                                                <input type="text" className="w-full border rounded p-2 text-sm" value={editForm.sub_category} onChange={e => setEditForm({ ...editForm, sub_category: e.target.value })} />
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-xs font-bold text-slate-500 block mb-1">Kaynak</label>
+                                                                <input type="text" className="w-full border rounded p-2 text-sm" value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} />
+                                                            </div>
                                                         </div>
                                                         <div>
-                                                            <label className="text-xs font-bold text-slate-500 block mb-1">Kaynak</label>
-                                                            <input type="text" className="w-full border rounded p-2 text-sm" value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} />
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-slate-500 block mb-1">Tehlike</label>
-                                                        <input type="text" className="w-full border rounded p-2 text-sm" value={editForm.hazard} onChange={e => setEditForm({ ...editForm, hazard: e.target.value })} />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-slate-500 block mb-1">Risk</label>
-                                                        <textarea rows={2} className="w-full border rounded p-2 text-sm" value={editForm.risk} onChange={e => setEditForm({ ...editForm, risk: e.target.value })} />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-xs font-bold text-slate-500 block mb-1">Önlemler</label>
-                                                        <textarea rows={3} className="w-full border rounded p-2 text-sm" value={editForm.measures} onChange={e => setEditForm({ ...editForm, measures: e.target.value })} />
-                                                    </div>
-                                                    <div className="grid grid-cols-6 gap-2">
-                                                        <div>
-                                                            <label className="text-[10px] font-bold text-slate-400 block">O1</label>
-                                                            <select className="w-full border rounded p-1 text-xs" value={editForm.probability} onChange={e => setEditForm({ ...editForm, probability: parseFloat(e.target.value) })}>
-                                                                {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                                            </select>
+                                                            <label className="text-xs font-bold text-slate-500 block mb-1">Tehlike</label>
+                                                            <input type="text" className="w-full border rounded p-2 text-sm" value={editForm.hazard} onChange={e => setEditForm({ ...editForm, hazard: e.target.value })} />
                                                         </div>
                                                         <div>
-                                                            <label className="text-[10px] font-bold text-slate-400 block">F1</label>
-                                                            <select className="w-full border rounded p-1 text-xs" value={editForm.frequency} onChange={e => setEditForm({ ...editForm, frequency: parseFloat(e.target.value) })}>
-                                                                {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                                            </select>
+                                                            <label className="text-xs font-bold text-slate-500 block mb-1">Risk</label>
+                                                            <textarea rows={2} className="w-full border rounded p-2 text-sm" value={editForm.risk} onChange={e => setEditForm({ ...editForm, risk: e.target.value })} />
                                                         </div>
                                                         <div>
-                                                            <label className="text-[10px] font-bold text-slate-400 block">Ş1</label>
-                                                            <select className="w-full border rounded p-1 text-xs" value={editForm.severity} onChange={e => setEditForm({ ...editForm, severity: parseFloat(e.target.value) })}>
-                                                                {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                                            </select>
+                                                            <label className="text-xs font-bold text-slate-500 block mb-1">Önlemler</label>
+                                                            <textarea rows={3} className="w-full border rounded p-2 text-sm" value={editForm.measures} onChange={e => setEditForm({ ...editForm, measures: e.target.value })} />
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[10px] font-bold text-slate-400 block">O2</label>
-                                                            <select className="w-full border rounded p-1 text-xs" value={editForm.probability2} onChange={e => setEditForm({ ...editForm, probability2: parseFloat(e.target.value) })}>
-                                                                {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                                            </select>
+                                                        <div className="grid grid-cols-6 gap-2">
+                                                            <div>
+                                                                <label className="text-[10px] font-bold text-slate-400 block">O1</label>
+                                                                <select className="w-full border rounded p-1 text-xs" value={editForm.probability} onChange={e => setEditForm({ ...editForm, probability: parseFloat(e.target.value) })}>
+                                                                    {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] font-bold text-slate-400 block">F1</label>
+                                                                <select className="w-full border rounded p-1 text-xs" value={editForm.frequency} onChange={e => setEditForm({ ...editForm, frequency: parseFloat(e.target.value) })}>
+                                                                    {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] font-bold text-slate-400 block">Ş1</label>
+                                                                <select className="w-full border rounded p-1 text-xs" value={editForm.severity} onChange={e => setEditForm({ ...editForm, severity: parseFloat(e.target.value) })}>
+                                                                    {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] font-bold text-slate-400 block">O2</label>
+                                                                <select className="w-full border rounded p-1 text-xs" value={editForm.probability2} onChange={e => setEditForm({ ...editForm, probability2: parseFloat(e.target.value) })}>
+                                                                    {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] font-bold text-slate-400 block">F2</label>
+                                                                <select className="w-full border rounded p-1 text-xs" value={editForm.frequency2} onChange={e => setEditForm({ ...editForm, frequency2: parseFloat(e.target.value) })}>
+                                                                    {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] font-bold text-slate-400 block">Ş2</label>
+                                                                <select className="w-full border rounded p-1 text-xs" value={editForm.severity2} onChange={e => setEditForm({ ...editForm, severity2: parseFloat(e.target.value) })}>
+                                                                    {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                                </select>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[10px] font-bold text-slate-400 block">F2</label>
-                                                            <select className="w-full border rounded p-1 text-xs" value={editForm.frequency2} onChange={e => setEditForm({ ...editForm, frequency2: parseFloat(e.target.value) })}>
-                                                                {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-[10px] font-bold text-slate-400 block">Ş2</label>
-                                                            <select className="w-full border rounded p-1 text-xs" value={editForm.severity2} onChange={e => setEditForm({ ...editForm, severity2: parseFloat(e.target.value) })}>
-                                                                {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex justify-end gap-2 pt-2 border-t">
-                                                        <button onClick={() => setEditingRisk(null)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">İptal</button>
-                                                        <button onClick={() => handleApproveRisk(risk.id, editForm)} className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-sm hover:bg-green-700 flex items-center gap-1">
-                                                            <Save className="w-3 h-3" /> Düzenleyip Onayla
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                // Görüntüleme Modu
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{risk.risk_no}</span>
-                                                            <span className="text-xs text-gray-500">{risk.user_email}</span>
-                                                        </div>
-                                                        <p className="font-bold text-gray-800 mb-1">{risk.hazard}</p>
-                                                        <p className="text-sm text-gray-600 mb-2">{risk.risk}</p>
-                                                        {risk.measures && (
-                                                            <p className="text-xs text-gray-500 bg-white p-2 rounded border">
-                                                                <strong>Önlemler:</strong> {risk.measures}
-                                                            </p>
-                                                        )}
-                                                        <div className="flex gap-2 mt-2 text-xs text-gray-400">
-                                                            <span>P: {risk.probability}</span>
-                                                            <span>F: {risk.frequency}</span>
-                                                            <span>S: {risk.severity}</span>
+                                                        <div className="flex justify-end gap-2 pt-2 border-t">
+                                                            <button onClick={() => setEditingRisk(null)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">İptal</button>
+                                                            <button onClick={() => handleApproveRisk(risk.id, editForm)} className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-sm hover:bg-green-700 flex items-center gap-1">
+                                                                <Save className="w-3 h-3" /> Düzenleyip Onayla
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col gap-2 ml-4">
-                                                        <button
-                                                            onClick={() => startEditing(risk)}
-                                                            className="px-3 py-1.5 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700 flex items-center"
-                                                        >
-                                                            <Edit className="w-3 h-3 mr-1" /> Düzenle
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleApproveRisk(risk.id)}
-                                                            className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
-                                                        >
-                                                            <Check className="w-3 h-3 mr-1" /> Onayla
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleRejectRisk(risk.id)}
-                                                            className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
-                                                        >
-                                                            <X className="w-3 h-3 mr-1" /> Reddet
-                                                        </button>
+                                                ) : (
+                                                    // Görüntüleme Modu
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{risk.risk_no}</span>
+                                                                <span className="text-xs text-gray-500">{risk.user_email}</span>
+                                                            </div>
+                                                            <p className="font-bold text-gray-800 mb-1">{risk.hazard}</p>
+                                                            <p className="text-sm text-gray-600 mb-2">{risk.risk}</p>
+                                                            {risk.measures && (
+                                                                <p className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                                    <strong>Önlemler:</strong> {risk.measures}
+                                                                </p>
+                                                            )}
+                                                            <div className="flex gap-2 mt-2 text-xs text-gray-400">
+                                                                <span>P: {risk.probability}</span>
+                                                                <span>F: {risk.frequency}</span>
+                                                                <span>S: {risk.severity}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 ml-4">
+                                                            <button
+                                                                onClick={() => startEditing(risk)}
+                                                                className="px-3 py-1.5 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700 flex items-center"
+                                                            >
+                                                                <Edit className="w-3 h-3 mr-1" /> Düzenle
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleApproveRisk(risk.id)}
+                                                                className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                            >
+                                                                <Check className="w-3 h-3 mr-1" /> Onayla
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectRisk(risk.id)}
+                                                                className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                            >
+                                                                <X className="w-3 h-3 mr-1" /> Reddet
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 

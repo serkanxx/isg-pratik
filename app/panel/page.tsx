@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import {
-    Building2, FileText, Shield, Plus, TrendingUp, Calendar,
-    AlertCircle, Clock, ChevronRight, Zap, Star, Users, PlusCircle
+    Building2, FileText, Shield, Plus, TrendingUp,
+    AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle
 } from 'lucide-react';
 import { Company } from '../types';
 
@@ -18,16 +18,26 @@ interface UserRisk {
     created_at: string;
 }
 
+interface ReportData {
+    id: string;
+    type: 'RISK_ASSESSMENT' | 'EMERGENCY_PLAN';
+    title: string;
+    createdAt: string;
+    data: any;
+}
+
 export default function PanelPage() {
     const { data: session } = useSession();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [userRisks, setUserRisks] = useState<UserRisk[]>([]);
+    const [recentReports, setRecentReports] = useState<ReportData[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         companyCount: 0,
         reportCount: 0,
         riskCount: 0,
-        upcomingExpirations: 0
+        riskReportCount: 0,
+        emergencyReportCount: 0
     });
 
     useEffect(() => {
@@ -51,6 +61,25 @@ export default function PanelPage() {
                 setUserRisks(risksData);
                 setStats(prev => ({ ...prev, riskCount: risksData.length }));
             }
+
+            // Raporları çek ve analiz et
+            const allReportsRes = await fetch('/api/reports');
+            if (allReportsRes.ok) {
+                const allReports: ReportData[] = await allReportsRes.json();
+
+                // Son 5 raporu kaydet
+                setRecentReports(allReports.slice(0, 5));
+
+                const riskReports = allReports.filter(r => r.type === 'RISK_ASSESSMENT').length;
+                const emergencyReports = allReports.filter(r => r.type === 'EMERGENCY_PLAN').length;
+
+                setStats(prev => ({
+                    ...prev,
+                    reportCount: allReports.length,
+                    riskReportCount: riskReports,
+                    emergencyReportCount: emergencyReports
+                }));
+            }
         } catch (error) {
             console.error('Veri alınamadı:', error);
         } finally {
@@ -64,6 +93,23 @@ export default function PanelPage() {
         if (hour < 18) return 'İyi Günler';
         return 'İyi Akşamlar';
     };
+
+    // --- Donut Chart Hesabı ---
+    // Yarıçap 40, Çevre = 2 * PI * 40 ≈ 251.2
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    const totalReports = stats.reportCount || 1; // 0 ise 1 kabul et (boş grafik için)
+
+    // Risk Değerlendirme Dilimi
+    const riskPercent = stats.riskReportCount / totalReports;
+    const riskDash = riskPercent * circumference;
+
+    // Acil Durum Dilimi (Kalan kısım)
+    const emergencyPercent = stats.emergencyReportCount / totalReports;
+    const emergencyDash = emergencyPercent * circumference;
+
+    // Boş durum kontrolü
+    const isEmpty = stats.reportCount === 0;
 
     return (
         <div className="p-8">
@@ -154,49 +200,113 @@ export default function PanelPage() {
             {/* İstatistik Kartları */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Firma Sayısı */}
-                <Link href="/panel/firmalar" className="block">
-                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-indigo-200 transition-all group">
+                <Link href="/panel/firmalar" className="block h-full">
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-indigo-200 transition-all group h-full flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
                                 <Building2 className="w-6 h-6" />
                             </div>
                             <TrendingUp className="w-5 h-5 text-emerald-500" />
                         </div>
-                        <h3 className="text-3xl font-bold text-slate-800 mb-1">
-                            {loading ? '...' : stats.companyCount}
-                        </h3>
-                        <p className="text-sm text-slate-500">Kayıtlı Firma</p>
+                        <div>
+                            <h3 className="text-3xl font-bold text-slate-800 mb-1">
+                                {loading ? '...' : stats.companyCount}
+                            </h3>
+                            <p className="text-sm text-slate-500">Kayıtlı Firma</p>
+                        </div>
                     </div>
                 </Link>
 
                 {/* Risklerim Kartı */}
-                <Link href="/panel/risk-maddelerim" className="block">
-                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-amber-200 transition-all group">
+                <Link href="/panel/risk-maddelerim" className="block h-full">
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-amber-200 transition-all group h-full flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-4">
                             <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                                 <Shield className="w-6 h-6" />
                             </div>
                             <PlusCircle className="w-5 h-5 text-amber-500" />
                         </div>
-                        <h3 className="text-3xl font-bold text-slate-800 mb-1">
-                            {loading ? '...' : stats.riskCount}
-                        </h3>
-                        <p className="text-sm text-slate-500">Risklerim</p>
+                        <div>
+                            <h3 className="text-3xl font-bold text-slate-800 mb-1">
+                                {loading ? '...' : stats.riskCount}
+                            </h3>
+                            <p className="text-sm text-slate-500">Risklerim</p>
+                        </div>
                     </div>
                 </Link>
 
-                {/* Rapor Sayısı */}
-                <div className="bg-white rounded-xl p-6 border border-slate-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
-                            <FileText className="w-6 h-6" />
+                {/* Rapor İstatistikleri Grafiği */}
+                <div className="bg-white rounded-xl p-6 border border-slate-200 relative overflow-hidden h-full">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h3 className="font-bold text-slate-800 mb-1">Rapor Özeti</h3>
+                            <p className="text-sm text-slate-500 mb-4">Oluşturulan Raporlar</p>
+
+                            {/* Legend */}
+                            <div className="space-y-2 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                    <span className="text-slate-600 font-medium">Risk: {stats.riskReportCount}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                                    <span className="text-slate-600 font-medium">Acil Durum: {stats.emergencyReportCount}</span>
+                                </div>
+                            </div>
                         </div>
-                        <span className="text-xs px-2 py-1 bg-slate-100 rounded-full text-slate-500 font-bold">
-                            YAKINDA
-                        </span>
+
+                        {/* Donut Chart */}
+                        <div className="relative w-24 h-24 flex-shrink-0">
+                            <svg width="100%" height="100%" viewBox="0 0 100 100" className="transform -rotate-90">
+                                {/* Arkaplan Halkası */}
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r={radius}
+                                    fill="transparent"
+                                    stroke={isEmpty ? "#f1f5f9" : "transparent"}
+                                    strokeWidth="12"
+                                />
+
+                                {!isEmpty && (
+                                    <>
+                                        {/* Risk Dilimi */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r={radius}
+                                            fill="transparent"
+                                            stroke="#10b981" // emerald-500
+                                            strokeWidth="12"
+                                            strokeDasharray={`${riskDash} ${circumference}`}
+                                            strokeDashoffset="0"
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                        {/* Acil Durum Dilimi */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r={radius}
+                                            fill="transparent"
+                                            stroke="#f97316" // orange-500
+                                            strokeWidth="12"
+                                            strokeDasharray={`${emergencyDash} ${circumference}`}
+                                            strokeDashoffset={-riskDash} // Risk bitiminden başla
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                    </>
+                                )}
+                            </svg>
+                            {/* Ortadaki Sayı */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="text-2xl font-bold text-slate-800 leading-none">
+                                    {stats.reportCount}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <h3 className="text-3xl font-bold text-slate-800 mb-1">0</h3>
-                    <p className="text-sm text-slate-500">Oluşturulan Rapor</p>
                 </div>
             </div>
 
@@ -260,6 +370,102 @@ export default function PanelPage() {
                                 </Link>
                             </li>
                         ))}
+                    </ul>
+                )}
+            </div>
+
+            {/* Son Alınan Raporlar */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-8">
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-indigo-600" />
+                        Son Alınan Raporlar
+                    </h2>
+                    <Link href="/panel/raporlarim" className="text-sm text-indigo-600 font-medium hover:underline flex items-center gap-1">
+                        Tümünü Gör <ChevronRight className="w-4 h-4" />
+                    </Link>
+                </div>
+
+                {loading ? (
+                    <div className="p-8 text-center text-slate-500">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent mx-auto mb-3"></div>
+                        Yükleniyor...
+                    </div>
+                ) : recentReports.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-500 mb-4">Henüz rapor oluşturmadınız</p>
+                        <div className="flex justify-center gap-3">
+                            <Link href="/risk-degerlendirme" className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                                Risk Analizi
+                            </Link>
+                            <Link href="/panel/acil-durum" className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+                                Acil Durum
+                            </Link>
+                        </div>
+                    </div>
+                ) : (
+                    <ul className="divide-y divide-slate-100">
+                        {recentReports.map((report) => {
+                            let companyName = report.title;
+                            let dangerClass = '';
+                            let reportDate = '-';
+
+                            try {
+                                if (report.type === 'RISK_ASSESSMENT') {
+                                    dangerClass = report.data?.headerInfo?.dangerClass || report.data?.company?.danger_class || '';
+                                    reportDate = report.data?.headerInfo?.date || '-';
+                                } else {
+                                    dangerClass = report.data?.company?.danger_class || report.data?.dangerClass || '';
+                                    reportDate = report.data?.date || report.data?.reportDate || '-';
+                                }
+                            } catch (e) { }
+
+                            let dangerClassLabel = dangerClass;
+                            let dangerClassStyle = 'bg-slate-100 text-slate-600';
+
+                            if (dangerClass) {
+                                const normalized = dangerClass.toLowerCase().replace(/ /g, '_');
+                                if (normalized.includes('az')) { dangerClassLabel = 'Az Tehlikeli'; dangerClassStyle = 'bg-emerald-100 text-emerald-700'; }
+                                else if (normalized.includes('cok') || normalized.includes('çok')) { dangerClassLabel = 'Çok Tehlikeli'; dangerClassStyle = 'bg-red-100 text-red-700'; }
+                                else if (normalized.includes('tehlikeli')) { dangerClassLabel = 'Tehlikeli'; dangerClassStyle = 'bg-amber-100 text-amber-700'; }
+                            }
+
+                            if (reportDate !== '-') {
+                                try {
+                                    const d = new Date(reportDate);
+                                    if (!isNaN(d.getTime())) {
+                                        reportDate = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                    }
+                                } catch (e) { }
+                            }
+
+                            return (
+                                <li key={report.id}>
+                                    <div className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${report.type === 'RISK_ASSESSMENT' ? 'bg-indigo-100 text-indigo-600' : 'bg-orange-100 text-orange-600'}`}>
+                                            {report.type === 'RISK_ASSESSMENT' ? <Shield className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-slate-800 truncate">{companyName}</p>
+                                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                <span>{report.type === 'RISK_ASSESSMENT' ? 'Risk Analizi' : 'Acil Durum Planı'}</span>
+                                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                <span>{reportDate}</span>
+                                            </div>
+                                        </div>
+                                        {dangerClass && (
+                                            <span className={`text-xs px-2 py-1 rounded-full font-bold whitespace-nowrap hidden sm:inline-block ${dangerClassStyle}`}>
+                                                {dangerClassLabel}
+                                            </span>
+                                        )}
+                                        <Link href={report.type === 'RISK_ASSESSMENT' ? `/risk-degerlendirme?reportId=${report.id}` : '/panel/raporlarim'} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                                        </Link>
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
