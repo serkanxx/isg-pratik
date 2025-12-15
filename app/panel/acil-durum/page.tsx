@@ -304,16 +304,70 @@ export default function AcilDurumPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Rapor Tarihi *</label>
-                                    <input
-                                        type="date"
-                                        ref={dateInputRef}
-                                        max="9999-12-31"
-                                        className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all focus:bg-white"
-                                        value={reportDate}
-                                        onChange={(e) => handleReportDateChange(e.target.value)}
-                                    />
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {/* Gün Dropdown */}
+                                        <select
+                                            className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all focus:bg-white"
+                                            value={reportDate ? reportDate.split('-')[2] || '' : ''}
+                                            onChange={(e) => {
+                                                const day = e.target.value;
+                                                const currentDate = reportDate || '';
+                                                const parts = currentDate.split('-');
+                                                const year = parts[0] || new Date().getFullYear().toString();
+                                                const month = parts[1] || '01';
+                                                if (day) {
+                                                    handleReportDateChange(`${year}-${month}-${day}`);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Gün</option>
+                                            {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                                                <option key={d} value={d.toString().padStart(2, '0')}>{d}</option>
+                                            ))}
+                                        </select>
+                                        {/* Ay Dropdown */}
+                                        <select
+                                            className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all focus:bg-white"
+                                            value={reportDate ? reportDate.split('-')[1] || '' : ''}
+                                            onChange={(e) => {
+                                                const month = e.target.value;
+                                                const currentDate = reportDate || '';
+                                                const parts = currentDate.split('-');
+                                                const year = parts[0] || new Date().getFullYear().toString();
+                                                const day = parts[2] || '01';
+                                                if (month) {
+                                                    handleReportDateChange(`${year}-${month}-${day}`);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Ay</option>
+                                            {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map((ay, i) => (
+                                                <option key={i} value={(i + 1).toString().padStart(2, '0')}>{ay}</option>
+                                            ))}
+                                        </select>
+                                        {/* Yıl Dropdown */}
+                                        <select
+                                            className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all focus:bg-white"
+                                            value={reportDate ? reportDate.split('-')[0] || '' : ''}
+                                            onChange={(e) => {
+                                                const year = e.target.value;
+                                                const currentDate = reportDate || '';
+                                                const parts = currentDate.split('-');
+                                                const month = parts[1] || '01';
+                                                const day = parts[2] || '01';
+                                                if (year) {
+                                                    handleReportDateChange(`${year}-${month}-${day}`);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Yıl</option>
+                                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                                                <option key={y} value={y.toString()}>{y}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     {reportDate && (
-                                        <p className="text-xs text-slate-500 mt-1">Seçilen tarih: <span className="font-medium text-slate-700">{formatDate(reportDate)}</span></p>
+                                        <p className="text-xs text-slate-500 mt-2">Seçilen tarih: <span className="font-medium text-slate-700">{formatDate(reportDate)}</span></p>
                                     )}
                                 </div>
 

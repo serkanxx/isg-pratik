@@ -169,22 +169,33 @@ export default function AdminPage() {
         }
     };
 
-    // Supabase'e manuel senkronizasyon
+    // Supabase ile çift yönlü senkronizasyon
     const handleSyncToSupabase = async () => {
         if (isSyncing) return;
 
         setIsSyncing(true);
         try {
-            const response = await fetch('/api/risks', {
+            const response = await fetch('/api/sync-risks', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                headers: { 'Content-Type': 'application/json' }
             });
 
-            if (response.ok) {
-                alert('Veriler Supabase\'e başarıyla senkronize edildi!');
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                const report = result.report;
+                alert(
+                    `✅ Senkronizasyon Başarılı!\n\n` +
+                    `📥 Supabase → Local: ${report.supabaseToLocal} yeni madde\n` +
+                    `📤 Local → Supabase: ${report.localToSupabase} yeni madde\n` +
+                    `🔄 Zaten mevcut: ${report.alreadyExists} madde\n\n` +
+                    `Toplam Local: ${report.totalLocal} madde\n` +
+                    `Toplam Supabase: ${report.totalSupabase} madde`
+                );
+                // Veriyi yeniden yükle
+                fetchData();
             } else {
-                alert('Senkronizasyon sırasında hata oluştu.');
+                alert('Senkronizasyon sırasında hata oluştu: ' + (result.error || 'Bilinmeyen hata'));
             }
         } catch (err) {
             console.error("Senkronizasyon hatası:", err);
@@ -599,14 +610,14 @@ export default function AdminPage() {
                         <button
                             onClick={handleSyncToSupabase}
                             disabled={isSyncing}
-                            className="flex items-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-bold disabled:bg-green-400"
+                            className="flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2 rounded-md hover:from-indigo-700 hover:to-purple-700 transition-all font-bold disabled:opacity-50 shadow-md"
                         >
                             {isSyncing ? (
                                 <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
                             ) : (
-                                <CloudUpload className="w-5 h-5 mr-2" />
+                                <RefreshCw className="w-5 h-5 mr-2" />
                             )}
-                            {isSyncing ? 'Senkronize Ediliyor...' : 'Supabase\'e Kaydet'}
+                            {isSyncing ? 'Senkronize Ediliyor...' : '🔄 Senkronize Et'}
                         </button>
                         <button
                             onClick={() => {
