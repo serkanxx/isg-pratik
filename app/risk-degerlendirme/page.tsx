@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
   AlertTriangle, Download, Save, Plus, Trash2, CheckCircle, Shield,
-  Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut, MinusCircle, Building2, Eye, FileCheck, LayoutDashboard
+  Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut, MinusCircle, Building2, Eye, FileCheck, LayoutDashboard, Moon, Sun
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -13,6 +13,7 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useSearchParams } from 'next/navigation';
 import { SECTOR_SUGGESTIONS } from '../data/constants';
+import { useTheme } from '@/app/context/ThemeContext';
 
 // --- 1. RİSK KÜTÜPHANESİ ---
 // --- 1. RİSK KÜTÜPHANESİ ---
@@ -22,6 +23,7 @@ function RiskAssessmentContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const reportId = searchParams.get('reportId');
+  const { isDark, toggleTheme } = useTheme();
 
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [riskCategories, setRiskCategories] = useState<RiskCategory[]>([]); // API'den gelen veriler için state
@@ -2261,7 +2263,7 @@ function RiskAssessmentContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-800 font-sans flex flex-col relative">
+    <div className={`min-h-screen text-gray-800 font-sans flex flex-col relative ${isDark ? 'dark-content bg-slate-900' : 'bg-gray-100'}`}>
 
       {notification.show && (
         <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-bounce-in ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
@@ -2340,6 +2342,13 @@ function RiskAssessmentContent() {
                       {session.user?.name || session.user?.email}
                     </span>
                   </div>
+                  <button
+                    onClick={toggleTheme}
+                    className="bg-white/10 hover:bg-white/20 text-blue-200 p-2 rounded-xl transition-all border border-white/10"
+                    title={isDark ? 'Açık Mod' : 'Karanlık Mod'}
+                  >
+                    {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
+                  </button>
                   <button
                     onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                     className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm group"

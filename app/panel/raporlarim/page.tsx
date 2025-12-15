@@ -1,8 +1,8 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { FileText, Download, RefreshCw, AlertTriangle, Shield, CheckCircle, Search, Calendar, Trash2 } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { FileText, Download, RefreshCw, AlertTriangle, Shield, CheckCircle, Search, Calendar, Trash2, Filter } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -21,6 +21,10 @@ export default function ReportsPage() {
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Yeni: Arama ve Filtreleme State'leri
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterType, setFilterType] = useState<'all' | 'RISK_ASSESSMENT' | 'EMERGENCY_PLAN' | 'WORK_PERMIT'>('all');
 
     useEffect(() => {
         fetchReports();
@@ -82,10 +86,10 @@ export default function ReportsPage() {
     // --- Silme ve Seçim İşlemleri ---
 
     const toggleSelectAll = () => {
-        if (selectedIds.length === reports.length) {
+        if (selectedIds.length === filteredReports.length) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(reports.map(r => r.id));
+            setSelectedIds(filteredReports.map(r => r.id));
         }
     };
 
@@ -146,6 +150,8 @@ export default function ReportsPage() {
             let dateStr = '-';
             if (report.type === 'RISK_ASSESSMENT') {
                 dateStr = report.data?.headerInfo?.date || '-';
+            } else if (report.type === 'WORK_PERMIT') {
+                dateStr = report.createdAt || '-';
             } else {
                 dateStr = report.data?.date || report.data?.reportDate || '-';
             }
@@ -161,6 +167,11 @@ export default function ReportsPage() {
                 return {
                     name: report.title,
                     dangerClass: report.data?.headerInfo?.dangerClass || report.data?.company?.danger_class
+                };
+            } else if (report.type === 'WORK_PERMIT') {
+                return {
+                    name: report.data?.companyName || report.title,
+                    dangerClass: null // İş izin formunda tehlike sınıfı yok
                 };
             } else {
                 return {
@@ -185,6 +196,28 @@ export default function ReportsPage() {
         return { label: dangerClass, class: 'bg-slate-100 text-slate-600' };
     };
 
+    // Filtrelenmiş raporlar
+    const filteredReports = useMemo(() => {
+        return reports.filter(report => {
+            // Tür filtresi
+            if (filterType !== 'all' && report.type !== filterType) return false;
+
+            // Arama filtresi
+            if (searchQuery.trim()) {
+                const query = searchQuery.toLowerCase();
+                const companyInfo = getCompanyInfo(report);
+                const matchesTitle = (companyInfo.name || '').toLowerCase().includes(query);
+                let matchesType = false;
+                if (report.type === 'RISK_ASSESSMENT') matchesType = 'risk analizi'.includes(query);
+                else if (report.type === 'EMERGENCY_PLAN') matchesType = 'acil durum planı'.includes(query);
+                else if (report.type === 'WORK_PERMIT') matchesType = 'iş izin formu'.includes(query);
+                if (!matchesTitle && !matchesType) return false;
+            }
+
+            return true;
+        });
+    }, [reports, filterType, searchQuery]);
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -195,7 +228,7 @@ export default function ReportsPage() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto">
-            <div className="mb-8 flex items-end justify-between">
+            <div className="mb-6 flex items-end justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <FileText className="w-7 h-7 text-indigo-600" />
@@ -214,6 +247,49 @@ export default function ReportsPage() {
                         Seçilenleri Sil ({selectedIds.length})
                     </button>
                 )}
+            </div>
+
+            {/* Arama ve Filtreler */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+                {/* Arama Kutusu */}
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Firma adı ile ara..."
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    />
+                </div>
+
+                {/* Tür Filtresi */}
+                <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-500">Filtrele:</span>
+                </div>
+                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                    {[
+                        { value: 'all', label: 'Tümü' },
+                        { value: 'RISK_ASSESSMENT', label: 'Risk Analizi' },
+                        { value: 'EMERGENCY_PLAN', label: 'Acil Durum' },
+                        { value: 'WORK_PERMIT', label: 'İş İzin Formu' }
+                    ].map((opt) => (
+                        <button
+                            key={opt.value}
+                            onClick={() => setFilterType(opt.value as any)}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === opt.value
+                                ? 'bg-white text-slate-800 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+                <span className="text-sm text-slate-400">
+                    {filteredReports.length} rapor
+                </span>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -237,6 +313,16 @@ export default function ReportsPage() {
                             </Link>
                         </div>
                     </div>
+                ) : filteredReports.length === 0 ? (
+                    <div className="text-center py-12 px-4">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Search className="w-8 h-8 text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-700">Sonuç bulunamadı</h3>
+                        <p className="text-slate-500 max-w-md mx-auto mt-2">
+                            Arama kriterlerinize uygun rapor bulunamadı. Filtreleri değiştirmeyi deneyin.
+                        </p>
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
@@ -245,7 +331,7 @@ export default function ReportsPage() {
                                     <th className="px-6 py-4 w-10">
                                         <input
                                             type="checkbox"
-                                            checked={reports.length > 0 && selectedIds.length === reports.length}
+                                            checked={filteredReports.length > 0 && selectedIds.length === filteredReports.length}
                                             onChange={toggleSelectAll}
                                             className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
@@ -258,7 +344,7 @@ export default function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {reports.map((report) => {
+                                {filteredReports.map((report) => {
                                     const companyInfo = getCompanyInfo(report);
                                     const dangerStatus = getDangerClassLabel(companyInfo.dangerClass);
                                     const reportDate = getReportDate(report);
@@ -276,11 +362,24 @@ export default function ReportsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${report.type === 'RISK_ASSESSMENT' ? 'bg-indigo-100 text-indigo-600' : 'bg-orange-100 text-orange-600'}`}>
-                                                        {report.type === 'RISK_ASSESSMENT' ? <Shield className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                                    <div className={`p-2 rounded-lg ${report.type === 'RISK_ASSESSMENT'
+                                                            ? 'bg-indigo-100 text-indigo-600'
+                                                            : report.type === 'WORK_PERMIT'
+                                                                ? 'bg-blue-100 text-blue-600'
+                                                                : 'bg-orange-100 text-orange-600'
+                                                        }`}>
+                                                        {report.type === 'RISK_ASSESSMENT'
+                                                            ? <Shield className="w-5 h-5" />
+                                                            : report.type === 'WORK_PERMIT'
+                                                                ? <FileText className="w-5 h-5" />
+                                                                : <AlertTriangle className="w-5 h-5" />}
                                                     </div>
                                                     <span className="font-medium text-slate-700">
-                                                        {report.type === 'RISK_ASSESSMENT' ? 'Risk Analizi' : 'Acil Durum Planı'}
+                                                        {report.type === 'RISK_ASSESSMENT'
+                                                            ? 'Risk Analizi'
+                                                            : report.type === 'WORK_PERMIT'
+                                                                ? 'İş İzin Formu'
+                                                                : 'Acil Durum Planı'}
                                                     </span>
                                                 </div>
                                             </td>
@@ -316,6 +415,11 @@ export default function ReportsPage() {
                                                             <RefreshCw className="w-4 h-4" />
                                                             Düzenle/Oluştur
                                                         </Link>
+                                                    ) : report.type === 'WORK_PERMIT' ? (
+                                                        <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-500">
+                                                            <FileText className="w-4 h-4" />
+                                                            {(report.data as any)?.permitNo || 'İzin Formu'}
+                                                        </span>
                                                     ) : (
                                                         <button
                                                             onClick={() => handleDownloadEmergencyPlan(report)}

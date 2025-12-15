@@ -83,6 +83,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.8,
         },
         {
+            url: `${baseUrl}/panel/is-izin-formu`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+        {
             url: `${baseUrl}/panel/notlarim`,
             lastModified: new Date(),
             changeFrequency: 'weekly',

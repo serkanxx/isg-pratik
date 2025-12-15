@@ -9,6 +9,7 @@ import {
     StickyNote, Clock, Check, Trash2, Bell, X
 } from 'lucide-react';
 import { Company } from '../types';
+import { useTheme } from '@/app/context/ThemeContext';
 
 interface Note {
     id: string;
@@ -30,7 +31,7 @@ interface UserRisk {
 
 interface ReportData {
     id: string;
-    type: 'RISK_ASSESSMENT' | 'EMERGENCY_PLAN';
+    type: 'RISK_ASSESSMENT' | 'EMERGENCY_PLAN' | 'WORK_PERMIT';
     title: string;
     createdAt: string;
     data: any;
@@ -38,6 +39,7 @@ interface ReportData {
 
 export default function PanelPage() {
     const { data: session } = useSession();
+    const { isDark } = useTheme();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [userRisks, setUserRisks] = useState<UserRisk[]>([]);
     const [recentReports, setRecentReports] = useState<ReportData[]>([]);
@@ -47,7 +49,8 @@ export default function PanelPage() {
         reportCount: 0,
         riskCount: 0,
         riskReportCount: 0,
-        emergencyReportCount: 0
+        emergencyReportCount: 0,
+        workPermitCount: 0
     });
 
     // Notlar state
@@ -107,12 +110,14 @@ export default function PanelPage() {
 
                 const riskReports = allReports.filter(r => r.type === 'RISK_ASSESSMENT').length;
                 const emergencyReports = allReports.filter(r => r.type === 'EMERGENCY_PLAN').length;
+                const workPermitReports = allReports.filter(r => r.type === 'WORK_PERMIT').length;
 
                 setStats(prev => ({
                     ...prev,
                     reportCount: allReports.length,
                     riskReportCount: riskReports,
-                    emergencyReportCount: emergencyReports
+                    emergencyReportCount: emergencyReports,
+                    workPermitCount: workPermitReports
                 }));
             }
         } catch (error) {
@@ -247,9 +252,13 @@ export default function PanelPage() {
     const riskPercent = stats.riskReportCount / totalReports;
     const riskDash = riskPercent * circumference;
 
-    // Acil Durum Dilimi (Kalan kısım)
+    // Acil Durum Dilimi
     const emergencyPercent = stats.emergencyReportCount / totalReports;
     const emergencyDash = emergencyPercent * circumference;
+
+    // İş İzin Formu Dilimi
+    const workPermitPercent = stats.workPermitCount / totalReports;
+    const workPermitDash = workPermitPercent * circumference;
 
     // Boş durum kontrolü
     const isEmpty = stats.reportCount === 0;
@@ -406,12 +415,20 @@ export default function PanelPage() {
 
                 {/* Risklerim Kartı */}
                 <Link href="/panel/risk-maddelerim" className="block h-full">
-                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-amber-200 transition-all group h-full flex flex-col justify-between">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-amber-200 transition-all group h-full flex flex-col justify-between relative overflow-visible">
+
+
+                        {/* Post-it Image */}
+                        <img
+                            src="/postit.png"
+                            alt="Risk Ekle"
+                            className="absolute top-5 right-12 z-10 w-[9.75rem] transform -rotate-12 hover:scale-105 transition-transform duration-300 drop-shadow-lg"
+                        />
+                        <div className="flex items-start justify-between mb-4">
                             <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                                 <Shield className="w-6 h-6" />
                             </div>
-                            <PlusCircle className="w-5 h-5 text-amber-500" />
+                            <PlusCircle className="w-7 h-7 text-amber-500 mb-auto -mt-3" />
                         </div>
                         <div>
                             <h3 className="text-3xl font-bold text-slate-800 mb-1">
@@ -438,6 +455,10 @@ export default function PanelPage() {
                                 <div className="flex items-center gap-2">
                                     <div className="w-3 h-3 rounded-full bg-orange-500"></div>
                                     <span className="text-slate-600 font-medium">Acil Durum: {stats.emergencyReportCount}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                    <span className="text-slate-600 font-medium">İş İzin: {stats.workPermitCount}</span>
                                 </div>
                             </div>
                         </div>
@@ -479,7 +500,20 @@ export default function PanelPage() {
                                             stroke="#f97316" // orange-500
                                             strokeWidth="12"
                                             strokeDasharray={`${emergencyDash} ${circumference}`}
-                                            strokeDashoffset={-riskDash} // Risk bitiminden başla
+                                            strokeDashoffset={-riskDash}
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                        {/* İş İzin Formu Dilimi */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r={radius}
+                                            fill="transparent"
+                                            stroke="#3b82f6" // blue-500
+                                            strokeWidth="12"
+                                            strokeDasharray={`${workPermitDash} ${circumference}`}
+                                            strokeDashoffset={-(riskDash + emergencyDash)}
                                             strokeLinecap="round"
                                             className="transition-all duration-1000 ease-out"
                                         />
@@ -602,6 +636,9 @@ export default function PanelPage() {
                                 if (report.type === 'RISK_ASSESSMENT') {
                                     dangerClass = report.data?.headerInfo?.dangerClass || report.data?.company?.danger_class || '';
                                     reportDate = report.data?.headerInfo?.date || '-';
+                                } else if (report.type === 'WORK_PERMIT') {
+                                    companyName = report.data?.companyName || report.title;
+                                    reportDate = report.createdAt || '-';
                                 } else {
                                     dangerClass = report.data?.company?.danger_class || report.data?.dangerClass || '';
                                     reportDate = report.data?.date || report.data?.reportDate || '-';
@@ -630,18 +667,37 @@ export default function PanelPage() {
                             return (
                                 <li key={report.id}>
                                     <div className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors">
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${report.type === 'RISK_ASSESSMENT' ? 'bg-indigo-100 text-indigo-600' : 'bg-orange-100 text-orange-600'}`}>
-                                            {report.type === 'RISK_ASSESSMENT' ? <Shield className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${report.type === 'RISK_ASSESSMENT'
+                                            ? 'bg-indigo-100 text-indigo-600'
+                                            : report.type === 'WORK_PERMIT'
+                                                ? 'bg-blue-100 text-blue-600'
+                                                : 'bg-orange-100 text-orange-600'
+                                            }`}>
+                                            {report.type === 'RISK_ASSESSMENT'
+                                                ? <Shield className="w-5 h-5" />
+                                                : report.type === 'WORK_PERMIT'
+                                                    ? <FileText className="w-5 h-5" />
+                                                    : <AlertTriangle className="w-5 h-5" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-medium text-slate-800 truncate">{companyName}</p>
                                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                <span>{report.type === 'RISK_ASSESSMENT' ? 'Risk Analizi' : 'Acil Durum Planı'}</span>
+                                                <span>{
+                                                    report.type === 'RISK_ASSESSMENT'
+                                                        ? 'Risk Analizi'
+                                                        : report.type === 'WORK_PERMIT'
+                                                            ? 'İş İzin Formu'
+                                                            : 'Acil Durum Planı'
+                                                }</span>
                                                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                                                 <span>{reportDate}</span>
                                             </div>
                                         </div>
-                                        {dangerClass && (
+                                        {report.type === 'WORK_PERMIT' ? (
+                                            <span className="text-xs px-2 py-1 rounded-full font-bold whitespace-nowrap bg-blue-100 text-blue-700 hidden sm:inline-block">
+                                                {(report.data as any)?.permitNo || 'İzin'}
+                                            </span>
+                                        ) : dangerClass && (
                                             <span className={`text-xs px-2 py-1 rounded-full font-bold whitespace-nowrap hidden sm:inline-block ${dangerClassStyle}`}>
                                                 {dangerClassLabel}
                                             </span>

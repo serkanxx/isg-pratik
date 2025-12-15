@@ -7,7 +7,7 @@ import { jsPDF } from 'jspdf';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { companyName, companyAddress, registrationNumber, reportDate, validityDate, employer, isgUzmani } = body;
+        const { companyName, companyAddress, registrationNumber, reportDate, validityDate, employer, isgUzmani, documentNo } = body;
 
         let docxPath = path.join(process.cwd(), 'ACİL DURUM EYLEM PLANI.docx');
         if (!fs.existsSync(docxPath)) {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         text = text.replace(/\[GEÇERLİLİK TARİHİ\]/g, validityDate || '');
         text = text.replace(/\[GECERLILIK TARIHI\]/g, validityDate || '');
 
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
         const pageWidth = 210;
         const pageHeight = 297;
         const margin = 15;
@@ -85,10 +85,31 @@ export async function POST(request: Request) {
         });
         const afterCompanyNameY = companyNameY + (companyNameLines.length * 10) + 10;
 
-        // Sicil No (köşeli parantez olmadan)
+        // Sicil No (ozel formatli)
         doc.setFontSize(14);
         doc.setFont('Roboto', 'normal');
-        doc.text(registrationNumber || '', pageWidth / 2, afterCompanyNameY, { align: 'center' });
+
+        const formatRegistrationNumber = (num: string) => {
+            if (!num) return '';
+            // Tum bosluklari ve non-digit karakterleri temizle
+            const cleanNum = num.replace(/\D/g, '');
+
+            // Eğer 26 hane değilse olduğu gibi döndür (veya yine de formatlamaya çalış)
+            // İstenen format: 1 4322 07 07 1390293 034 24 54 000
+            // Regex grupları: (\d{1})(\d{4})(\d{2})(\d{2})(\d{7})(\d{3})(\d{2})(\d{2})(\d{3})
+
+            const match = cleanNum.match(/^(\d{1})(\d{4})(\d{2})(\d{2})(\d{7})(\d{3})(\d{2})(\d{2})(\d{3})$/);
+
+            if (match) {
+                // match[0] tüm string, match[1]..match[9] gruplar
+                return `${match[1]} ${match[2]} ${match[3]} ${match[4]} ${match[5]} ${match[6]} ${match[7]} ${match[8]} ${match[9]}`;
+            }
+
+            return num;
+        };
+
+        const formattedRegistrationNumber = registrationNumber ? formatRegistrationNumber(registrationNumber) : '';
+        doc.text(formattedRegistrationNumber, pageWidth / 2, afterCompanyNameY, { align: 'center' });
 
         // Ana Baslik
         doc.setFontSize(28);
@@ -127,17 +148,21 @@ export async function POST(request: Request) {
         doc.rect(tableX + col1Width, tableY, tableWidth - col1Width, rowHeight);
         doc.setFontSize(9);
         doc.setFont('Roboto', 'bold');
-        doc.text('YAPILDIĞI TARİH', tableX + 3, tableY + 8);
+
+        const col1CenterX = tableX + col1Width / 2;
+        doc.text('YAPILDIĞI TARİH', col1CenterX, tableY + 8, { align: 'center' });
         doc.setFont('Roboto', 'normal');
-        doc.text(reportDate || '', tableX + col1Width + 3, tableY + 8);
+
+        const col2CenterX = tableX + col1Width + (tableWidth - col1Width) / 2;
+        doc.text(reportDate || '', col2CenterX, tableY + 8, { align: 'center' });
 
         // Gecerlilik Suresi satiri
         doc.rect(tableX, tableY + rowHeight, col1Width, rowHeight);
         doc.rect(tableX + col1Width, tableY + rowHeight, tableWidth - col1Width, rowHeight);
         doc.setFont('Roboto', 'bold');
-        doc.text('GEÇERLİLİK SÜRESİ', tableX + 3, tableY + rowHeight + 8);
+        doc.text('GEÇERLİLİK TARİHİ', col1CenterX, tableY + rowHeight + 8, { align: 'center' });
         doc.setFont('Roboto', 'normal');
-        doc.text(validityDate || '', tableX + col1Width + 3, tableY + rowHeight + 8);
+        doc.text(validityDate || '', col2CenterX, tableY + rowHeight + 8, { align: 'center' });
 
         // ========== ICERIK SAYFALARI ==========
         let allLines = text.split('\n').filter((line: string) => line.trim() !== '');
@@ -256,21 +281,49 @@ export async function POST(request: Request) {
             doc.setFont('Roboto', 'normal');
 
             const infoLabels = ['Doküman No', 'Yayın Tarihi', 'Revizyon Tarihi', 'Revizyon No'];
+            const fontBoyutu = 10; // doc.setFontSize(10) olarak ayarlandığı için bu değeri kullandık
+
             for (let i = 0; i < 4; i++) {
                 const rowY = headerY + (i * smallRowHeight);
+
+                // ----------------------------------------------------------------------
+                // ✨ YENİ: Dikey ortalama için hesaplama
+                // Metin Y koordinatı = Satır başlangıcı + (Yüksekliğin yarısı) + (Dengeleme)
+                // Metin Y koordinatı = Satır başlangıcı + (Yüksekliğin yarısı) + (Dengeleme) - (Manuel Ayar)
+                const dikeyOrtalamaY = rowY + (smallRowHeight / 2) + (fontBoyutu / 6) - 1.5; // Kullanıcı isteği üzerine yukarı kaydırıldı
+                // Not: Font Boyutu/3 veya /3.5 genellikle jsPDF'de görsel olarak en iyi sonucu verir.
+                // ----------------------------------------------------------------------
+
                 if (i < 3) {
                     doc.line(rightBoxX, rowY + smallRowHeight, rightBoxX + docInfoWidth, rowY + smallRowHeight);
                 }
-                doc.text(infoLabels[i], rightBoxX + 2, rowY + 4);
+
+                // doc.text() metodunda yeni Y koordinatını kullanıyoruz.
+                doc.text(infoLabels[i], rightBoxX + 2, dikeyOrtalamaY);
+
+                // --- YENİ: Değerleri Yazdırma ---
+                doc.setFont('Roboto', 'normal'); // Değerler normal font olsun
+                // Değerleri sabit bir hizada (sağa kaydırılmış) yazdır (rightBoxX + 22)
+                const valueX = rightBoxX + 22;
+
+                if (i === 0 && documentNo) {
+                    // Doküman No (Index 0)
+                    doc.text(documentNo, valueX, dikeyOrtalamaY);
+                } else if (i === 1 && reportDate) {
+                    // Yayın Tarihi (Index 1)
+                    doc.text(reportDate, valueX, dikeyOrtalamaY);
+                }
+                // Revizyon Tarihi ve No şimdilik boş kalabilir veya 00 olarak set edilebilir
+                doc.setFont('Roboto', 'normal'); // Tekrar eski fonta dön (döngü başı zaten normal ama emin olmak için)
             }
         };
 
         // Footer cizim fonksiyonu
         const drawFooter = (pageNum: number, total: number) => {
-            doc.setFontSize(7);
+            doc.setFontSize(5); // 7'den 5'e düşürüldü (%30 küçültme)
             doc.setFont('Roboto', 'normal');
-            // Sayfa numarası (en altta ortada)
-            doc.text(`Sayfa ${pageNum} / ${total}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+            // Sayfa numarası (sağ altta)
+            doc.text(`Sayfa ${pageNum} / ${total}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
             // Alt bilgiler - imza alanları (kapak hariç, sayfa numarasının üstünde)
             if (pageNum > 1) {
                 doc.setFontSize(6);
@@ -323,6 +376,7 @@ export async function POST(request: Request) {
             { type: 'p', text: 'Acil durum faaliyet ve hazırlıklarını koordine eder. Acil durum planında belirtilmiş acil durum uygulama prosedürlerini uygulamaya koyar, uygulama sırasında tespit edilen veya meydana gelen değişik durumlar karşısında uygulama yöntemlerini değiştirir.' },
             { type: 'p', text: 'Gerekli araç gereçleri sağlar, bakım ve kontrolleri yapar/yaptırır. Acil durum koordinatörü ……………………………………………………………….  \'dir.' },
             // 3. Sayfa içeriği
+            { type: 'p', text: '' },  // Boşluk: y += lineHeight; ile aynı etki - bir satır boşluk bırakır
             { type: 'h3', text: '3.2.2\tİlkyardım Ekibi' },
             { type: 'p', text: 'İlkyardım ekibi, tesis personelinden ilkyardımcı eğitimi almış personelden oluşturulur. Ekip amiri ve ilk yardım ekibindeki diğer personelin tamamının eğitim alması istenir, fakat olmadığı durumlarda sedyeciler, ilkyardımcı eğitimi almış kişilerce sedye ile yaralı taşıma hususunda eğitilmelidir. İlk yardım ekibinin kullanacağı malzeme ve teçhizat ortak sağlık birimi veya iş yeri hekimi tarafından belirlenmelidir.' },
             { type: 'p', text: 'İlkyardım Ekip Liderinin Görevleri' },
@@ -1180,9 +1234,10 @@ export async function POST(request: Request) {
         drawHeader();
 
         // Başlık
+        const sayfaGenisligi2 = doc.internal.pageSize.getWidth();
         doc.setFontSize(10);
         doc.setFont('Roboto', 'bold');
-        doc.text('EK-7 FİRMA BİLGİLERİ', margin, 38);
+        doc.text('EK-7 FİRMA BİLGİLERİ', sayfaGenisligi2 / 2, 38, { align: 'center' });
 
         // Firma Bilgileri Tablosu
         let firmaY = 48;
@@ -1242,13 +1297,15 @@ export async function POST(request: Request) {
 
         // EK-8 TAHLİYE VE ÇIKIŞ PLANI
         firmaY += 20;
+        // Sayfa genişliğini alıyoruz
+        const sayfaGenisligi = doc.internal.pageSize.getWidth();
         doc.setFont('Roboto', 'bold');
         doc.setFontSize(10);
-        doc.text('EK-8 TAHLİYE VE ÇIKIŞ PLANI', margin, firmaY);
+        doc.text('EK-8 TAHLİYE VE ÇIKIŞ PLANI', sayfaGenisligi / 2, firmaY, { align: 'center' });
 
         firmaY += 8;
         // Büyük boş kutu (alt boşluk için kısaltıldı)
-        doc.rect(margin, firmaY, pageWidth - 2 * margin, 130);
+        doc.rect(margin, firmaY, pageWidth - 2 * margin, 100);
 
         // Footer
         drawFooter(currentPage, totalPages);
@@ -1261,7 +1318,7 @@ export async function POST(request: Request) {
         // Başlık
         doc.setFontSize(10);
         doc.setFont('Roboto', 'bold');
-        doc.text('DEĞİŞME VE DÜZELTMELER', margin, 38);
+        doc.text('DEĞİŞME VE DÜZELTMELER', sayfaGenisligi2 / 2, 38, { align: 'center' });
 
         // Değişme ve Düzeltmeler Tablosu
         let degismeY = 48;
@@ -1293,7 +1350,7 @@ export async function POST(request: Request) {
         doc.rect(margin + siraNoW + konuW, degismeY, yapanW, degismeRowH);
         doc.rect(margin + siraNoW + konuW + yapanW, degismeY, tarihW, degismeRowH);
 
-        doc.text('00', margin + siraNoW / 2, degismeY + 9, { align: 'center' });
+        doc.text('01', margin + siraNoW / 2, degismeY + 9, { align: 'center' });
         doc.text('İLK YAYIN', margin + siraNoW + konuW / 2, degismeY + 9, { align: 'center' });
         doc.text(isgUzmani || '', margin + siraNoW + konuW + yapanW / 2, degismeY + 9, { align: 'center' });
         doc.text(reportDate || '', margin + siraNoW + konuW + yapanW + tarihW / 2, degismeY + 9, { align: 'center' });
@@ -1318,7 +1375,7 @@ export async function POST(request: Request) {
         degismeY += 10;
         doc.setFont('Roboto', 'normal');
         doc.setFontSize(9);
-        const onayMetni = 'HAZIRLANMIŞ OLAN ACİL DURUM PLANI 21 SAYFADAN OLUŞMAKTADIR. DOKÜMANI OKUDUĞUMU VE KABUL ETTİĞİMİ BEYAN EDERİM.';
+        const onayMetni = 'FİRMASI İÇİN HAZIRLANMIŞ OLAN BU ACİL DURUM PLANI 21 SAYFADAN OLUŞMAKTADIR. DOKÜMANI OKUDUĞUMU VE KABUL ETTİĞİMİ BEYAN EDERİM.';
         const onayLines = doc.splitTextToSize(onayMetni, pageWidth - 2 * margin);
         doc.text(onayLines, margin, degismeY);
 

@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Kalam } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ThemeProvider } from "@/app/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
@@ -12,6 +13,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const kalam = Kalam({
+  weight: ['300', '400', '700'],
+  subsets: ['latin'],
+  variable: '--font-kalam',
 });
 
 export const metadata: Metadata = {
@@ -138,10 +145,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} antialiased`}
       >
         <AuthProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </AuthProvider>
         <Analytics />
       </body>

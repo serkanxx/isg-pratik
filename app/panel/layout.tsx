@@ -8,41 +8,42 @@ import { usePathname } from 'next/navigation';
 import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
-    PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote
+    PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
+    Headphones as HeadphonesIcon, Mail, Lightbulb, Moon, Sun
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
+import { useTheme } from '@/app/context/ThemeContext';
+import OnboardingTour, { useTourStatus } from '@/components/OnboardingTour';
 
 const menuItems = [
-    {
-        name: 'Dashboard',
-        href: '/panel',
-        icon: LayoutDashboard,
-        active: true
-    },
     {
         name: 'Firmalarım',
         href: '/panel/firmalar',
         icon: Building2,
-        active: true
+        active: true,
+        dataTour: 'firmalar'
     },
     {
         name: 'Risklerim',
         href: '/panel/risk-maddelerim',
         icon: Shield,
-        active: true
+        active: true,
+        dataTour: 'risklerim'
     },
     {
         name: 'Raporlarım',
         href: '/panel/raporlarim',
         icon: FileText,
-        active: true
+        active: true,
+        dataTour: 'raporlarim'
     },
     {
         name: 'Notlarım',
         href: '/panel/notlarim',
         icon: StickyNote,
-        active: true
+        active: true,
+        dataTour: 'notlarim'
     },
 
     { type: 'divider' },
@@ -51,13 +52,22 @@ const menuItems = [
         href: '/risk-degerlendirme',
         icon: Shield,
         active: true,
-        highlight: true
+        highlight: true,
+        dataTour: 'risk-degerlendirme'
     },
     {
         name: 'Acil Durum Eylem Planı',
         href: '/panel/acil-durum',
         icon: AlertTriangle,
-        active: true
+        active: true,
+        dataTour: 'acil-durum'
+    },
+    {
+        name: 'İş İzin Formu',
+        href: '/panel/is-izin-formu',
+        icon: FileCheck,
+        active: true,
+        dataTour: 'is-izin'
     },
     {
         name: 'Saha Gözlem Formları',
@@ -82,6 +92,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const { isDark, toggleTheme } = useTheme();
+    const { showTour, completeTour } = useTourStatus();
 
     // Admin Risk Önerileri State
     const [pendingRisksCount, setPendingRisksCount] = useState(0);
@@ -91,6 +103,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const [editingRisk, setEditingRisk] = useState<any | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isSupportOpen, setIsSupportOpen] = useState(false);
 
     const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
@@ -286,6 +299,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                 <li key={index}>
                                     <Link
                                         href={item.active ? item.href : '#'}
+                                        data-tour={item.dataTour}
                                         className={`
                                             flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
                                             ${isActive
@@ -315,43 +329,62 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     </ul>
                 </nav>
 
-                {/* Risk Maddesi Ekle - Ayrı Bölüm */}
-                <div className="px-4 py-4 border-t border-white/10">
-                    <Link
-                        href="/panel/risk-maddelerim"
-                        className={`
-                            flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                            ${pathname === '/panel/risk-maddelerim'
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                : 'text-amber-400 hover:bg-white/5 hover:text-amber-300'
-                            }
-                        `}
+                {/* Destek Bölümü - Açılıp Kapanabilir */}
+                <div className="px-4 py-2 border-t border-white/10">
+                    <button
+                        onClick={() => setIsSupportOpen(!isSupportOpen)}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all"
                     >
-                        <PlusCircle className="w-5 h-5" />
-                        <span className="flex-1">Risk Maddesi Ekle</span>
-                        <div className="relative group">
-                            <Info className="w-4 h-4 opacity-70 cursor-help" />
-                            <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-800 text-[10px] text-slate-300 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 border border-white/10">
-                                Risk Değerlendirme Maddelerini kalıcı olarak sisteme öner, katkıda bulun.
-                            </div>
+                        <HeadphonesIcon className="w-5 h-5" />
+                        <span className="flex-1 text-left">Destek</span>
+                        <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isSupportOpen ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {/* Destek Alt Menüsü */}
+                    <div className={`overflow-hidden transition-all duration-200 ${isSupportOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className="pl-4 mt-1 space-y-1">
+                            <Link
+                                href="/iletisim"
+                                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                            >
+                                <Mail className="w-4 h-4" />
+                                <span>İletişim</span>
+                            </Link>
+                            <Link
+                                href="/destek"
+                                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                            >
+                                <Lightbulb className="w-4 h-4" />
+                                <span>Öneride Bulun</span>
+                            </Link>
                         </div>
-                    </Link>
+                    </div>
                 </div>
 
-                {/* Alt Menü */}
+                {/* Alt Menü - Dark Mode Toggle + Çıkış */}
                 <div className="p-4 border-t border-white/10">
-                    <button
-                        onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
-                    >
-                        <LogOut className="w-5 h-5" />
-                        <span>Çıkış Yap</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            data-tour="dark-mode"
+                            className="flex items-center justify-center w-10 h-10 rounded-xl text-slate-300 hover:bg-white/10 transition-all"
+                            title={isDark ? 'Açık Mod' : 'Karanlık Mod'}
+                        >
+                            {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
+                            className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            <span>Çıkış Yap</span>
+                        </button>
+                    </div>
                 </div>
             </aside>
 
             {/* Ana İçerik */}
-            <main className="flex-1 md:ml-72 min-h-screen">
+            <main className={`flex-1 md:ml-72 min-h-screen ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
                 {/* Üst Navbar - Tam Genişlik */}
                 <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md sticky top-0 z-40">
                     <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -586,6 +619,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     </div>
                 )
             }
+
+            {/* Kullanıcı Turu */}
+            {showTour && <OnboardingTour onComplete={completeTour} />}
         </div >
     );
 }

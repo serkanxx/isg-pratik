@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    AlertTriangle, Download, Lock, Calendar, User, Briefcase, ChevronDown, LogIn, Building2, CheckCircle, AlertCircle
+    AlertTriangle, Download, Lock, Calendar, User, Briefcase, ChevronDown, LogIn, Building2, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -18,6 +18,8 @@ export default function AcilDurumPage() {
     // Rapor bilgileri
     const [reportDate, setReportDate] = useState<string>('');
     const [validityDate, setValidityDate] = useState<string>('');
+    const [documentNo, setDocumentNo] = useState<string>('');
+    const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
     // Firmaları çek
     useEffect(() => {
@@ -86,7 +88,8 @@ export default function AcilDurumPage() {
             return;
         }
 
-        showNotification('PDF hazırlanıyor...', 'success');
+        setIsGenerating(true);
+        // showNotification('PDF hazırlanıyor...', 'success'); // Overlay kullanıldığı için bildirime gerek yok
 
         try {
             const requestData = {
@@ -98,7 +101,8 @@ export default function AcilDurumPage() {
                 employer: selectedCompany.employer,
                 igu: selectedCompany.igu,
                 doctor: selectedCompany.doctor,
-                support: selectedCompany.support
+                support: selectedCompany.support,
+                documentNo: documentNo
             };
 
             const response = await fetch('/api/acil-durum-pdf', {
@@ -172,6 +176,8 @@ export default function AcilDurumPage() {
         } catch (error: any) {
             console.error('PDF hatası:', error);
             showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -371,6 +377,18 @@ export default function AcilDurumPage() {
                                     )}
                                 </div>
 
+                                {/* Doküman No */}
+                                <div>
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Doküman No</label>
+                                    <input
+                                        type="text"
+                                        value={documentNo}
+                                        onChange={(e) => setDocumentNo(e.target.value)}
+                                        placeholder="Örn: AD-01"
+                                        className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all focus:bg-white"
+                                    />
+                                </div>
+
                                 {/* Geçerlilik Tarihi (Otomatik) */}
                                 {selectedCompany && reportDate && (
                                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
@@ -404,6 +422,19 @@ export default function AcilDurumPage() {
                     <Download className="w-6 h-6 mr-3" />
                     Acil Durum Eylem Planı PDF İndir
                 </button>
+                {/* Loading Overlay */}
+                {isGenerating && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex flex-col items-center justify-center">
+                        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-bounce-in max-w-sm text-center">
+                            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                                <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">PDF Hazırlanıyor</h3>
+                            <p className="text-slate-500">Lütfen bekleyiniz, belgeniz oluşturuluyor...</p>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* Bilgi Kutusu */}
