@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
   AlertTriangle, Download, Save, Plus, Trash2, CheckCircle, Shield,
   Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut, MinusCircle, Building2, Eye, FileCheck, LayoutDashboard
@@ -18,7 +18,7 @@ import { SECTOR_SUGGESTIONS } from '../data/constants';
 // --- 1. RİSK KÜTÜPHANESİ ---
 // import { EXCEL_DATA } from './riskData'; // Artık API'den çekilecek
 
-export default function Home() {
+function RiskAssessmentContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const reportId = searchParams.get('reportId');
@@ -3585,5 +3585,20 @@ export default function Home() {
         )
       }
     </div >
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500 font-medium">Yükleniyor...</p>
+        </div>
+      </div>
+    }>
+      <RiskAssessmentContent />
+    </Suspense>
   );
 }
