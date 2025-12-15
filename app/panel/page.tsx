@@ -5,9 +5,19 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import {
     Building2, FileText, Shield, Plus, TrendingUp,
-    AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle
+    AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle,
+    StickyNote, Clock, Check, Trash2, Bell, X
 } from 'lucide-react';
 import { Company } from '../types';
+
+interface Note {
+    id: string;
+    content: string;
+    companyId: string | null;
+    dueDate: string | null;
+    isCompleted: boolean;
+    createdAt: string;
+}
 
 interface UserRisk {
     id: string;
@@ -40,8 +50,33 @@ export default function PanelPage() {
         emergencyReportCount: 0
     });
 
+    // Notlar state
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [upcomingNotes, setUpcomingNotes] = useState<Note[]>([]);
+    const [newNote, setNewNote] = useState('');
+    const [dueDateDay, setDueDateDay] = useState('');
+    const [dueDateMonth, setDueDateMonth] = useState('');
+    const [dueDateYear, setDueDateYear] = useState('');
+    const [newNoteCompanyId, setNewNoteCompanyId] = useState<string>('');
+    const [showNoteForm, setShowNoteForm] = useState(false);
+
+    // Dropdown değerleri
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+    const monthOptions = [
+        { value: '01', label: 'Ocak' }, { value: '02', label: 'Şubat' },
+        { value: '03', label: 'Mart' }, { value: '04', label: 'Nisan' },
+        { value: '05', label: 'Mayıs' }, { value: '06', label: 'Haziran' },
+        { value: '07', label: 'Temmuz' }, { value: '08', label: 'Ağustos' },
+        { value: '09', label: 'Eylül' }, { value: '10', label: 'Ekim' },
+        { value: '11', label: 'Kasım' }, { value: '12', label: 'Aralık' }
+    ];
+    const currentYear = new Date().getFullYear();
+    const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + i);
+
     useEffect(() => {
         fetchData();
+        fetchNotes();
+        fetchUpcomingNotes();
     }, []);
 
     const fetchData = async () => {
@@ -85,6 +120,114 @@ export default function PanelPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Tüm notları getir
+    const fetchNotes = async () => {
+        try {
+            const res = await fetch('/api/notes');
+            if (res.ok) {
+                const data = await res.json();
+                setNotes(data);
+            }
+        } catch (error) {
+            console.error('Notlar alınamadı:', error);
+        }
+    };
+
+    // Yaklaşan hatırlatmalar (5 gün içinde)
+    const fetchUpcomingNotes = async () => {
+        try {
+            const res = await fetch('/api/notes?upcoming=true');
+            if (res.ok) {
+                const data = await res.json();
+                setUpcomingNotes(data);
+            }
+        } catch (error) {
+            console.error('Hatırlatmalar alınamadı:', error);
+        }
+    };
+
+    // Not ekle
+    const handleAddNote = async () => {
+        if (!newNote.trim()) return;
+
+        // Tarih oluştur
+        let dueDate = null;
+        if (dueDateDay && dueDateMonth && dueDateYear) {
+            dueDate = `${dueDateYear}-${dueDateMonth.padStart(2, '0')}-${dueDateDay.padStart(2, '0')}`;
+        }
+
+        try {
+            const res = await fetch('/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: newNote,
+                    companyId: newNoteCompanyId || null,
+                    dueDate
+                })
+            });
+            if (res.ok) {
+                setNewNote('');
+                setDueDateDay('');
+                setDueDateMonth('');
+                setDueDateYear('');
+                setNewNoteCompanyId('');
+                setShowNoteForm(false);
+                fetchNotes();
+                fetchUpcomingNotes();
+            }
+        } catch (error) {
+            console.error('Not eklenemedi:', error);
+        }
+    };
+
+    // Not tamamla
+    const toggleNoteComplete = async (id: string, currentStatus: boolean) => {
+        try {
+            await fetch('/api/notes', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, isCompleted: !currentStatus })
+            });
+            fetchNotes();
+            fetchUpcomingNotes();
+        } catch (error) {
+            console.error('Not güncellenemedi:', error);
+        }
+    };
+
+    // Not sil
+    const handleDeleteNote = async (id: string) => {
+        if (!confirm('Bu notu silmek istediğinize emin misiniz?')) return;
+        try {
+            await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
+            fetchNotes();
+            fetchUpcomingNotes();
+        } catch (error) {
+            console.error('Not silinemedi:', error);
+        }
+    };
+
+    // Yardımcı fonksiyonlar
+    const isOverdue = (dueDate: string | null) => {
+        if (!dueDate) return false;
+        return new Date(dueDate) < new Date();
+    };
+
+    const formatDate = (dateString: string | null) => {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('tr-TR', {
+            day: 'numeric',
+            month: 'short'
+        });
+    };
+
+    const getCompanyName = (companyId: string | null) => {
+        if (!companyId) return 'Genel';
+        const company = companies.find(c => c.id === companyId);
+        return company?.title || 'Bilinmeyen Firma';
     };
 
     const getGreeting = () => {
@@ -151,6 +294,50 @@ export default function PanelPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Hatırlatmalar Kartı */}
+            {upcomingNotes.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-5 mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Bell className="w-5 h-5 text-amber-600" />
+                        <h2 className="font-bold text-amber-800">Hatırlatmalar</h2>
+                        <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">
+                            {upcomingNotes.length}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {upcomingNotes.slice(0, 6).map((note) => (
+                            <div
+                                key={note.id}
+                                className={`p-3 rounded-xl border transition-all ${isOverdue(note.dueDate)
+                                    ? 'bg-red-50 border-red-200'
+                                    : 'bg-white border-amber-200'
+                                    }`}
+                            >
+                                <div className="flex items-start gap-2">
+                                    <button
+                                        onClick={() => toggleNoteComplete(note.id, note.isCompleted)}
+                                        className="mt-0.5 w-5 h-5 rounded-full border-2 border-amber-400 hover:border-emerald-500 flex items-center justify-center flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-slate-700 line-clamp-2">{note.content}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className={`text-xs font-medium ${isOverdue(note.dueDate) ? 'text-red-600' : 'text-amber-600'
+                                                }`}>
+                                                <Clock className="w-3 h-3 inline mr-1" />
+                                                {formatDate(note.dueDate)}
+                                            </span>
+                                            <span className="text-xs text-slate-400">
+                                                {getCompanyName(note.companyId)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
 
             {/* Hızlı Erişim Butonları */}
@@ -524,6 +711,138 @@ export default function PanelPage() {
                                     </span>
                                     <ChevronRight className="w-4 h-4 text-slate-400" />
                                 </Link>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            {/* Notlar Kartı */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-8">
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <StickyNote className="w-5 h-5 text-amber-500" />
+                        Notlarım
+                    </h2>
+                    <button
+                        onClick={() => setShowNoteForm(!showNoteForm)}
+                        className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                    >
+                        {showNoteForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    </button>
+                </div>
+
+                {/* Not Ekleme Formu */}
+                {showNoteForm && (
+                    <div className="p-4 bg-amber-50 border-b border-amber-200">
+                        <div className="space-y-3">
+                            <textarea
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                                placeholder="Notunuzu yazın..."
+                                className="w-full p-3 border border-amber-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                rows={2}
+                            />
+                            <div className="flex flex-wrap items-center gap-3">
+                                <select
+                                    value={newNoteCompanyId}
+                                    onChange={(e) => setNewNoteCompanyId(e.target.value)}
+                                    className="flex-1 min-w-[150px] p-2 border border-amber-200 rounded-lg text-sm bg-white"
+                                >
+                                    <option value="">Genel Not</option>
+                                    {companies.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.title}</option>
+                                    ))}
+                                </select>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-500 whitespace-nowrap">Hedef Tarih :</span>
+                                    <select
+                                        value={dueDateDay}
+                                        onChange={(e) => setDueDateDay(e.target.value)}
+                                        className="w-16 p-2 border border-amber-200 rounded-lg text-sm bg-white"
+                                    >
+                                        <option value="">Gün</option>
+                                        {days.map(d => <option key={d} value={String(d)}>{d}</option>)}
+                                    </select>
+                                    <select
+                                        value={dueDateMonth}
+                                        onChange={(e) => setDueDateMonth(e.target.value)}
+                                        className="w-24 p-2 border border-amber-200 rounded-lg text-sm bg-white"
+                                    >
+                                        <option value="">Ay</option>
+                                        {monthOptions.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                    </select>
+                                    <select
+                                        value={dueDateYear}
+                                        onChange={(e) => setDueDateYear(e.target.value)}
+                                        className="w-20 p-2 border border-amber-200 rounded-lg text-sm bg-white"
+                                    >
+                                        <option value="">Yıl</option>
+                                        {yearOptions.map(y => <option key={y} value={String(y)}>{y}</option>)}
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={handleAddNote}
+                                    className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition-colors"
+                                >
+                                    Ekle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Not Listesi */}
+                {notes.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <p className="text-slate-500 mb-4">Henüz not eklemediniz</p>
+                        <button
+                            onClick={() => setShowNoteForm(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            İlk Notu Ekle
+                        </button>
+                    </div>
+                ) : (
+                    <ul className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+                        {notes.slice(0, 10).map((note) => (
+                            <li key={note.id} className={`p-4 hover:bg-slate-50 transition-colors ${note.isCompleted ? 'opacity-60' : ''
+                                }`}>
+                                <div className="flex items-start gap-3">
+                                    <button
+                                        onClick={() => toggleNoteComplete(note.id, note.isCompleted)}
+                                        className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${note.isCompleted
+                                            ? 'bg-emerald-500 border-emerald-500 text-white'
+                                            : 'border-slate-300 hover:border-emerald-500'
+                                            }`}
+                                    >
+                                        {note.isCompleted && <Check className="w-3 h-3" />}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm ${note.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                            {note.content}
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                                            <span className="bg-slate-100 px-2 py-0.5 rounded">
+                                                {getCompanyName(note.companyId)}
+                                            </span>
+                                            {note.dueDate && (
+                                                <span className={isOverdue(note.dueDate) && !note.isCompleted ? 'text-red-600 font-medium' : ''}>
+                                                    <Clock className="w-3 h-3 inline mr-1" />
+                                                    {formatDate(note.dueDate)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteNote(note.id)}
+                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>

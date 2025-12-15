@@ -8,7 +8,7 @@ import { usePathname } from 'next/navigation';
 import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
-    PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu
+    PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -36,6 +36,12 @@ const menuItems = [
         name: 'Raporlarım',
         href: '/panel/raporlarim',
         icon: FileText,
+        active: true
+    },
+    {
+        name: 'Notlarım',
+        href: '/panel/notlarim',
+        icon: StickyNote,
         active: true
     },
 

@@ -74,6 +74,7 @@ model User {
   risks         UserRisk[]
   reports       ReportHistory[]
   headerInfo    HeaderInfo?
+  notes         Note[]
 }
 
 // Kullanıcı risk tablosu
@@ -190,4 +191,19 @@ model Company {
   updated_at          DateTime @updatedAt
 
   @@map("companies")
+}
+
+// Kullanıcı Notları
+model Note {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String?   // null = Genel not, değilse firma ID
+  content     String    @db.Text
+  dueDate     DateTime? // Termin tarihi
+  isCompleted Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("notes")
 }

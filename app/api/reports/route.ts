@@ -73,8 +73,9 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const limit = searchParams.get('limit');
+        const companyId = searchParams.get('company_id');
 
-        const reports = await prisma.reportHistory.findMany({
+        let reports = await prisma.reportHistory.findMany({
             where: {
                 userId
             },
@@ -83,6 +84,29 @@ export async function GET(request: Request) {
             },
             take: limit ? parseInt(limit) : undefined
         });
+
+        // company_id filtresi varsa, rapor verisindeki firma bilgisine göre filtrele
+        if (companyId) {
+            // Önce firma bilgisini al
+            const company = await prisma.company.findUnique({
+                where: { id: companyId }
+            });
+
+            if (company) {
+                // Rapor verisindeki firma unvanına göre filtrele
+                reports = reports.filter((report: any) => {
+                    const reportData = report.data as any;
+                    // headerInfo.title veya companyId kontrolü
+                    if (reportData?.headerInfo?.title === company.title) {
+                        return true;
+                    }
+                    if (reportData?.companyId === companyId) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+        }
 
         return NextResponse.json(reports);
     } catch (error) {

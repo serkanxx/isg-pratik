@@ -251,32 +251,32 @@ export default function FirmalarPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            {/* Logo */}
-                            <div className="flex items-center gap-4">
+                        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                            {/* Logo - Kompakt */}
+                            <div className="flex items-center gap-3">
                                 <div
                                     onClick={() => logoInputRef.current?.click()}
-                                    className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all overflow-hidden"
+                                    className="w-14 h-14 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-all overflow-hidden flex-shrink-0"
                                 >
                                     {form.logo ? (
                                         <img src={form.logo} alt="Logo" className="w-full h-full object-contain" />
                                     ) : (
-                                        <Upload className="w-6 h-6 text-slate-400" />
+                                        <Upload className="w-5 h-5 text-slate-400" />
                                     )}
                                 </div>
-                                <div>
-                                    <p className="font-medium text-slate-700">Firma Logosu</p>
-                                    <p className="text-sm text-slate-500">PNG, JPG (max 1MB)</p>
-                                    {form.logo && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setForm({ ...form, logo: null })}
-                                            className="text-red-500 text-sm hover:underline mt-1"
-                                        >
-                                            Kaldır
-                                        </button>
-                                    )}
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-slate-700">Firma Logosu</p>
+                                    <p className="text-xs text-slate-400">PNG, JPG (max 1MB)</p>
                                 </div>
+                                {form.logo && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setForm({ ...form, logo: null })}
+                                        className="text-red-500 text-xs hover:underline"
+                                    >
+                                        Kaldır
+                                    </button>
+                                )}
                             </div>
 
                             {/* Firma Unvanı */}
@@ -413,75 +413,90 @@ export default function FirmalarPage() {
                             </div>
                         </form>
                     </div>
-                </div>
-            )}
+                </div >
+            )
+            }
 
-            {/* Firma Listesi */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                {loading ? (
-                    <div className="p-8 text-center text-slate-500">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent mx-auto mb-3"></div>
-                        Yükleniyor...
+            {/* Firma Listesi - Modern Kart Tasarımı */}
+            {
+                loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
                     </div>
                 ) : filteredCompanies.length === 0 ? (
-                    <div className="p-8 text-center">
-                        <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-500 mb-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                        <Building2 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-500 mb-6 text-lg">
                             {searchTerm ? 'Arama sonucu bulunamadı' : 'Henüz firma eklemediniz'}
                         </p>
                         {!searchTerm && (
                             <button
                                 onClick={() => { resetForm(); setShowForm(true); }}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/25"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-5 h-5" />
                                 İlk Firmayı Ekle
                             </button>
                         )}
                     </div>
                 ) : (
-                    <table className="w-full">
-                        <thead className="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Firma</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Tehlike Sınıfı</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Sicil No</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {filteredCompanies.map((company) => (
-                                <tr key={company.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            {company.logo ? (
-                                                <img src={company.logo} alt="" className="w-10 h-10 rounded-lg object-contain border border-slate-200" />
-                                            ) : (
-                                                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredCompanies.map((company) => (
+                            <div
+                                key={company.id}
+                                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-300 transition-all duration-300 cursor-pointer"
+                                onClick={() => router.push(`/panel/firmalar/${company.id}`)}
+                            >
+                                {/* Kart Üst Kısım - Gradient Header */}
+                                <div className={`h-24 relative bg-gradient-to-br ${company.danger_class === 'az_tehlikeli'
+                                    ? 'from-emerald-500 to-teal-600'
+                                    : company.danger_class === 'tehlikeli'
+                                        ? 'from-amber-500 to-orange-600'
+                                        : 'from-red-500 to-rose-600'
+                                    }`}>
+                                    {/* Logo */}
+                                    <div className="absolute -bottom-8 left-6">
+                                        {company.logo ? (
+                                            <img
+                                                src={company.logo}
+                                                alt={company.title}
+                                                className="w-16 h-16 rounded-xl object-contain bg-white border-4 border-white shadow-lg"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-xl bg-white border-4 border-white shadow-lg flex items-center justify-center">
+                                                <span className="text-2xl font-bold text-slate-600">
                                                     {company.title.charAt(0)}
-                                                </div>
-                                            )}
-                                            <div>
-                                                <p className="font-medium text-slate-800">{company.title}</p>
-                                                <p className="text-sm text-slate-500 truncate max-w-xs">{company.address || '-'}</p>
+                                                </span>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`text-xs px-2 py-1 rounded-full font-bold ${company.danger_class === 'az_tehlikeli'
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : company.danger_class === 'tehlikeli'
-                                                ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-red-100 text-red-700'
-                                            }`}>
+                                        )}
+                                    </div>
+                                    {/* Tehlike Sınıfı Badge */}
+                                    <div className="absolute top-3 right-3">
+                                        <span className="bg-white/90 backdrop-blur-sm text-xs px-3 py-1.5 rounded-full font-bold shadow-sm">
                                             {DANGER_CLASS_LABELS[company.danger_class]}
                                         </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-600">
-                                        {company.registration_number || '-'}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                    </div>
+                                </div>
+
+                                {/* Kart İçerik */}
+                                <div className="pt-12 pb-5 px-6">
+                                    <h3 className="font-bold text-slate-800 text-lg mb-1 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                                        {company.title}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 line-clamp-2 mb-4">
+                                        {company.address || 'Adres bilgisi yok'}
+                                    </p>
+
+                                    {/* Alt Bilgiler */}
+                                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                        <div className="text-xs text-slate-400">
+                                            {company.registration_number ? (
+                                                <span>SGK: {company.registration_number}</span>
+                                            ) : (
+                                                <span>Sicil No Girilmemiş</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 onClick={() => handleEdit(company)}
                                                 className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -497,13 +512,16 @@ export default function FirmalarPage() {
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
-        </div>
+                                    </div>
+                                </div>
+
+                                {/* Hover Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-indigo-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
+        </div >
     );
 }
