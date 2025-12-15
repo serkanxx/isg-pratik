@@ -10,5 +10,6 @@ Buraya istediğiniz metni yazın...
 
 - ADEP PDF  başlıkları ortala sayfaları kontrol et
 - Firmalarım sayfasına ağırlık ver.
-- Notlarım düzenleme yapılabilsin. yanındaki tik işaretlemek yerine küçük tamamlandı butonu ekle.
+- acil durum pdf çıktısına döküman no eklendi, bu yüzden raporlarım kısmından indirme yapılamayabilir. kontrol et düzelt
+
 
