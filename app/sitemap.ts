@@ -53,28 +53,46 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.5,
         },
         {
-            url: `${baseUrl}/admin`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.6,
-        },
-        {
             url: `${baseUrl}/panel`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
-            priority: 0.7,
+            priority: 0.8,
         },
         {
             url: `${baseUrl}/panel/firmalar`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
-            priority: 0.7,
+            priority: 0.8,
         },
         {
             url: `${baseUrl}/panel/risk-maddelerim`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
-            priority: 0.7,
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/panel/raporlarim`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/panel/acil-durum`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/iletisim`,
+            lastModified: new Date(),
+            changeFrequency: 'yearly',
+            priority: 0.5,
+        },
+        {
+            url: `${baseUrl}/destek`,
+            lastModified: new Date(),
+            changeFrequency: 'yearly',
+            priority: 0.5,
         },
     ];
 }
