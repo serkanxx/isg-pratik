@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
     Building2, FileText, Shield, Plus, TrendingUp,
     AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle,
-    StickyNote, Clock, Check, Trash2, Bell, X
+    StickyNote, Clock, Check, Trash2, Bell, X, Calendar
 } from 'lucide-react';
 import { Company } from '../types';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -37,6 +37,16 @@ interface ReportData {
     data: any;
 }
 
+interface VisitProgram {
+    id: string;
+    name: string;
+    type: string;
+    startDate: string;
+    endDate: string;
+    companies: any[];
+    schedule: any[];
+}
+
 export default function PanelPage() {
     const { data: session } = useSession();
     const { isDark } = useTheme();
@@ -63,6 +73,9 @@ export default function PanelPage() {
     const [newNoteCompanyId, setNewNoteCompanyId] = useState<string>('');
     const [showNoteForm, setShowNoteForm] = useState(false);
 
+    // Ziyaret Programları state
+    const [visitPrograms, setVisitPrograms] = useState<VisitProgram[]>([]);
+
     // Dropdown değerleri
     const days = Array.from({ length: 31 }, (_, i) => i + 1);
     const monthOptions = [
@@ -80,6 +93,7 @@ export default function PanelPage() {
         fetchData();
         fetchNotes();
         fetchUpcomingNotes();
+        fetchVisitPrograms();
     }, []);
 
     const fetchData = async () => {
@@ -150,6 +164,19 @@ export default function PanelPage() {
             }
         } catch (error) {
             console.error('Hatırlatmalar alınamadı:', error);
+        }
+    };
+
+    // Ziyaret programlarını getir
+    const fetchVisitPrograms = async () => {
+        try {
+            const res = await fetch('/api/visit-programs');
+            if (res.ok) {
+                const data = await res.json();
+                setVisitPrograms(data);
+            }
+        } catch (error) {
+            console.error('Programlar alınamadı:', error);
         }
     };
 
@@ -531,12 +558,89 @@ export default function PanelPage() {
                 </div>
             </div>
 
+            {/* Ziyaret Programları */}
+            {visitPrograms.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-8">
+                    <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-indigo-600" />
+                            Ziyaretler
+                        </h2>
+                        <Link href="/panel/ziyaret-programi" className="text-sm text-indigo-600 font-medium hover:underline flex items-center gap-1">
+                            Tümünü Gör <ChevronRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                    <div className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {visitPrograms.slice(0, 3).map((program) => (
+                                <Link
+                                    key={program.id}
+                                    href="/panel/ziyaret-programi"
+                                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all bg-white dark:bg-slate-800"
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex flex-col gap-1">
+                                            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{program.name}</h3>
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                                <Building2 className="w-3 h-3" />
+                                                {program.companies.length} Firma
+                                            </div>
+                                        </div>
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${program.type === 'monthly' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'}`}>
+                                            {program.type === 'monthly' ? 'Aylık' : 'Haftalık'}
+                                        </span>
+                                    </div>
+
+                                    {/* Mini Takvim Önizleme - Sadece Doluluk */}
+                                    <div className="mt-3 pt-2 border-t border-indigo-100/50 dark:border-indigo-900/30">
+                                        <div className="grid grid-cols-5 gap-1 mb-1">
+                                            {['Pzt', 'Sal', 'Çar', 'Per', 'Cum'].map(d => (
+                                                <div key={d} className="text-[9px] text-center text-slate-400 dark:text-slate-500 font-medium">{d}</div>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-5 gap-1">
+                                            {(program.schedule || [])
+                                                .filter((d: any) => !['Cumartesi', 'Pazar'].includes(d.dayName))
+                                                .map((day: any, i: number) => {
+                                                    const hasVisit = day.companies && day.companies.length > 0;
+                                                    const dayNumber = new Date(day.date).getDate();
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className={`h-8 rounded flex flex-col items-center justify-center transition-colors ${hasVisit
+                                                                ? 'bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-800'
+                                                                : 'bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700'
+                                                                }`}
+                                                            title={hasVisit ? `${day.companies.length} Ziyaret:\n${day.companies.map((c: any) => c.title).join('\n')}` : `Tarih: ${new Date(day.date).toLocaleDateString('tr-TR')}`}
+                                                        >
+                                                            <span className={`text-[10px] font-bold ${hasVisit ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                                {dayNumber}
+                                                            </span>
+                                                            {hasVisit && (
+                                                                <div className="flex gap-0.5 mt-0.5">
+                                                                    {[...Array(Math.min(day.companies.length, 3))].map((_, k) => (
+                                                                        <div key={k} className="w-0.5 h-0.5 rounded-full bg-indigo-400 dark:bg-indigo-400"></div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Son Firmalar */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="p-6 border-b border-slate-200 flex items-center justify-between">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <Building2 className="w-5 h-5 text-indigo-600" />
-                        Son Eklenen Firmalar
+                        Son Firmalar
                     </h2>
                     <Link href="/panel/firmalar" className="text-sm text-indigo-600 font-medium hover:underline flex items-center gap-1">
                         Tümünü Gör <ChevronRight className="w-4 h-4" />
@@ -718,7 +822,7 @@ export default function PanelPage() {
                 <div className="p-6 border-b border-slate-200 flex items-center justify-between">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-amber-600" />
-                        Son Eklenen Risk Maddeleri
+                        Son Riskler
                     </h2>
                     <Link href="/panel/risk-maddelerim" className="text-sm text-amber-600 font-medium hover:underline flex items-center gap-1">
                         Tümünü Gör <ChevronRight className="w-4 h-4" />

@@ -75,6 +75,7 @@ model User {
   reports       ReportHistory[]
   headerInfo    HeaderInfo?
   notes         Note[]
+  visitPrograms VisitProgram[]
 }
 
 // Kullanıcı risk tablosu
@@ -206,4 +207,22 @@ model Note {
   updatedAt   DateTime  @updatedAt
 
   @@map("notes")
+}
+
+// Firma Ziyaret Programı
+model VisitProgram {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String   // Program adı
+  type        String   // "weekly" | "monthly"
+  visitsPerDay Int     @default(3) // Günlük ziyaret sayısı
+  schedule    Json     // Ziyaret çizelgesi
+  companies   Json     // Seçilen firmalar ve sıklıkları
+  startDate   DateTime? // Başlangıç tarihi
+  endDate     DateTime? // Bitiş tarihi
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("visit_programs")
 }

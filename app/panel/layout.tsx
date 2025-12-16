@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Mail, Lightbulb, Moon, Sun
+    Headphones as HeadphonesIcon, Mail, Lightbulb, Moon, Sun, Calendar
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -68,6 +68,13 @@ const menuItems = [
         icon: FileCheck,
         active: true,
         dataTour: 'is-izin'
+    },
+    {
+        name: 'Firma Ziyaret Programı',
+        href: '/panel/ziyaret-programi',
+        icon: Calendar,
+        active: true,
+        dataTour: 'ziyaret-programi'
     },
     {
         name: 'Saha Gözlem Formları',
