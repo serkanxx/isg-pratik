@@ -6,9 +6,11 @@ import { prisma } from '@/lib/prisma';
 // Belirli programı getir
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
+
         const session = await getServerSession(authOptions);
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Oturum gerekli' }, { status: 401 });
@@ -24,7 +26,7 @@ export async function GET(
 
         const program = await prisma.visitProgram.findFirst({
             where: {
-                id: params.id,
+                id: id,
                 userId: user.id
             }
         });
@@ -43,9 +45,11 @@ export async function GET(
 // Programı güncelle
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
+
         const session = await getServerSession(authOptions);
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Oturum gerekli' }, { status: 401 });
@@ -64,7 +68,7 @@ export async function PUT(
 
         const program = await prisma.visitProgram.updateMany({
             where: {
-                id: params.id,
+                id: id,
                 userId: user.id
             },
             data: {
@@ -92,9 +96,11 @@ export async function PUT(
 // Programı sil
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
+
         const session = await getServerSession(authOptions);
         if (!session?.user?.email) {
             return NextResponse.json({ error: 'Oturum gerekli' }, { status: 401 });
@@ -110,7 +116,7 @@ export async function DELETE(
 
         const result = await prisma.visitProgram.deleteMany({
             where: {
-                id: params.id,
+                id: id,
                 userId: user.id
             }
         });
