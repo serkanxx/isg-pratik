@@ -362,7 +362,7 @@ export default function FirmalarPage() {
         });
 
     return (
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
             {/* Notification */}
             {notification.show && (
                 <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-50 flex items-center ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
@@ -520,42 +520,44 @@ export default function FirmalarPage() {
             )}
 
             {/* Başlık */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                        <Building2 className="w-7 h-7 text-indigo-600" />
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2 sm:gap-3">
+                        <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600" />
                         Firmalarım
                     </h1>
-                    <p className="text-slate-500 mt-1">Kayıtlı firmalarınızı yönetin</p>
+                    <p className="text-slate-500 mt-1 text-sm sm:text-base">Kayıtlı firmalarınızı yönetin</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                     <button
                         onClick={() => { setShowBulkModal(true); setBulkData([]); setBulkResult(null); }}
-                        className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs sm:text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
                     >
-                        <FileSpreadsheet className="w-5 h-5" />
-                        Toplu Yükle
+                        <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline">Toplu Yükle</span>
+                        <span className="sm:hidden">Toplu</span>
                     </button>
                     <button
                         onClick={() => { resetForm(); setShowForm(true); }}
-                        className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs sm:text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
                     >
-                        <Plus className="w-5 h-5" />
-                        Yeni Firma Ekle
+                        <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline">Yeni Firma Ekle</span>
+                        <span className="sm:hidden">Ekle</span>
                     </button>
                 </div>
             </div>
 
             {/* Arama ve Filtreler */}
-            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:gap-4 sm:items-center sm:justify-between">
                 <div className="relative w-full sm:max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Firma ara..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm sm:text-base"
                     />
                 </div>
 
@@ -607,10 +609,10 @@ export default function FirmalarPage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-slate-800">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+                        <div className="p-4 sm:p-6 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                            <h2 className="text-lg sm:text-xl font-bold text-slate-800">
                                 {editingId ? 'Firma Düzenle' : 'Yeni Firma Ekle'}
                             </h2>
                             <button
@@ -818,7 +820,7 @@ export default function FirmalarPage() {
                                     <th className="px-4 py-3 text-left font-bold text-slate-600">Firma</th>
                                     <th className="px-4 py-3 text-left font-bold text-slate-600 hidden md:table-cell">Adres</th>
                                     <th className="px-4 py-3 text-left font-bold text-slate-600 hidden sm:table-cell">Sicil No</th>
-                                    <th className="px-4 py-3 text-left font-bold text-slate-600">Tehlike</th>
+                                    <th className="px-4 py-3 text-center font-bold text-slate-600">Tehlike</th>
                                     <th className="px-4 py-3 text-right font-bold text-slate-600">İşlem</th>
                                 </tr>
                             </thead>
@@ -849,7 +851,7 @@ export default function FirmalarPage() {
                                         <td className="px-4 py-3 text-slate-500 hidden sm:table-cell">
                                             {company.registration_number || '-'}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-3 text-center">
                                             <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${company.danger_class === 'az_tehlikeli' ? 'bg-emerald-100 text-emerald-700' :
                                                 company.danger_class === 'tehlikeli' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                                                 }`}>

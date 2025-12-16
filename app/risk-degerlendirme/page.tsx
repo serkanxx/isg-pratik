@@ -2266,9 +2266,9 @@ function RiskAssessmentContent() {
     <div className={`min-h-screen text-gray-800 font-sans flex flex-col relative ${isDark ? 'dark-content bg-slate-900' : 'bg-gray-100'}`}>
 
       {notification.show && (
-        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-bounce-in ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
-          {notification.type === 'error' ? <AlertCircle className="w-5 h-5 mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-          <span className="font-bold text-sm">{notification.message}</span>
+        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-bounce-in ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+          {notification.type === 'error' ? <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> : <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />}
+          <span className="font-bold text-xs sm:text-sm">{notification.message}</span>
         </div>
       )}
 
@@ -2279,31 +2279,31 @@ function RiskAssessmentContent() {
       {/* NAVBAR */}
       {/* NAVBAR */}
       <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md sticky top-0 z-50">
-        <div className="w-full px-4 sm:px-6 lg:px-8 pl-12">
-          <div className="flex items-center h-16">
+        <div className="w-full px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center h-14 sm:h-16">
             <div className="flex items-center">
               {/* Mobil Hamburger Menü Butonu */}
               <button
                 onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-                className="md:hidden mr-3 p-2 rounded-xl text-blue-100 hover:bg-white/10 transition-colors"
+                className="md:hidden mr-2 sm:mr-3 p-2 rounded-xl text-blue-100 hover:bg-white/10 transition-colors"
                 aria-label="Menüyü Aç"
               >
-                {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {isMobileSidebarOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
               </button>
 
               {/* Logo Alanı */}
               <Link href="/" className="flex items-center group">
                 <div className="transition-transform duration-300 group-hover:scale-105">
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
+                  <img src="/logo.png" alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain drop-shadow-sm" />
                 </div>
-                <div className="ml-3 flex flex-col">
-                  <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 group-hover:to-white transition-all">İSG Pratik</span>
-                  <span className="text-[10px] text-blue-300/80 font-medium tracking-widest uppercase">Risk Yönetim Sistemi</span>
+                <div className="ml-2 sm:ml-3 flex flex-col">
+                  <span className="text-sm sm:text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 group-hover:to-white transition-all">İSG Pratik</span>
+                  <span className="hidden sm:block text-[10px] text-blue-300/80 font-medium tracking-widest uppercase">Risk Yönetim Sistemi</span>
                 </div>
               </Link>
             </div>
 
-            <div className="hidden md:flex items-center space-x-1.5 ml-28">
+            <div className="hidden lg:flex items-center space-x-1.5 ml-8 lg:ml-28">
               {/* Firmalarım */}
               <Link href="/panel/firmalar" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
                 <Building2 className="w-4 h-4" />

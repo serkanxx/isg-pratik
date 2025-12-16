@@ -80,16 +80,16 @@ export default function LandingPage() {
       {/* NAVBAR */}
       {/* NAVBAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
             <div className="flex items-center gap-2">
               <Link href="/" className="flex items-center group">
                 <div className="transition-transform duration-300 group-hover:scale-110">
-                  <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain drop-shadow-md" />
+                  <img src="/logo.png" alt="Logo" className="w-12 h-12 sm:w-20 sm:h-20 object-contain drop-shadow-md" />
                 </div>
-                <div className="ml-3 flex flex-col">
-                  <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 group-hover:to-white transition-all">İSG Pratik</span>
-                  <span className="text-xs text-blue-300/80 tracking-widest uppercase group-hover:text-blue-200 transition-colors">Risk Yönetim Sistemi</span>
+                <div className="ml-2 sm:ml-3 flex flex-col">
+                  <span className="text-base sm:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200 group-hover:to-white transition-all">İSG Pratik</span>
+                  <span className="hidden sm:block text-xs text-blue-300/80 tracking-widest uppercase group-hover:text-blue-200 transition-colors">Risk Yönetim Sistemi</span>
                 </div>
               </Link>
             </div>
@@ -97,16 +97,17 @@ export default function LandingPage() {
 
 
             {session ? (
-              <div className="flex items-center space-x-3 gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <span className="text-sm text-blue-100 hidden sm:inline-flex items-center">
                   <User className="w-4 h-4 mr-1" />
                   {session.user?.name || session.user?.email}
                 </span>
                 <Link
                   href="/panel"
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 border border-blue-400/20"
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 border border-blue-400/20"
                 >
-                  Panele Git
+                  <span className="hidden sm:inline">Panele Git</span>
+                  <span className="sm:hidden">Panel</span>
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
@@ -117,15 +118,16 @@ export default function LandingPage() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
-                <Link href="/login" className="text-blue-100 hover:text-white text-sm font-medium transition-colors">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Link href="/login" className="hidden sm:block text-blue-100 hover:text-white text-sm font-medium transition-colors">
                   Giriş Yap
                 </Link>
                 <Link
                   href="/register"
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 border border-blue-400/20"
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 border border-blue-400/20"
                 >
-                  Ücretsiz Başla
+                  <span className="hidden sm:inline">Ücretsiz Başla</span>
+                  <span className="sm:hidden">Başla</span>
                 </Link>
               </div>
             )}
@@ -134,29 +136,29 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO SECTION */}
-      <section className="pt-24 pb-16 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 overflow-hidden">
+      <section className="pt-20 sm:pt-24 pb-12 sm:pb-16 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Sol: Başlık ve CTA */}
-            <div className="text-white">
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm">Yapay Zeka Destekli İSG Platformu</span>
+            <div className="text-white text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6">
+                <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
+                <span className="text-xs sm:text-sm">Yapay Zeka Destekli İSG Platformu</span>
               </div>
 
-              <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
                 İş Güvenliğine
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400">
                   Pratik Çözüm
                 </span>
               </h1>
 
-              <p className="text-lg text-gray-300 mb-8 max-w-xl">
+              <p className="text-base sm:text-lg text-gray-300 mb-6 sm:mb-8 max-w-xl mx-auto lg:mx-0">
                 <strong className="text-white">Yapay Zeka</strong> destekli risk değerlendirme formu
                 hızlı, pratik ve eksiksiz hazırla.
               </p>
 
-              <div className="flex flex-wrap gap-4 mb-4">
+              <div className="flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 mb-4">
                 <Link
                   href={session ? "/panel" : "/register"}
                   className="inline-flex items-center gap-2 bg-white text-indigo-900 px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
@@ -176,7 +178,7 @@ export default function LandingPage() {
               </div>
 
 
-              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-300">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm text-gray-300">
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -294,18 +296,18 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
+      <footer className="bg-gray-900 text-gray-400 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6 md:gap-8 text-center md:text-left">
             {/* Sol: Logo ve Copyright */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-center md:items-start gap-3 sm:gap-4">
               <div className="flex items-center gap-2 group">
                 <div className="transition-transform duration-300 group-hover:scale-110">
-                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                  <img src="/logo.png" alt="Logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
                 </div>
-                <span className="text-xl font-bold text-gray-300 group-hover:text-white transition-colors">İSG Pratik</span>
+                <span className="text-lg sm:text-xl font-bold text-gray-300 group-hover:text-white transition-colors">İSG Pratik</span>
               </div>
-              <p className="text-sm">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
+              <p className="text-xs sm:text-sm">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
             </div>
 
             {/* Orta: Risk Değerlendirme Nedir? */}
@@ -315,8 +317,8 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Sağ: Gizlilik, Kullanım, KVKK alt alta */}
-            <div className="flex flex-col gap-2 text-sm text-right">
+            {/* Sağ: Gizlilik, Kullanım, KVKK - mobilde yatay, masaüstünde dikey */}
+            <div className="flex flex-row flex-wrap justify-center md:flex-col gap-3 md:gap-2 text-xs sm:text-sm md:text-right">
               <Link href="/gizlilik-politikasi" className="hover:text-white">Gizlilik Politikası</Link>
               <Link href="/kullanim-kosullari" className="hover:text-white">Kullanım Koşulları</Link>
               <Link href="/kvkk" className="hover:text-white">KVKK</Link>

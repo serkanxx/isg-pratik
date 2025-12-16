@@ -277,8 +277,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Kullanıcı Bilgisi */}
-                <div className="px-6 py-4 border-b border-white/10">
-                    <div className="flex items-center gap-3">
+                <div className="px-6 py-4 border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer">
+                    <Link href="/panel" className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                             {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U'}
                         </div>
@@ -288,7 +288,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                             </p>
                             <p className="text-xs text-slate-400">Kullanıcı</p>
                         </div>
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Menü */}
@@ -405,45 +405,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                             </button>
 
                             {/* Desktop Nav Links */}
+                            {/* Desktop Nav Links - Linkler kaldırıldı */}
                             <div className="hidden md:flex items-center space-x-1.5">
-                                {/* Dashboard Link Kaldırıldı */}
-                                <Link
-                                    href="/panel/firmalar"
-                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/firmalar'
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
-                                        }`}
-                                >
-                                    <Building2 className="w-4 h-4" />
-                                    <span>Firmalarım</span>
-                                </Link>
-                                <Link
-                                    href="/panel/risk-maddelerim"
-                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/risk-maddelerim'
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
-                                        }`}
-                                >
-                                    <PlusCircle className="w-4 h-4" />
-                                    <span>Risklerim</span>
-                                </Link>
-                                <Link
-                                    href="/risk-degerlendirme"
-                                    className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2"
-                                >
-                                    <Shield className="w-4 h-4" />
-                                    <span>Risk Değerlendirmesi</span>
-                                </Link>
-                                <Link
-                                    href="/panel/acil-durum"
-                                    className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${pathname === '/panel/acil-durum'
-                                        ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-600/30'
-                                        : 'text-white hover:bg-white/20 border border-white/10 bg-white/5'
-                                        }`}
-                                >
-                                    <AlertTriangle className="w-4 h-4" />
-                                    <span>Acil Durum Planı</span>
-                                </Link>
                             </div>
 
                             {/* Sağ taraf - Kullanıcı bilgisi */}

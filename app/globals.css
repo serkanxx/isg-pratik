@@ -23,6 +23,33 @@
   /* slate-800 */
 }
 
+/* Ziyaret olan takvim günleri - Aydınlık modda beyaz arka plan korunmalı */
+.visit-day-light {
+  background-color: #ffffff !important;
+}
+
+.visit-day-light .text-slate-900 {
+  color: #0f172a !important;
+}
+
+.dark-content .visit-day-light {
+  background-color: #1e293b !important;
+}
+
+.dark-content .visit-day-light .text-slate-900,
+.dark-content .visit-day-light .dark\:text-white {
+  color: #ffffff !important;
+}
+
+/* Ziyaret programı kartı başlığı - Aydınlık modda siyah, karanlık modda beyaz */
+.visit-program-title {
+  color: #0f172a !important; /* slate-900 - siyah */
+}
+
+.dark-content .visit-program-title {
+  color: #ffffff !important; /* beyaz */
+}
+
 /* Dark mode - Metin renkleri */
 .dark-content .text-slate-800,
 .dark-content .text-slate-700 {
@@ -145,6 +172,100 @@ body {
     width: 95vw !important;
     max-width: 95vw !important;
     margin: 10px;
+  }
+
+  /* Genel padding azaltma - mobil */
+  .p-8-mobile {
+    padding: 16px !important;
+  }
+
+  /* Fixed bottom bar - sidebar ile çakışmayı önle */
+  .fixed.bottom-0 {
+    left: 0 !important;
+  }
+
+  /* Mobil flex wrap */
+  .mobile-flex-wrap {
+    flex-wrap: wrap !important;
+  }
+
+  /* Mobil gap azaltma */
+  .mobile-gap-2 {
+    gap: 8px !important;
+  }
+
+  /* Mobil metin küçültme */
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+  }
+
+  .mobile-text-xs {
+    font-size: 0.75rem !important;
+  }
+
+  /* Mobil gizle */
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  /* Mobil tam genişlik buton */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  /* Mobil stack (dikey yığılma) */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  /* Card içi düzen - mobil */
+  .card-content-mobile {
+    padding: 12px !important;
+  }
+
+  /* Safe area desteği (notch'lu cihazlar için) */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 16px) !important;
+  }
+}
+
+/* Küçük mobil ekranlar için ek stiller */
+@media (max-width: 480px) {
+  /* Daha da küçük padding */
+  .p-8 {
+    padding: 12px !important;
+  }
+
+  .p-6 {
+    padding: 10px !important;
+  }
+
+  .p-5 {
+    padding: 10px !important;
+  }
+
+  /* Daha küçük gap'ler */
+  .gap-6 {
+    gap: 12px !important;
+  }
+
+  .gap-4 {
+    gap: 8px !important;
+  }
+
+  /* Küçük ekranda buton text'i */
+  .btn-text-mobile {
+    font-size: 0.75rem !important;
+  }
+
+  /* Modal tam ekran */
+  .modal-fullscreen-mobile {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
   }
 }
 

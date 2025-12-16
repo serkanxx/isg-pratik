@@ -4,10 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import {
     Calendar, Building2, Check, Plus, Trash2, Save, Edit2, X,
-    ChevronDown, MapPin, AlertCircle, CheckCircle, Loader2, RefreshCw, GripVertical, CheckSquare
+    ChevronDown, MapPin, AlertCircle, CheckCircle, Loader2, RefreshCw, GripVertical, CheckSquare, Download
 } from 'lucide-react';
 import { Company, DANGER_CLASS_LABELS } from '@/app/types';
 import { useTheme } from '@/app/context/ThemeContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Ziyaret sıklığı seçenekleri
 const FREQUENCY_OPTIONS = [
@@ -135,6 +137,9 @@ export default function ZiyaretProgramiPage() {
     // Meşgul Günler State
     const [busyDays, setBusyDays] = useState<string[]>([]);
     const [showBusyDaysModal, setShowBusyDaysModal] = useState(false);
+
+    // Program Görüntüleme Modal State
+    const [selectedProgramForView, setSelectedProgramForView] = useState<SavedProgram | null>(null);
 
     const toggleBusyDay = (dateStr: string) => {
         setBusyDays(prev => prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]);
@@ -557,10 +562,24 @@ export default function ZiyaretProgramiPage() {
         }
 
         setGeneratedSchedule(schedule);
-        setShowSchedule(true);
 
         const monthName = MONTHS[selectedMonth].label;
-        setProgramName(`${programType === 'monthly' ? monthName : selectedWeek + '. Hafta'} ${selectedYear} Programı`);
+        const generatedProgramName = `${programType === 'monthly' ? monthName : selectedWeek + '. Hafta'} ${selectedYear} Programı`;
+        setProgramName(generatedProgramName);
+
+        // Modal'ı aç - geçici bir program nesnesi oluştur
+        const tempProgram: SavedProgram = {
+            id: 'temp-' + Date.now(), // Geçici ID
+            name: generatedProgramName,
+            type: programType,
+            visitsPerDay: visitsPerDay,
+            schedule: schedule,
+            companies: selectedCompanies,
+            startDate: schedule[0]?.date || new Date().toISOString(),
+            endDate: schedule[schedule.length - 1]?.date || new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
+        setSelectedProgramForView(tempProgram);
     };
 
     // Programdan tekil ziyaret çıkar
@@ -679,6 +698,298 @@ export default function ZiyaretProgramiPage() {
         setShowSchedule(true);
     };
 
+    // PDF generating state
+    const [generatingPDF, setGeneratingPDF] = useState(false);
+
+    // PDF oluşturma fonksiyonu
+    const generateVisitProgramPDF = async (program: SavedProgram) => {
+        setGeneratingPDF(true);
+
+        try {
+            // A4 yatay, sıkıştırılmış PDF
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            });
+
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+            const margin = 5;
+
+            // Roboto font yükleme (Türkçe karakter desteği)
+            const toBase64 = (buffer: ArrayBuffer) => {
+                let binary = '';
+                const bytes = new Uint8Array(buffer);
+                const len = bytes.byteLength;
+                for (let i = 0; i < len; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return window.btoa(binary);
+            };
+
+            try {
+                const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
+                const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf';
+
+                const [fontRes, fontBoldRes] = await Promise.all([
+                    fetch(fontUrl),
+                    fetch(fontUrlBold)
+                ]);
+
+                const fontBuffer = await fontRes.arrayBuffer();
+                const fontBoldBuffer = await fontBoldRes.arrayBuffer();
+
+                doc.addFileToVFS('Roboto-Regular.ttf', toBase64(fontBuffer));
+                doc.addFileToVFS('Roboto-Bold.ttf', toBase64(fontBoldBuffer));
+
+                doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+                doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+
+                doc.setFont('Roboto');
+            } catch (error) {
+                console.error("Font yüklenirken hata oluştu:", error);
+            }
+
+            // Arka plan beyaz
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+            // Header - kompakt
+            let yPos = margin;
+
+            // Program adı (orta)
+            doc.setFont('Roboto', 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(program.name, pageWidth / 2, yPos + 5, { align: 'center' });
+
+            // Tarih aralığı (sağ) - %20 küçük font
+            const dateRange = `${new Date(program.startDate).toLocaleDateString('tr-TR')} - ${new Date(program.endDate).toLocaleDateString('tr-TR')}`;
+            doc.setFont('Roboto', 'normal');
+            doc.setFontSize(8); // 10'dan 8'e düşürüldü (%20 küçük)
+            doc.text(dateRange, pageWidth - margin, yPos + 5, { align: 'right' });
+
+            yPos += 10;
+
+            // Hafta günlerini belirle
+            const schedule = program.schedule;
+            const hasSaturday = schedule.some(day => {
+                const d = new Date(day.date);
+                return d.getDay() === 6;
+            });
+
+            const dayHeaders = hasSaturday
+                ? ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'C.tesi']
+                : ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+
+            const numCols = dayHeaders.length;
+            const tableWidth = pageWidth - 2 * margin;
+            const colWidth = tableWidth / numCols;
+
+            // Günleri haftalara böl
+            interface WeekDay {
+                date: string;
+                dayOfMonth: number;
+                companies: string[];
+                isHoliday: boolean;
+                holidayName?: string;
+            }
+
+            const weeks: (WeekDay | null)[][] = [];
+            let currentWeek: (WeekDay | null)[] = [];
+
+            // İlk haftanın başına boş günler ekle
+            if (schedule.length > 0) {
+                const firstDayDate = new Date(schedule[0].date);
+                const firstDayOfWeek = firstDayDate.getDay();
+                const emptyDaysAtStart = firstDayOfWeek === 0 ? (hasSaturday ? 6 : 5) : firstDayOfWeek - 1;
+
+                for (let i = 0; i < emptyDaysAtStart; i++) {
+                    currentWeek.push(null);
+                }
+            }
+
+            schedule.forEach((day) => {
+                const date = new Date(day.date);
+                const dayOfWeek = date.getDay();
+
+                // Pazartesi ise yeni hafta başlat
+                if (dayOfWeek === 1 && currentWeek.length > 0) {
+                    // Haftayı doldur
+                    while (currentWeek.length < numCols) {
+                        currentWeek.push(null);
+                    }
+                    weeks.push(currentWeek);
+                    currentWeek = [];
+                }
+
+                // Firma adının ilk 2 kelimesini al
+                const getFirstTwoWords = (name: string) => {
+                    const words = name.trim().split(/\s+/);
+                    return words.slice(0, 2).join(' ');
+                };
+
+                currentWeek.push({
+                    date: day.date,
+                    dayOfMonth: date.getDate(),
+                    companies: day.companies.map(c => getFirstTwoWords(c.title)),
+                    isHoliday: day.isHoliday || false,
+                    holidayName: day.holidayName
+                });
+            });
+
+            // Son haftayı ekle
+            if (currentWeek.length > 0) {
+                while (currentWeek.length < numCols) {
+                    currentWeek.push(null);
+                }
+                weeks.push(currentWeek);
+            }
+
+            // Tablo verilerini hazırla - Gün ve firmalar ayrı satırda
+            const tableBody: any[][] = [];
+
+            weeks.forEach((week) => {
+                const row: any[] = [];
+                week.forEach((day) => {
+                    if (!day) {
+                        row.push('');
+                    } else {
+                        // Gün numarası ve firmalar ayrı tutulacak
+                        let cellContent = `${day.dayOfMonth}`;
+                        if (day.isHoliday && day.holidayName) {
+                            cellContent += `\n(${day.holidayName})`;
+                        }
+                        if (day.companies.length > 0) {
+                            cellContent += '\n───\n' + day.companies.join('\n');
+                        }
+                        row.push(cellContent);
+                    }
+                });
+                tableBody.push(row);
+            });
+
+            // Tablo yüksekliğini hesapla
+            const availableHeight = pageHeight - yPos - margin;
+            const rowHeight = Math.min(availableHeight / weeks.length, 30);
+
+            // Satır aralığını ayarla - firmalar arası ~1mm boşluk
+            doc.setLineHeightFactor(1.35);
+
+            // jspdf-autotable ile tablo çiz
+            autoTable(doc, {
+                startY: yPos,
+                head: [dayHeaders],
+                body: tableBody,
+                theme: 'grid',
+                styles: {
+                    font: 'Roboto',
+                    fontSize: 9, // %25 büyütüldü (7 -> ~9)
+                    cellPadding: { top: 1, right: 1, bottom: 1, left: 1 },
+                    valign: 'middle', // Dikey ortala
+                    halign: 'center',
+                    textColor: [0, 0, 0],
+                    lineColor: [150, 150, 150],
+                    lineWidth: 0.2,
+                    minCellHeight: rowHeight
+                },
+                headStyles: {
+                    font: 'Roboto',
+                    fillColor: [255, 255, 255], // Beyaz arka plan
+                    textColor: [0, 0, 0], // Siyah yazı
+                    fontStyle: 'bold',
+                    fontSize: 9,
+                    halign: 'center',
+                    cellPadding: 2, // Kompakt başlık
+                    minCellHeight: 8 // Sadece yazı kadar yükseklik
+                },
+                columnStyles: {
+                    0: { cellWidth: colWidth },
+                    1: { cellWidth: colWidth },
+                    2: { cellWidth: colWidth },
+                    3: { cellWidth: colWidth },
+                    4: { cellWidth: colWidth },
+                    5: { cellWidth: colWidth }
+                },
+                margin: { left: margin, right: margin },
+                tableWidth: tableWidth,
+                didParseCell: (data: any) => {
+                    // Tatil günlerini kırmızı arka plan ile işaretle
+                    if (data.section === 'body' && data.cell.raw) {
+                        const cellText = String(data.cell.raw);
+                        if (cellText.includes('Bayram') || cellText.includes('TATİL') || cellText.includes('MEŞGUL')) {
+                            data.cell.styles.fillColor = [254, 226, 226]; // Açık kırmızı
+                            data.cell.styles.textColor = [185, 28, 28]; // Koyu kırmızı
+                        }
+                    }
+                },
+                willDrawCell: (data: any) => {
+                    // Gün numarasını gizle - didDrawCell'de kendimiz çizeceğiz
+                    if (data.section === 'body' && data.cell.raw) {
+                        const cellText = String(data.cell.raw);
+                        const lines = cellText.split('\n');
+                        if (lines.length > 0) {
+                            // İlk satırı (gün numarasını) kaldır, sadece geri kalanı göster
+                            const remainingLines = lines.slice(1).join('\n');
+                            data.cell.text = remainingLines ? remainingLines.split('\n') : [''];
+                        }
+                    }
+                },
+                didDrawCell: (data: any) => {
+                    // Gün numarasını kalın yap ve altına çizgi çiz
+                    if (data.section === 'body' && data.cell.raw) {
+                        const cellText = String(data.cell.raw);
+                        const lines = cellText.split('\n');
+                        if (lines.length > 0) {
+                            const dayNumber = lines[0];
+                            const x = data.cell.x + data.cell.width / 2;
+                            const y = data.cell.y + 5;
+
+                            // Gün numarasını kalın yaz
+                            doc.setFont('Roboto', 'bold');
+                            doc.setFontSize(10);
+                            doc.setTextColor(0, 0, 0);
+                            doc.text(dayNumber, x, y, { align: 'center' });
+
+                            // Altına çizgi çiz (gün numarasının altına)
+                            const textWidth = doc.getTextWidth(dayNumber);
+                            doc.setDrawColor(100, 100, 100);
+                            doc.setLineWidth(0.3);
+                            doc.line(x - textWidth / 2 - 2, y + 1.5, x + textWidth / 2 + 2, y + 1.5);
+
+                            // Font'u normal'e geri al
+                            doc.setFont('Roboto', 'normal');
+                        }
+                    }
+                }
+            });
+
+            // Dosya adını oluştur
+            const sanitizeFilename = (name: string) => {
+                return name
+                    .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                    .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                    .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+                    .replace(/[^a-zA-Z0-9 -]/g, '')
+                    .trim();
+            };
+
+            doc.save(`${sanitizeFilename(program.name)} - Ziyaret Programi.pdf`);
+            showNotif('PDF başarıyla indirildi!', 'success');
+
+        } catch (error) {
+            console.error('PDF oluşturma hatası:', error);
+            showNotif('PDF oluşturulurken hata oluştu!', 'error');
+        } finally {
+            setGeneratingPDF(false);
+        }
+    };
+
     // Form sıfırla
     const resetForm = () => {
         setSelectedCompanies([]);
@@ -691,28 +1002,29 @@ export default function ZiyaretProgramiPage() {
     const allSelected = companies.length > 0 && selectedCompanies.length === companies.length;
 
     return (
-        <div className={`p-8 max-w-7xl mx-auto ${isDark ? 'text-white' : ''}`}>
+        <div className={`p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto ${isDark ? 'text-white' : ''}`}>
             {/* Notification */}
             {notification.show && (
-                <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-50 flex items-center ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
-                    {notification.type === 'error' ? <AlertCircle className="w-5 h-5 mr-2" /> : <CheckCircle className="w-5 h-5 mr-2" />}
-                    <span className="font-bold text-sm">{notification.message}</span>
+                <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-2xl z-50 flex items-center ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+                    {notification.type === 'error' ? <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> : <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />}
+                    <span className="font-bold text-xs sm:text-sm">{notification.message}</span>
                 </div>
             )}
 
             {/* Başlık */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
                 <div>
-                    <h1 className={`text-2xl font-bold flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                        <Calendar className="w-7 h-7 text-indigo-600" />
-                        Firma Ziyaret Programı
+                    <h1 className={`text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                        <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600" />
+                        <span className="hidden sm:inline">Firma Ziyaret Programı</span>
+                        <span className="sm:hidden">Ziyaret Programı</span>
                     </h1>
-                    <p className={`mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Firmalarınız için ziyaret programı oluşturun</p>
+                    <p className={`mt-1 text-sm sm:text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Firmalarınız için ziyaret programı oluşturun</p>
                 </div>
                 {showSchedule && (
                     <button
                         onClick={cancelSchedule}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors self-start ${isDark ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
                         <X className="w-4 h-4" />
                         İptal
@@ -729,9 +1041,13 @@ export default function ZiyaretProgramiPage() {
                                 <Calendar className="w-5 h-5 text-indigo-500" />
                                 Kayıtlı Programlarınız
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {savedPrograms.map((program) => (
-                                    <div key={program.id} className={`rounded-xl border p-3 hover:shadow-lg transition-all cursor-pointer ${isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 hover:bg-white'}`}>
+                                    <div
+                                        key={program.id}
+                                        onClick={() => setSelectedProgramForView(program)}
+                                        className={`rounded-xl border p-3 hover:shadow-lg transition-all cursor-pointer ${isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 hover:bg-white'}`}
+                                    >
                                         <div className="flex items-center justify-between mb-2">
                                             <h3 className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-800'}`}>{program.name}</h3>
                                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${program.type === 'monthly' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
@@ -741,20 +1057,8 @@ export default function ZiyaretProgramiPage() {
                                         <p className={`text-xs mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                             {new Date(program.startDate).toLocaleDateString('tr-TR')} - {new Date(program.endDate).toLocaleDateString('tr-TR')}
                                         </p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => editProgram(program)}
-                                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium hover:bg-indigo-100 transition-colors"
-                                            >
-                                                <Edit2 className="w-3 h-3" />
-                                                Düzenle
-                                            </button>
-                                            <button
-                                                onClick={() => deleteProgram(program.id)}
-                                                className="flex items-center justify-center gap-1 px-2 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors"
-                                            >
-                                                <Trash2 className="w-3 h-3" />
-                                            </button>
+                                        <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                            {program.companies.length} firma • {program.schedule.reduce((sum, day) => sum + day.companies.length, 0)} ziyaret
                                         </div>
                                     </div>
                                 ))}
@@ -763,11 +1067,11 @@ export default function ZiyaretProgramiPage() {
                     )}
 
                     {/* Program Ayarları */}
-                    <div className={`rounded-2xl border p-6 mb-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                        <h2 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>Program Ayarları</h2>
+                    <div className={`rounded-2xl border p-4 sm:p-6 mb-6 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <h2 className={`text-base sm:text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>Program Ayarları</h2>
 
                         {/* İlk Satır - Tip ve Dönem */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
                             {/* Program Tipi */}
                             <div>
                                 <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Program Tipi</label>
@@ -924,7 +1228,7 @@ export default function ZiyaretProgramiPage() {
                                             <th className="px-4 py-3 text-left w-12"></th>
                                             <th className={`px-4 py-3 text-left font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Firma</th>
                                             <th className={`px-4 py-3 text-left font-bold text-sm hidden lg:table-cell ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Adres</th>
-                                            <th className={`px-4 py-3 text-left font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Tehlike</th>
+                                            <th className={`px-4 py-3 text-center font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Tehlike</th>
                                             <th className={`px-4 py-3 text-left font-bold text-sm w-48 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Ziyaret Sıklığı</th>
                                         </tr>
                                     </thead>
@@ -959,7 +1263,7 @@ export default function ZiyaretProgramiPage() {
                                                             <span className="truncate">{company.address || '-'}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-3 py-1.5 text-sm">
+                                                    <td className="px-3 py-1.5 text-sm text-center">
                                                         <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${company.danger_class === 'az_tehlikeli' ? 'bg-emerald-100 text-emerald-700' :
                                                             company.danger_class === 'tehlikeli' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                                                             }`}>
@@ -1202,7 +1506,7 @@ export default function ZiyaretProgramiPage() {
             )}
 
             {!showSchedule && (
-                <div className={`fixed bottom-0 left-0 md:left-64 right-0 py-2 px-4 border-t z-30 flex items-center justify-between ${isDark ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-200'} backdrop-blur-sm transition-all shadow-[0_-2px_4px_rgba(0,0,0,0.05)]`}>
+                <div className={`fixed bottom-0 left-0 md:left-72 right-0 py-2 px-4 border-t z-30 flex items-center justify-between ${isDark ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-200'} backdrop-blur-sm transition-all shadow-[0_-2px_4px_rgba(0,0,0,0.05)]`}>
                     <div className="text-sm font-medium">
                         <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
                             {selectedCompanies.length} firma seçildi
@@ -1293,6 +1597,372 @@ export default function ZiyaretProgramiPage() {
                             >
                                 Tamam
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Program Görüntüleme ve Düzenleme Modal */}
+            {selectedProgramForView && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                    <div className={`w-full max-w-6xl max-h-[98vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                        {/* Modal Header */}
+                        <div className={`p-4 border-b flex items-center justify-between flex-shrink-0 ${isDark ? 'border-slate-700 bg-gradient-to-r from-indigo-600 to-purple-600' : 'border-slate-100 bg-gradient-to-r from-indigo-500 to-purple-500'}`}>
+                            <div className="flex items-center gap-3 flex-1">
+                                <Calendar className="w-6 h-6 text-white flex-shrink-0" />
+                                <div className="flex-1">
+                                    <input
+                                        type="text"
+                                        value={selectedProgramForView.name}
+                                        onChange={(e) => setSelectedProgramForView({
+                                            ...selectedProgramForView,
+                                            name: e.target.value
+                                        })}
+                                        className="font-bold text-lg text-white bg-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-white/50"
+                                        placeholder="Program Adı"
+                                    />
+                                    <p className="text-xs text-white/80 mt-1">
+                                        {new Date(selectedProgramForView.startDate).toLocaleDateString('tr-TR')} - {new Date(selectedProgramForView.endDate).toLocaleDateString('tr-TR')}
+                                        <span className="ml-2 opacity-70">• Firmaları sürükleyerek günler arasında taşıyabilirsiniz</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedProgramForView(null)}
+                                className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors flex-shrink-0"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Program Info Bar */}
+                        <div className={`px-4 py-1.5 border-b flex items-center gap-3 flex-shrink-0 ${isDark ? 'border-slate-700 bg-slate-700/50' : 'border-slate-100 bg-slate-50'}`}>
+                            <div className={`flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                <Building2 className="w-3.5 h-3.5" />
+                                <span className="text-xs font-medium">{selectedProgramForView.companies.length} Firma</span>
+                            </div>
+                            <div className={`flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                <Check className="w-3.5 h-3.5" />
+                                <span className="text-xs font-medium">{selectedProgramForView.schedule.reduce((sum, day) => sum + day.companies.length, 0)} Ziyaret</span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedProgramForView.type === 'monthly' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                {selectedProgramForView.type === 'monthly' ? 'Aylık' : 'Haftalık'}
+                            </span>
+                            <div className={`ml-auto text-xs ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                                <GripVertical className="w-3 h-3 inline mr-1" />
+                                Sürükle-bırak aktif
+                            </div>
+                        </div>
+
+                        {/* Modal Content - Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {/* Hafta başlıkları - Cumartesi kontrolü */}
+                            {(() => {
+                                const hasSaturday = selectedProgramForView.schedule.some(day => {
+                                    const d = new Date(day.date);
+                                    return d.getDay() === 6;
+                                });
+                                const dayNames = hasSaturday
+                                    ? ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'C.tesi']
+                                    : ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+                                return (
+                                    <div className={`grid ${hasSaturday ? 'grid-cols-6' : 'grid-cols-5'} gap-1 mb-1 sticky top-0 z-10 px-1 py-0.5 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                                        {dayNames.map(day => (
+                                            <div key={day} className={`text-center py-1 text-[11px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                {day}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Takvim - Sürükle Bırak Destekli */}
+                            {(() => {
+                                const schedule = selectedProgramForView.schedule;
+                                if (!schedule || schedule.length === 0) {
+                                    return (
+                                        <div className={`text-center py-12 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                            Bu program için ziyaret planı bulunamadı.
+                                        </div>
+                                    );
+                                }
+
+                                // Cumartesi kontrolü
+                                const hasSaturday = schedule.some(day => {
+                                    const d = new Date(day.date);
+                                    return d.getDay() === 6;
+                                });
+                                const numCols = hasSaturday ? 6 : 5;
+
+                                // Modal için drag handler fonksiyonları
+                                const handleModalDragStart = (dayIndex: number, visitIndex: number, e: React.DragEvent) => {
+                                    e.dataTransfer.setData('text/plain', JSON.stringify({ dayIndex, visitIndex }));
+                                    e.dataTransfer.effectAllowed = 'move';
+                                };
+
+                                const handleModalDrop = (targetDayIndex: number, e: React.DragEvent) => {
+                                    e.preventDefault();
+                                    const data = e.dataTransfer.getData('text/plain');
+                                    if (!data) return;
+
+                                    try {
+                                        const { dayIndex: sourceDayIndex, visitIndex } = JSON.parse(data);
+                                        if (sourceDayIndex === targetDayIndex) return;
+
+                                        const newSchedule = [...selectedProgramForView.schedule];
+                                        const draggedVisit = newSchedule[sourceDayIndex].companies[visitIndex];
+
+                                        // Kaynak günden çıkar
+                                        newSchedule[sourceDayIndex] = {
+                                            ...newSchedule[sourceDayIndex],
+                                            companies: newSchedule[sourceDayIndex].companies.filter((_, i) => i !== visitIndex)
+                                        };
+
+                                        // Hedef güne ekle
+                                        newSchedule[targetDayIndex] = {
+                                            ...newSchedule[targetDayIndex],
+                                            companies: [...newSchedule[targetDayIndex].companies, draggedVisit]
+                                        };
+
+                                        setSelectedProgramForView({
+                                            ...selectedProgramForView,
+                                            schedule: newSchedule
+                                        });
+                                    } catch (err) {
+                                        console.error('Drop error:', err);
+                                    }
+                                };
+
+                                const handleModalRemoveVisit = (dayIndex: number, visitId: string) => {
+                                    const newSchedule = [...selectedProgramForView.schedule];
+                                    newSchedule[dayIndex] = {
+                                        ...newSchedule[dayIndex],
+                                        companies: newSchedule[dayIndex].companies.filter(v => v.id !== visitId)
+                                    };
+                                    setSelectedProgramForView({
+                                        ...selectedProgramForView,
+                                        schedule: newSchedule
+                                    });
+                                };
+
+                                // Günleri haftalara böl
+                                const firstDayDate = new Date(schedule[0].date);
+                                const firstDayOfWeek = firstDayDate.getDay();
+                                const emptyDaysAtStart = firstDayOfWeek === 0 ? (hasSaturday ? 6 : 5) : firstDayOfWeek - 1;
+
+                                type ViewDaySlot = { day: ScheduleDay; globalIndex: number } | { isEmpty: true };
+                                const weeks: ViewDaySlot[][] = [];
+                                let currentWeek: ViewDaySlot[] = [];
+
+                                for (let i = 0; i < emptyDaysAtStart; i++) {
+                                    currentWeek.push({ isEmpty: true });
+                                }
+
+                                schedule.forEach((day, index) => {
+                                    const date = new Date(day.date);
+                                    const dayOfWeek = date.getDay();
+
+                                    if (dayOfWeek === 1 && currentWeek.length > 0) {
+                                        weeks.push(currentWeek);
+                                        currentWeek = [];
+                                    }
+
+                                    currentWeek.push({ day, globalIndex: index });
+                                });
+
+                                if (currentWeek.length > 0) {
+                                    weeks.push(currentWeek);
+                                }
+
+                                const visibleWeeks = weeks.filter(week => week.some(d => !('isEmpty' in d)));
+
+                                return visibleWeeks.map((week, weekIndex) => (
+                                    <div key={weekIndex} className={`grid ${hasSaturday ? 'grid-cols-6' : 'grid-cols-5'} gap-1 mb-2`}>
+                                        {week.map((daySlot, dayInWeekIndex) => {
+                                            if ('isEmpty' in daySlot) {
+                                                return (
+                                                    <div
+                                                        key={`empty-${weekIndex}-${dayInWeekIndex}`}
+                                                        className={`border rounded-lg p-2 min-h-[100px] ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-gray-100 border-gray-200'}`}
+                                                    >
+                                                        <div className={`flex items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-gray-400'}`}>
+                                                            <span className="text-xs">—</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const { day, globalIndex } = daySlot;
+
+                                            return (
+                                                <div
+                                                    key={day.date}
+                                                    className={`border rounded-lg p-2 min-h-[100px] transition-all ${day.isHoliday
+                                                        ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                                                        : isDark
+                                                            ? 'border-slate-600 bg-slate-800 hover:border-indigo-500'
+                                                            : 'border-slate-200 bg-white hover:border-indigo-400'
+                                                        }`}
+                                                    onDragOver={(e) => {
+                                                        e.preventDefault();
+                                                        e.currentTarget.classList.add('ring-2', 'ring-indigo-400');
+                                                    }}
+                                                    onDragLeave={(e) => {
+                                                        e.currentTarget.classList.remove('ring-2', 'ring-indigo-400');
+                                                    }}
+                                                    onDrop={(e) => {
+                                                        e.currentTarget.classList.remove('ring-2', 'ring-indigo-400');
+                                                        handleModalDrop(globalIndex, e);
+                                                    }}
+                                                >
+                                                    <div className={`flex items-center justify-between mb-1.5 pb-1 border-b ${day.isHoliday ? 'border-red-200' : isDark ? 'border-slate-600' : 'border-slate-100'}`}>
+                                                        <span className={`text-sm font-bold ${day.isHoliday ? 'text-red-600' : isDark ? 'text-white' : 'text-slate-800'}`}>
+                                                            {new Date(day.date).getDate()}
+                                                        </span>
+                                                        {day.companies.length > 0 && (
+                                                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${day.isHoliday ? 'bg-red-100 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                                {day.companies.length}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {day.isHoliday && day.holidayName && (
+                                                        <div className="text-[9px] text-red-500 mb-1 font-medium truncate" title={day.holidayName}>
+                                                            🎉 {day.holidayName}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="space-y-0.5">
+                                                        {day.companies.map((visit, visitIndex) => (
+                                                            <div
+                                                                key={visit.id}
+                                                                draggable
+                                                                onDragStart={(e) => handleModalDragStart(globalIndex, visitIndex, e)}
+                                                                className={`text-[10px] truncate px-1.5 py-0.5 rounded cursor-move flex items-center justify-between group ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                                                                title={visit.title}
+                                                            >
+                                                                <div className="flex items-center gap-1 min-w-0">
+                                                                    <GripVertical className={`w-2.5 h-2.5 flex-shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                                                                    <span className="truncate">{visit.title}</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleModalRemoveVisit(globalIndex, visit.id);
+                                                                    }}
+                                                                    className={`p-0.5 rounded opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 ${isDark ? 'text-slate-400 hover:text-red-400' : 'text-slate-400 hover:text-red-500'}`}
+                                                                >
+                                                                    <X className="w-2.5 h-2.5" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        {day.companies.length === 0 && !day.isHoliday && (
+                                                            <div className={`text-center py-2 text-[9px] border border-dashed rounded ${isDark ? 'text-slate-600 border-slate-600' : 'text-slate-400 border-slate-300'}`}>
+                                                                Buraya bırakın
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className={`px-4 py-2 border-t flex justify-between gap-2 flex-shrink-0 ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+                            {/* Sil butonu sadece kayıtlı programlar için */}
+                            {!selectedProgramForView.id.startsWith('temp-') ? (
+                                <button
+                                    onClick={() => {
+                                        deleteProgram(selectedProgramForView.id);
+                                        setSelectedProgramForView(null);
+                                    }}
+                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-xs"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Sil
+                                </button>
+                            ) : (
+                                <div /> // Boşluk için
+                            )}
+                            <div className="flex gap-2 flex-1 justify-end">
+                                <button
+                                    onClick={() => setSelectedProgramForView(null)}
+                                    className={`px-4 py-1.5 rounded-lg font-medium text-xs transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={() => generateVisitProgramPDF(selectedProgramForView)}
+                                    disabled={generatingPDF}
+                                    className="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-xs disabled:opacity-50"
+                                >
+                                    {generatingPDF ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Hazırlanıyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="w-4 h-4" />
+                                            PDF İndir
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        setSaving(true);
+                                        try {
+                                            const isNewProgram = selectedProgramForView.id.startsWith('temp-');
+                                            const url = isNewProgram
+                                                ? '/api/visit-programs'
+                                                : `/api/visit-programs/${selectedProgramForView.id}`;
+                                            const method = isNewProgram ? 'POST' : 'PUT';
+
+                                            const res = await fetch(url, {
+                                                method: method,
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    name: selectedProgramForView.name,
+                                                    type: selectedProgramForView.type,
+                                                    visitsPerDay: selectedProgramForView.visitsPerDay,
+                                                    schedule: selectedProgramForView.schedule,
+                                                    companies: selectedProgramForView.companies,
+                                                    startDate: selectedProgramForView.startDate,
+                                                    endDate: selectedProgramForView.endDate
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                showNotif(isNewProgram ? 'Program kaydedildi!' : 'Program güncellendi!');
+                                                fetchPrograms();
+                                                setSelectedProgramForView(null);
+                                            } else {
+                                                showNotif('Kaydetme hatası!', 'error');
+                                            }
+                                        } catch (error) {
+                                            showNotif('Sunucu hatası!', 'error');
+                                        } finally {
+                                            setSaving(false);
+                                        }
+                                    }}
+                                    disabled={saving || !selectedProgramForView.name.trim()}
+                                    className="flex items-center justify-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md shadow-green-600/25 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                                >
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Kaydediliyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="w-4 h-4" />
+                                            {selectedProgramForView.id.startsWith('temp-') ? 'Kaydet' : 'Güncelle'}
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
