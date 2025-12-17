@@ -297,7 +297,7 @@ export default function FirmalarPage() {
                 showNotif(editingId ? 'Firma güncellendi!' : 'Firma eklendi!');
                 resetForm();
                 setShowForm(false);
-                fetchCompanies();
+                queryClient.invalidateQueries({ queryKey: queryKeys.companies });
                 router.replace('/panel/firmalar');
             } else {
                 const error = await res.json();
