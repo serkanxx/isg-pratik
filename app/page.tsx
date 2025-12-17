@@ -4,7 +4,8 @@ import React from 'react';
 import Link from "next/link";
 import {
   Shield, Brain, AlertTriangle, Calendar, BookOpen, Eye, FileText, Users, Building,
-  CheckCircle, Clock, ChevronRight, Star, Zap, Target, BarChart3, FileCheck, Map, LogOut, User
+  CheckCircle, Clock, ChevronRight, Star, Zap, Target, BarChart3, FileCheck, Map, LogOut, User,
+  StickyNote, CalendarDays, Flame, Moon
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -31,17 +32,42 @@ export default function LandingPage() {
       href: "/panel/acil-durum"
     },
     {
+      icon: Flame,
+      title: "İş İzin Formu",
+      description: "Sıcak iş, yüksekte çalışma, kapalı alan ve elektrik çalışmaları için izin formları.",
+      color: "bg-red-500",
+      active: true,
+      href: "/panel/is-izin-formu"
+    },
+    {
+      icon: Building,
+      title: "Çoklu Firma Yönetimi",
+      description: "OSGB'ler ve İSG uzmanları için tüm müşteriler tek panelden yönetim.",
+      color: "bg-pink-500",
+      active: true,
+      href: "/panel/firmalar"
+    },
+    {
+      icon: CalendarDays,
+      title: "Firma Ziyaret Programı",
+      description: "Haftalık ve aylık ziyaret programları oluştur, takip et ve yönet.",
+      color: "bg-blue-500",
+      active: true,
+      href: "/panel/ziyaret-programi"
+    },
+    {
+      icon: StickyNote,
+      title: "Not & Hatırlatma",
+      description: "Firmaya özel notlar, görev takibi ve hatırlatmalar ile hiçbir şeyi unutma.",
+      color: "bg-amber-500",
+      active: true,
+      href: "/panel/notlarim"
+    },
+    {
       icon: Eye,
       title: "Saha Gözlem Formları",
       description: "AI destekli gözlem raporları. Fotoğraf ekleme, DÖF atama.",
-      color: "bg-blue-500",
-      active: false
-    },
-    {
-      icon: FileText,
-      title: "İş Kazası Yönetimi",
-      description: "Kaza kayıtları, istatistikler, SGK bildirimleri, kök neden analizi.",
-      color: "bg-red-500",
+      color: "bg-cyan-500",
       active: false
     },
     {
@@ -49,13 +75,6 @@ export default function LandingPage() {
       title: "DÖF Yönetimi",
       description: "Düzeltici önleyici faaliyetler, görev atamaları, takip sistemi.",
       color: "bg-teal-500",
-      active: false
-    },
-    {
-      icon: Building,
-      title: "Çoklu Firma Desteği",
-      description: "OSGB'ler için tüm müşteriler tek panelden yönetim.",
-      color: "bg-pink-500",
       active: false
     }
   ];
@@ -69,8 +88,32 @@ export default function LandingPage() {
         "Fine Kinney metodu",
         "Sektöre özel tehlike kütüphanesi",
         "Otomatik risk skorlama",
-        "Çoklu firma yönetimi",
-        "Risk analizi şablonları"
+        "AI destekli risk önerileri",
+        "Profesyonel PDF çıktıları"
+      ]
+    },
+    {
+      icon: Building,
+      title: "Firma Yönetimi",
+      color: "bg-pink-100 text-pink-600",
+      items: [
+        "Sınırsız firma kaydı",
+        "Tehlike sınıfı takibi",
+        "İSG ekibi bilgileri",
+        "Firma bazlı raporlama",
+        "Ziyaret programı entegrasyonu"
+      ]
+    },
+    {
+      icon: CalendarDays,
+      title: "Planlama & Takip",
+      color: "bg-blue-100 text-blue-600",
+      items: [
+        "Haftalık/aylık ziyaret programı",
+        "Firma bazlı notlar",
+        "Hatırlatma sistemi",
+        "Görev takibi",
+        "Rapor arşivi"
       ]
     }
   ];
@@ -154,8 +197,8 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-base sm:text-lg text-gray-300 mb-6 sm:mb-8 max-w-xl mx-auto lg:mx-0">
-                <strong className="text-white">Yapay Zeka</strong> destekli risk değerlendirme formu
-                hızlı, pratik ve eksiksiz hazırla.
+                Risk analizi, acil durum planları, iş izin formları ve firma yönetimi.
+                <strong className="text-white"> Tüm İSG ihtiyaçların tek platformda.</strong>
               </p>
 
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 mb-4">
@@ -208,6 +251,9 @@ export default function LandingPage() {
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mt-2">
               Tek Platformda <span className="text-indigo-600">Tüm İSG İhtiyaçlarınız</span>
             </h2>
+            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
+              6 aktif modül ile İSG süreçlerinizi kolayca yönetin
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -251,11 +297,14 @@ export default function LandingPage() {
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mt-2">
               <span className="text-indigo-600">Kapsamlı Özellikler</span>
             </h2>
+            <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
+              İSG yönetiminin tüm ihtiyaçlarını karşılayan güçlü araçlar
+            </p>
           </div>
 
-          <div className="flex justify-center">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {enterpriseFeatures.map((feature, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm max-w-md">
+              <div key={index} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
                 <div className={`w-12 h-12 ${feature.color} rounded-xl flex items-center justify-center mb-4`}>
                   <feature.icon className="w-6 h-6" />
                 </div>
@@ -277,19 +326,27 @@ export default function LandingPage() {
       {/* CTA SECTION */}
       <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-            Hemen Risk Analizlerinizi Oluşturmaya Başlayın
+          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+            İSG Süreçlerinizi Dijitalleştirin
           </h2>
+          <p className="text-indigo-100 mb-8 text-lg">
+            Risk analizi, acil durum planları, iş izin formları ve daha fazlası tek platformda.
+          </p>
 
-
-
-          <div>
+          <div className="flex flex-wrap justify-center gap-4">
             <Link
               href="/register"
               className="inline-flex items-center gap-2 bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors"
             >
               Ücretsiz Başla
               <ChevronRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/risk-degerlendirme"
+              className="inline-flex items-center gap-2 bg-indigo-500/30 text-white border-2 border-white/30 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-500/50 transition-colors"
+            >
+              Demo İncele
+              <Eye className="w-5 h-5" />
             </Link>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
@@ -72,6 +72,8 @@ function RiskAssessmentContent() {
   const [sectorLoading, setSectorLoading] = useState(false); // Sektör analizi yükleniyor mu?
   const [severityFilter, setSeverityFilter] = useState(0); // 0: Tümü, 1: Orta+ (>=70), 2: Yüksek (>=200)
   const [showSectorSuggestions, setShowSectorSuggestions] = useState(false); // Öneri dropdown'u göster
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1); // Klavye navigasyonu için seçili öneri indexi
+  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]); // Filtrelenmiş öneriler
   const [showAIPreview, setShowAIPreview] = useState(false); // AI önizleme modal
   const [previewRisks, setPreviewRisks] = useState<any[]>([]); // Önizleme risk listesi
   const [selectedPreviewRisks, setSelectedPreviewRisks] = useState<Set<number>>(new Set()); // Tikli olanlar
@@ -84,6 +86,64 @@ function RiskAssessmentContent() {
   // Yaygın sektörler listesi
   // Yaygın sektörler listesi -> constants.ts dosyasından geliyor
   const sectorSuggestions = SECTOR_SUGGESTIONS;
+
+  // Akıllı sektör filtreleme fonksiyonu
+  const filterSectorSuggestions = (query: string): string[] => {
+    if (!query || query.length < 1) return [];
+    
+    const normalizedQuery = query.toLowerCase()
+      .replace(/ı/g, 'i').replace(/İ/g, 'i')
+      .replace(/ğ/g, 'g').replace(/Ğ/g, 'g')
+      .replace(/ü/g, 'u').replace(/Ü/g, 'u')
+      .replace(/ş/g, 's').replace(/Ş/g, 's')
+      .replace(/ö/g, 'o').replace(/Ö/g, 'o')
+      .replace(/ç/g, 'c').replace(/Ç/g, 'c');
+
+    const results: Array<{ sector: string; score: number }> = [];
+
+    sectorSuggestions.forEach(sector => {
+      const normalizedSector = sector.toLowerCase()
+        .replace(/ı/g, 'i').replace(/İ/g, 'i')
+        .replace(/ğ/g, 'g').replace(/Ğ/g, 'g')
+        .replace(/ü/g, 'u').replace(/Ü/g, 'u')
+        .replace(/ş/g, 's').replace(/Ş/g, 's')
+        .replace(/ö/g, 'o').replace(/Ö/g, 'o')
+        .replace(/ç/g, 'c').replace(/Ç/g, 'c');
+
+      let score = 0;
+
+      // Tam eşleşme - en yüksek öncelik
+      if (normalizedSector === normalizedQuery) {
+        score = 1000;
+      }
+      // Başlangıç eşleşmesi - yüksek öncelik
+      else if (normalizedSector.startsWith(normalizedQuery)) {
+        score = 500 + (normalizedSector.length - normalizedQuery.length);
+      }
+      // Kelime başlangıcı eşleşmesi
+      else if (normalizedSector.split(' ').some(word => word.startsWith(normalizedQuery))) {
+        score = 300;
+      }
+      // İçeriyor - düşük öncelik
+      else if (normalizedSector.includes(normalizedQuery)) {
+        score = 100 - (normalizedSector.indexOf(normalizedQuery));
+      }
+      // Query içinde sector geçiyor
+      else if (normalizedQuery.includes(normalizedSector)) {
+        score = 50;
+      }
+
+      if (score > 0) {
+        results.push({ sector, score });
+      }
+    });
+
+    // Score'a göre sırala ve sadece sektör isimlerini döndür
+    return results
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10) // En fazla 10 öneri
+      .map(r => r.sector);
+  };
 
   const [showScrollTop, setShowScrollTop] = useState(false); // Yukarı git butonu
   const [showPremiumModal, setShowPremiumModal] = useState(false); // Premium teşvik modal
@@ -648,27 +708,64 @@ function RiskAssessmentContent() {
       }
 
       const data = await response.json();
-      const { results, method, sectorCount, generalCount, matchedTags } = data;
+      const { results, method, sectorCount, generalCount, generalTagCount, matchedTags, count } = data;
 
       // Debug log - query ve matched tags
-      console.log(`Query: "${sectorSearch}", Matched Tags: ${JSON.stringify(matchedTags)}, Yöntem: ${method}, Sektör: ${sectorCount || 0}, Genel: ${generalCount || 0}`);
+      console.log(`🔍 Sektör Analizi:`, {
+        query: sectorSearch,
+        matchedTags: matchedTags,
+        method: method,
+        sectorCount: sectorCount || 0,
+        generalCategoryCount: generalCount || 0,
+        generalTagCount: generalTagCount || 0,
+        totalResults: count || results?.length || 0
+      });
 
       if (!results || results.length === 0) {
-        showNotification(`"${sectorSearch}" için uygun risk bulunamadı.`, 'error');
+        showNotification(`"${sectorSearch}" için uygun risk bulunamadı. Lütfen farklı bir sektör adı deneyin.`, 'error');
         setSectorLoading(false);
         return;
       }
 
+      console.log(`✅ API'den ${results.length} sonuç alındı`);
+
       // Supabase'den gelen sonuçları önizleme formatına çevir
       let tempId = 0;
       const previewList: any[] = [];
+      const seenHazardRisk = new Set<string>(); // Duplicate kontrolü için
 
       results.forEach((item: any) => {
+        // Veri doğrulama - gerekli alanlar var mı?
+        if (!item.hazard || !item.risk) {
+          console.warn('Eksik veri atlandı:', item);
+          return;
+        }
+
         // Duplicate kontrolü - tablodaki mevcut maddelerle karşılaştır
         if (isRiskDuplicate(item.hazard, item.risk)) return;
 
-        const p = item.p || 1; const f = item.f || 1; const s = item.s || 1;
-        const score = calculateRiskScore(p, f, s);
+        // Aynı önizleme listesinde duplicate kontrolü
+        const hazardRiskKey = `${item.hazard?.toLowerCase().trim()}_${item.risk?.toLowerCase().trim()}`;
+        if (seenHazardRisk.has(hazardRiskKey)) return;
+        seenHazardRisk.add(hazardRiskKey);
+
+        // Değerleri güvenli şekilde parse et
+        const p = parseFloat(item.p) || parseFloat(item.probability) || 1;
+        const f = parseFloat(item.f) || parseFloat(item.frequency) || 1;
+        const s = parseFloat(item.s) || parseFloat(item.severity) || 1;
+        const p2 = parseFloat(item.p2) || parseFloat(item.probability2) || 1;
+        const f2 = parseFloat(item.f2) || parseFloat(item.frequency2) || 1;
+        const s2 = parseFloat(item.s2) || parseFloat(item.severity2) || 1;
+
+        // Değerleri 1-100 aralığında sınırla
+        const safeP = Math.max(1, Math.min(100, p));
+        const safeF = Math.max(1, Math.min(100, f));
+        const safeS = Math.max(1, Math.min(100, s));
+        const safeP2 = Math.max(1, Math.min(100, p2));
+        const safeF2 = Math.max(1, Math.min(100, f2));
+        const safeS2 = Math.max(1, Math.min(100, s2));
+
+        const score = calculateRiskScore(safeP, safeF, safeS);
 
         // Ciddiyet filtresi kontrolü
         const minScore = severityFilter === 2 ? 200 : (severityFilter === 1 ? 70 : 0);
@@ -679,29 +776,45 @@ function RiskAssessmentContent() {
 
         previewList.push({
           tempId,
-          riskNo: item.riskNo || '', // API'den gelen orijinal riskNo
-          categoryCode: item.category_code || '99',
-          sub_category: item.sub_category || '',
+          riskNo: item.riskNo || item.risk_no || '', // API'den gelen orijinal riskNo
+          categoryCode: item.category_code || item.categoryCode || '99',
+          sub_category: item.sub_category || item.subCategory || '',
           source: item.source || '',
-          hazard: item.hazard || '',
-          risk: item.risk || '',
+          hazard: String(item.hazard || '').trim(),
+          risk: String(item.risk || '').trim(),
           affected: item.affected || "ÇALIŞANLAR",
           responsible: item.responsible || "İŞVEREN / İŞVEREN VEKİLİ",
-          probability: p, frequency: f, severity: s,
-          probability2: item.p2 || 1, frequency2: item.f2 || 1, severity2: item.s2 || 1,
-          measures: item.measures || '',
-          score, level: label, color,
+          probability: safeP, 
+          frequency: safeF, 
+          severity: safeS,
+          probability2: safeP2, 
+          frequency2: safeF2, 
+          severity2: safeS2,
+          measures: String(item.measures || '').trim(),
+          score, 
+          level: label, 
+          color,
           similarity: item.similarity // Vektör benzerlik skoru
         });
+      });
+
+      console.log(`📊 İşlenen sonuçlar:`, {
+        toplamSonuc: results.length,
+        filtrelemeSonrasi: previewList.length,
+        atlananDuplicate: results.length - previewList.length,
+        ciddiyetFiltresi: severityFilter
       });
 
       if (previewList.length > 0) {
         setPreviewRisks(previewList);
         setSelectedPreviewRisks(new Set(previewList.map(r => r.tempId))); // Hepsi tikli başlasın
         setShowAIPreview(true);
-        showNotification(`${previewList.length} risk maddesi bulundu.`, 'success');
+        showNotification(`${previewList.length} risk maddesi bulundu. Önizleme penceresinden seçim yapabilirsiniz.`, 'success');
       } else {
-        showNotification(`"${sectorSearch}" için tabloda riskler zaten mevcut.`, 'error');
+        const reason = results.length === 0 
+          ? 'uygun risk bulunamadı' 
+          : 'tüm riskler zaten tabloda mevcut veya filtre kriterlerinize uymuyor';
+        showNotification(`"${sectorSearch}" için ${reason}. Filtre ayarlarınızı kontrol edin veya farklı bir sektör deneyin.`, 'error');
       }
 
     } catch (error: any) {
@@ -2326,16 +2439,17 @@ function RiskAssessmentContent() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto">
 
               {session ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Mobil için Panele Dön Butonu */}
                   <Link
                     href="/panel"
-                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    Panel
+                    <LayoutDashboard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span>Panel</span>
                   </Link>
                   <div className="hidden sm:flex flex-col items-end mr-2">
                     <span className="text-xs font-bold text-blue-100">
@@ -2344,17 +2458,17 @@ function RiskAssessmentContent() {
                   </div>
                   <button
                     onClick={toggleTheme}
-                    className="bg-white/10 hover:bg-white/20 text-blue-200 p-2 rounded-xl transition-all border border-white/10"
+                    className="bg-white/10 hover:bg-white/20 text-blue-200 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all border border-white/10"
                     title={isDark ? 'Açık Mod' : 'Karanlık Mod'}
                   >
-                    {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
+                    {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                   <button
                     onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                    className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm group"
+                    className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm group"
                     title="Çıkış Yap"
                   >
-                    <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <LogOut className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
                   </button>
                 </div>
               ) : (
@@ -2397,15 +2511,15 @@ function RiskAssessmentContent() {
           left-0
           h-[calc(100vh-64px)] md:h-auto md:min-h-[calc(100vh-64px)]
           w-72 md:w-72
-          bg-indigo-50/30 shadow-xl md:shadow-none flex flex-col 
-          border-r border-slate-200 overflow-y-auto md:overflow-visible
+          ${isDark ? 'bg-slate-800 shadow-xl md:shadow-none' : 'bg-indigo-50/30 shadow-xl md:shadow-none'} flex flex-col 
+          ${isDark ? 'border-r border-slate-700' : 'border-r border-slate-200'} overflow-y-auto md:overflow-visible
           transition-transform duration-300 ease-in-out
           z-50 md:z-auto
         `}>
 
           {/* SEKTÖR SEÇ BÖLÜMÜ */}
-          <div className="p-5 border-b border-slate-200">
-            <h2 className="text-xs font-bold text-indigo-600 uppercase flex items-center mb-3 tracking-wider">
+          <div className={`p-5 ${isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}`}>
+            <h2 className={`text-xs font-bold uppercase flex items-center mb-3 tracking-wider ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
               <Zap className="w-4 h-4 mr-2" />
               Yapay Zeka Risk Analiz (Beta)
             </h2>
@@ -2413,15 +2527,64 @@ function RiskAssessmentContent() {
               <input
                 type="text"
                 placeholder="Sektör yazın (örn: İnşaat)"
-                className="w-full pl-4 pr-16 py-3 text-sm border-0 bg-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-700 placeholder:text-slate-400 font-medium transition-all"
+                className={`w-full pl-4 pr-16 py-3 text-sm border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium transition-all ${isDark ? 'bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'bg-slate-100 text-slate-700 placeholder:text-slate-400'}`}
                 value={sectorSearch}
                 onChange={(e) => {
-                  setSectorSearch(e.target.value);
-                  setShowSectorSuggestions(e.target.value.length >= 3);
+                  const value = e.target.value;
+                  setSectorSearch(value);
+                  
+                  // 1 karakterden itibaren önerileri göster
+                  if (value.length >= 1) {
+                    const filtered = filterSectorSuggestions(value);
+                    setFilteredSuggestions(filtered);
+                    setShowSectorSuggestions(filtered.length > 0);
+                    setSelectedSuggestionIndex(-1);
+                  } else {
+                    setShowSectorSuggestions(false);
+                    setFilteredSuggestions([]);
+                  }
                 }}
-                onKeyDown={(e) => e.key === 'Enter' && handleSectorAnalysis()}
-                onFocus={() => setShowSectorSuggestions(sectorSearch.length >= 3)}
-                onBlur={() => setTimeout(() => setShowSectorSuggestions(false), 200)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (selectedSuggestionIndex >= 0 && filteredSuggestions[selectedSuggestionIndex]) {
+                      // Seçili öneriyi kullan
+                      setSectorSearch(filteredSuggestions[selectedSuggestionIndex]);
+                      setShowSectorSuggestions(false);
+                      setSelectedSuggestionIndex(-1);
+                    } else {
+                      // Analiz yap
+                      handleSectorAnalysis();
+                    }
+                  } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (showSectorSuggestions && filteredSuggestions.length > 0) {
+                      setSelectedSuggestionIndex(prev => 
+                        prev < filteredSuggestions.length - 1 ? prev + 1 : 0
+                      );
+                    }
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (showSectorSuggestions && filteredSuggestions.length > 0) {
+                      setSelectedSuggestionIndex(prev => 
+                        prev > 0 ? prev - 1 : filteredSuggestions.length - 1
+                      );
+                  }
+                  } else if (e.key === 'Escape') {
+                    setShowSectorSuggestions(false);
+                    setSelectedSuggestionIndex(-1);
+                  }
+                }}
+                onFocus={() => {
+                  if (sectorSearch.length >= 1) {
+                    const filtered = filterSectorSuggestions(sectorSearch);
+                    setFilteredSuggestions(filtered);
+                    setShowSectorSuggestions(filtered.length > 0);
+                  }
+                }}
+                onBlur={() => setTimeout(() => {
+                  setShowSectorSuggestions(false);
+                  setSelectedSuggestionIndex(-1);
+                }, 200)}
                 disabled={sectorLoading}
               />
               <button
@@ -2433,40 +2596,59 @@ function RiskAssessmentContent() {
               </button>
 
               {/* Sektör Önerileri Dropdown */}
-              {showSectorSuggestions && sectorSearch.length >= 3 && (
-                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 max-h-48 overflow-y-auto overflow-hidden">
-                  {sectorSuggestions
-                    .filter(s => s.toLowerCase().includes(sectorSearch.toLowerCase()))
-                    .slice(0, 8)
-                    .map((suggestion, idx) => (
+              {showSectorSuggestions && filteredSuggestions.length > 0 && (
+                <div className={`absolute z-50 w-full mt-2 rounded-xl shadow-xl max-h-64 overflow-y-auto overflow-hidden ${isDark ? 'bg-slate-700 border border-slate-600 shadow-slate-900/50' : 'bg-white border border-slate-200 shadow-slate-200/50'}`}>
+                  <div className={`px-3 py-2 text-xs font-bold uppercase ${isDark ? 'text-slate-400 border-b border-slate-600' : 'text-slate-500 border-b border-slate-100'}`}>
+                    Öneriler ({filteredSuggestions.length})
+                  </div>
+                  {filteredSuggestions.map((suggestion, idx) => {
+                    const isSelected = idx === selectedSuggestionIndex;
+                    return (
                       <button
                         key={idx}
-                        className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors border-b border-slate-50 last:border-0"
+                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b last:border-0 ${
+                          isSelected
+                            ? isDark 
+                              ? 'bg-indigo-600 text-white border-indigo-500' 
+                              : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                            : isDark 
+                              ? 'text-slate-200 hover:bg-slate-600 hover:text-indigo-300 border-slate-600' 
+                              : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 border-slate-50'
+                        }`}
                         onClick={() => {
                           setSectorSearch(suggestion);
                           setShowSectorSuggestions(false);
+                          setSelectedSuggestionIndex(-1);
                         }}
+                        onMouseEnter={() => setSelectedSuggestionIndex(idx)}
                       >
-                        {suggestion}
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs opacity-50">#{idx + 1}</span>
+                          <span>{suggestion}</span>
+                        </span>
                       </button>
-                    ))
-                  }
-                  {sectorSuggestions.filter(s => s.toLowerCase().includes(sectorSearch.toLowerCase())).length === 0 && (
-                    <div className="px-4 py-3 text-sm text-slate-400 italic">Öneri bulunamadı</div>
-                  )}
+                    );
+                  })}
+                </div>
+              )}
+              {showSectorSuggestions && filteredSuggestions.length === 0 && sectorSearch.length >= 1 && (
+                <div className={`absolute z-50 w-full mt-2 rounded-xl shadow-xl ${isDark ? 'bg-slate-700 border border-slate-600 shadow-slate-900/50' : 'bg-white border border-slate-200 shadow-slate-200/50'}`}>
+                  <div className={`px-4 py-3 text-sm italic ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
+                    Öneri bulunamadı. Farklı bir arama terimi deneyin.
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Risk Ciddiyet Filtresi */}
             <div className="flex items-center gap-3 mt-4">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Filtrele:</span>
-              <div className="flex bg-slate-100 rounded-lg p-1 w-full">
+              <span className={`text-[10px] uppercase font-bold ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Filtrele:</span>
+              <div className={`flex rounded-lg p-1 w-full ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                 <button
                   onClick={() => setSeverityFilter(0)}
                   className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${severityFilter === 0
-                    ? 'bg-white text-slate-700 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? isDark ? 'bg-slate-600 text-slate-100 shadow-sm' : 'bg-white text-slate-700 shadow-sm'
+                    : isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   Tümü
@@ -2474,8 +2656,8 @@ function RiskAssessmentContent() {
                 <button
                   onClick={() => setSeverityFilter(1)}
                   className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${severityFilter === 1
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-500 hover:text-orange-600'
+                    ? isDark ? 'bg-slate-600 text-orange-400 shadow-sm' : 'bg-white text-orange-600 shadow-sm'
+                    : isDark ? 'text-slate-300 hover:text-orange-400' : 'text-slate-500 hover:text-orange-600'
                     }`}
                 >
                   Orta+
@@ -2483,8 +2665,8 @@ function RiskAssessmentContent() {
                 <button
                   onClick={() => setSeverityFilter(2)}
                   className={`flex-1 py-1 rounded-md text-[10px] font-bold transition-all ${severityFilter === 2
-                    ? 'bg-white text-red-600 shadow-sm'
-                    : 'text-slate-500 hover:text-red-600'
+                    ? isDark ? 'bg-slate-600 text-red-400 shadow-sm' : 'bg-white text-red-600 shadow-sm'
+                    : isDark ? 'text-slate-300 hover:text-red-400' : 'text-slate-500 hover:text-red-600'
                     }`}
                 >
                   Yüksek
@@ -2492,7 +2674,7 @@ function RiskAssessmentContent() {
               </div>
             </div>
 
-            <p className="text-[10px] text-slate-400 mt-3 font-medium flex items-start">
+            <p className={`text-[10px] mt-3 font-medium flex items-start ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
               <span className="mr-1.5 mt-0.5">•</span>
               Seçilen sektöre uygun riskler otomatik listelenir.
             </p>
@@ -2501,16 +2683,16 @@ function RiskAssessmentContent() {
 
           {/* RİSK SINIFLARI BÖLÜMÜ */}
           <div className="px-5 py-3">
-            <h2 className="text-xs font-bold text-slate-500 uppercase flex items-center mb-3 tracking-wider">
+            <h2 className={`text-xs font-bold uppercase flex items-center mb-3 tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               <BookOpen className="w-4 h-4 mr-2" />
               Risk Kütüphanesi
             </h2>
             <div className="relative group">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <Search className={`absolute left-3 top-2.5 h-4 w-4 transition-colors ${isDark ? 'text-slate-400 group-focus-within:text-indigo-400' : 'text-slate-400 group-focus-within:text-indigo-500'}`} />
               <input
                 type="text"
                 placeholder="Risk ara..."
-                className="w-full pl-10 pr-3 py-2 text-sm border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className={`w-full pl-10 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${isDark ? 'border-slate-600 bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'border-slate-200 bg-white'}`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -2519,20 +2701,26 @@ function RiskAssessmentContent() {
           <ul className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-4">
             {filteredCategories.map((cat: any, index: any) => (
               <li key={index} className="mb-0.5">
-                <div className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group cursor-pointer border border-transparent ${risks.some((r: any) => r.categoryCode === cat.code)
-                  ? 'bg-green-50 border-green-200'
+                <div className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group cursor-pointer border ${risks.some((r: any) => r.categoryCode === cat.code)
+                  ? isDark ? 'bg-green-900/30 border-green-700' : 'bg-green-50 border-green-200'
                   : selectedCategory?.category === cat.category
-                    ? 'bg-indigo-50 border-indigo-100'
-                    : 'hover:bg-slate-50 hover:border-slate-200'
+                    ? isDark ? 'bg-indigo-900/30 border-indigo-700' : 'bg-indigo-50 border-indigo-100'
+                    : isDark ? 'border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'border-transparent hover:bg-slate-50 hover:border-slate-200'
                   }`}>
                   <button
                     onClick={() => setSelectedCategory(cat)}
                     className="flex-1 text-left flex items-center"
                   >
-                    <span className={`inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-md mr-2 ${risks.some((r: any) => r.categoryCode === cat.code) ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{cat.code}</span>
+                    <span className={`inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-md mr-2 ${risks.some((r: any) => r.categoryCode === cat.code) 
+                      ? isDark ? 'bg-green-800 text-green-300' : 'bg-green-100 text-green-700'
+                      : isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
+                    }`}>{cat.code}</span>
                     <div className="flex flex-col">
-                      <span className={`text-xs font-bold uppercase line-clamp-1 ${risks.some((r: any) => r.categoryCode === cat.code) ? 'text-green-800' : 'text-slate-700'}`}>{cat.category}</span>
-                      <span className="text-[9px] text-slate-400 font-medium">{cat.items.length} Risk Maddesi</span>
+                      <span className={`text-xs font-bold uppercase line-clamp-1 ${risks.some((r: any) => r.categoryCode === cat.code) 
+                        ? isDark ? 'text-green-300' : 'text-green-800'
+                        : isDark ? 'text-slate-200' : 'text-slate-700'
+                      }`}>{cat.category}</span>
+                      <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{cat.items.length} Risk Maddesi</span>
                     </div>
                   </button>
                   <div className="flex items-center gap-0.5">
@@ -2541,7 +2729,10 @@ function RiskAssessmentContent() {
                       <button
                         onClick={(e) => handleRemoveAllFromCategory(e, cat)}
                         title="Tümünü Çıkar"
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all"
+                        className={`p-1.5 rounded-lg transition-all ${isDark 
+                          ? 'text-slate-400 hover:text-red-400 hover:bg-red-900/30' 
+                          : 'text-slate-400 hover:text-red-600 hover:bg-red-100'
+                        }`}
                       >
                         <MinusCircle className="w-4 h-4" />
                       </button>
@@ -2551,7 +2742,10 @@ function RiskAssessmentContent() {
                       <button
                         onClick={(e) => handleAddAllFromCategory(e, cat)}
                         title="Tümünü Ekle"
-                        className="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-100 rounded-lg transition-all"
+                        className={`p-1.5 rounded-lg transition-all ${isDark 
+                          ? 'text-slate-400 hover:text-green-400 hover:bg-green-900/30' 
+                          : 'text-slate-400 hover:text-green-600 hover:bg-green-100'
+                        }`}
                       >
                         <PlusCircle className="w-4 h-4" />
                       </button>
@@ -2895,14 +3089,17 @@ function RiskAssessmentContent() {
 
               {/* Risklerim - Hızlı Ekleme Bölümü */}
               {session && (
-                <div className="px-6 py-4 border-b border-slate-200 bg-amber-50/50">
+                <div className={`px-6 py-4 border-b ${isDark ? 'border-slate-700 bg-amber-900/20' : 'border-slate-200 bg-amber-50/50'}`}>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-amber-600" />
-                      <span className="font-bold text-slate-700 text-sm">Risklerim</span>
+                      <Shield className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                      <span className={`font-bold text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Risklerim</span>
                     </div>
                     <select
-                      className="flex-1 border border-amber-200 bg-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                      className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent ${isDark 
+                        ? 'border-amber-700 bg-slate-700 text-slate-100' 
+                        : 'border-amber-200 bg-white'
+                      }`}
                       id="userRiskSelect"
                       defaultValue=""
                       onChange={() => {
@@ -2940,14 +3137,17 @@ function RiskAssessmentContent() {
                     </button>
                     <Link
                       href="/panel/risk-maddelerim"
-                      className="text-xs text-amber-700 hover:text-amber-900 hover:underline"
+                      className={`text-xs hover:underline ${isDark 
+                        ? 'text-amber-400 hover:text-amber-300' 
+                        : 'text-amber-700 hover:text-amber-900'
+                      }`}
                     >
                       Düzenle
                     </Link>
                   </div>
                   {userRisks.length === 0 && (
-                    <p className="text-xs text-amber-600 mt-2">
-                      Henüz risk eklemediniz. <Link href="/panel/risk-maddelerim" className="underline font-medium">Risk Maddelerim</Link> sayfasından ekleyebilirsiniz.
+                    <p className={`text-xs mt-2 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                      Henüz risk eklemediniz. <Link href="/panel/risk-maddelerim" className={`underline font-medium ${isDark ? 'text-amber-300' : ''}`}>Risk Maddelerim</Link> sayfasından ekleyebilirsiniz.
                     </p>
                   )}
                 </div>
@@ -3452,20 +3652,26 @@ function RiskAssessmentContent() {
       {
         deleteConfirmStep > 0 && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full border border-gray-200 transform transition-all scale-100">
+            <div className={`rounded-xl shadow-2xl p-6 max-w-md w-full border transform transition-all scale-100 ${isDark 
+              ? 'bg-slate-800 border-slate-700' 
+              : 'bg-white border-gray-200'
+            }`}>
               <div className="flex flex-col items-center text-center">
-                <div className="bg-red-100 p-3 rounded-full mb-4">
-                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                <div className={`p-3 rounded-full mb-4 ${isDark ? 'bg-red-900/30' : 'bg-red-100'}`}>
+                  <AlertTriangle className={`w-8 h-8 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Tümünü Silmek İstiyor musunuz?</h3>
-                <p className="text-gray-500 mb-6">
-                  Tablodaki <span className="font-bold text-gray-800">TÜM VERİLER</span> silinecek ve bu işlem geri alınamaz.
+                <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>Tümünü Silmek İstiyor musunuz?</h3>
+                <p className={`mb-6 ${isDark ? 'text-slate-300' : 'text-gray-500'}`}>
+                  Tablodaki <span className={`font-bold ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>TÜM VERİLER</span> silinecek ve bu işlem geri alınamaz.
                 </p>
                 <div className="flex space-x-3 w-full">
                   <button
                     onClick={() => setDeleteConfirmStep(0)}
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-colors"
+                    className={`flex-1 px-4 py-2 font-bold rounded-lg transition-colors ${isDark 
+                      ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
                   >
                     İptal
                   </button>
