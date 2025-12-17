@@ -39,16 +39,39 @@ async function createReport(userId: string, request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // Acil Durum Planı için documentNo'yu ayrı kolona da kaydet
+        // Boş string'i null'a çevir, sadece gerçek değer varsa kaydet
+        let documentNo: string | null = null;
+        if (type === 'EMERGENCY_PLAN' && data?.documentNo) {
+            const docNo = String(data.documentNo).trim();
+            documentNo = docNo.length > 0 ? docNo : null;
+        }
+        
+        // Debug log
+        console.log('DocumentNo Debug:', {
+            type,
+            documentNo,
+            dataDocumentNo: data?.documentNo,
+            hasDocumentNo: !!data?.documentNo,
+            trimmed: documentNo
+        });
+
         const report = await prisma.reportHistory.create({
             data: {
                 userId,
                 type,
                 title: title || 'İsimsiz Rapor',
-                data
+                data,
+                documentNo
             }
         });
 
-        console.log('Report created:', report.id);
+        console.log('Report created:', {
+            id: report.id,
+            type: report.type,
+            documentNo: report.documentNo,
+            hasDocumentNo: !!report.documentNo
+        });
         return NextResponse.json(report);
     } catch (error) {
         console.error('Create report prisma error:', error);

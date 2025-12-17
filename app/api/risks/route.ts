@@ -11,7 +11,13 @@ export async function GET() {
     try {
         const fileContents = await fs.promises.readFile(dataFilePath, 'utf8');
         const data = JSON.parse(fileContents);
-        return NextResponse.json(data);
+        
+        // Cache için headers ekle (1 saat cache, 1 gün stale-while-revalidate)
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+            },
+        });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to read data' }, { status: 500 });
     }

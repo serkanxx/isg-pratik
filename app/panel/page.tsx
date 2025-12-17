@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -519,23 +519,21 @@ export default function PanelPage() {
             </div>
 
             {/* Container for Visit Programs and Notes */}
-            {/* Container for Visit Programs and Notes */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8 w-full">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6 w-full">
                 {/* Ziyaret Programları */}
                 {visitPrograms.length > 0 && (
-
-                    <div className="xl:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden w-full">
-                        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-indigo-600" />
+                    <div className="xl:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden w-full">
+                        <div className="p-3 border-b border-slate-200 flex items-center justify-between">
+                            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <Calendar className="w-4 h-4 text-indigo-600" />
                                 Ziyaret Programım
                             </h2>
-                            <Link href="/panel/ziyaret-programi" className="text-sm text-indigo-600 font-medium hover:underline flex items-center gap-1">
-                                Tümünü Gör <ChevronRight className="w-4 h-4" />
+                            <Link href="/panel/ziyaret-programi" className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
+                                Tümünü Gör <ChevronRight className="w-3 h-3" />
                             </Link>
                         </div>
-                        <div className="p-4">
-                            <div className="flex flex-col md:flex-row flex-wrap gap-3">
+                        <div className="p-3">
+                            <div className="flex flex-col gap-2">
                                 {(() => {
                                     // Tarihi en yakın olan programı bul
                                     if (visitPrograms.length === 0) return null;
@@ -606,36 +604,34 @@ export default function PanelPage() {
                                         <Link
                                             key={nearestProgram.id}
                                             href="/panel/ziyaret-programi"
-                                            className="p-5 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all bg-white w-full md:min-w-[450px]"
+                                            className="p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all bg-white w-full"
                                         >
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex flex-col gap-1">
-                                                    <h3 className="font-bold text-lg truncate visit-program-title">{nearestProgram.name}</h3>
-                                                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                                                        <Building2 className="w-4 h-4" />
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                                    <h3 className="font-bold text-sm truncate visit-program-title">{nearestProgram.name}</h3>
+                                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                                        <Building2 className="w-3 h-3" />
                                                         {nearestProgram.companies.length} Firma
                                                     </div>
                                                 </div>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${nearestProgram.type === 'monthly' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'}`}>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${nearestProgram.type === 'monthly' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'}`}>
                                                     {nearestProgram.type === 'monthly' ? 'Aylık' : 'Haftalık'}
                                                 </span>
                                             </div>
 
-                                            {/* Mini Takvim Önizleme - Sadece Doluluk */}
-                                            <div className="mt-4 pt-4 border-t border-indigo-100/50 dark:border-indigo-900/30">
-                                                <div className="grid grid-cols-5 gap-2 mb-2">
+                                            {/* Mini Takvim Önizleme - Kompakt */}
+                                            <div className="mt-2 pt-2 border-t border-indigo-100/50 dark:border-indigo-900/30">
+                                                <div className="grid grid-cols-5 gap-1 mb-1">
                                                     {['Pzt', 'Sal', 'Çar', 'Per', 'Cum'].map(d => (
-                                                        <div key={d} className="text-xs text-center text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{d}</div>
+                                                        <div key={d} className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold uppercase">{d}</div>
                                                     ))}
                                                 </div>
-                                                <div className="grid grid-cols-5 gap-2">
+                                                <div className="grid grid-cols-5 gap-1">
                                                     {(() => {
                                                         const weekdays = (nearestProgram.schedule || []).filter((d: any) => !['Cumartesi', 'Pazar'].includes(d.dayName));
                                                         if (weekdays.length === 0) return null;
 
                                                         const firstDayDate = new Date(weekdays[0].date);
-                                                        // getDay(): 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
-                                                        // We want mapping: Mon(1)->0, Tue(2)->1, ..., Fri(5)->4
                                                         const startOffset = Math.max(0, firstDayDate.getDay() - 1);
 
                                                         const emptySlots = Array(startOffset).fill(null);
@@ -643,7 +639,7 @@ export default function PanelPage() {
 
                                                         return allSlots.map((day, i) => {
                                                             if (!day) {
-                                                                return <div key={`empty-${i}`} className="h-12 rounded bg-transparent" />;
+                                                                return <div key={`empty-${i}`} className="h-8 rounded bg-transparent" />;
                                                             }
 
                                                             const hasVisit = day.companies && day.companies.length > 0;
@@ -652,19 +648,19 @@ export default function PanelPage() {
                                                             return (
                                                                 <div
                                                                     key={i}
-                                                                    className={`h-12 rounded-lg flex flex-col items-center justify-center transition-all ${hasVisit
+                                                                    className={`h-8 rounded flex flex-col items-center justify-center transition-all ${hasVisit
                                                                         ? 'visit-day-light border border-indigo-100 dark:border-slate-700'
                                                                         : 'bg-slate-50 border border-slate-100 dark:bg-slate-700/50 dark:border-slate-600'
                                                                         }`}
                                                                     title={hasVisit ? `${day.companies.length} Ziyaret:\n${day.companies.map((c: any) => c.title).join('\n')}` : `Tarih: ${new Date(day.date).toLocaleDateString('tr-TR')}`}
                                                                 >
-                                                                    <span className={`text-sm font-bold ${hasVisit ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                                    <span className={`text-xs font-bold ${hasVisit ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                                                                         {dayNumber}
                                                                     </span>
                                                                     {hasVisit && (
-                                                                        <div className="flex gap-0.5 mt-1">
+                                                                        <div className="flex gap-0.5 mt-0.5">
                                                                             {[...Array(Math.min(day.companies.length, 3))].map((_, k) => (
-                                                                                <div key={k} className="w-1 h-1 rounded-full bg-indigo-400 dark:bg-indigo-300"></div>
+                                                                                <div key={k} className="w-0.5 h-0.5 rounded-full bg-indigo-400 dark:bg-indigo-300"></div>
                                                                             ))}
                                                                         </div>
                                                                     )}

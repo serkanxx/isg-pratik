@@ -6,7 +6,16 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
     title: 'Risk Değerlendirmesi Nedir? | İSG Pratik',
     description: 'Risk değerlendirmesi nedir, nasıl yapılır? 6331 sayılı kanuna göre risk analizi zorunluluğu ve Fine-Kinney metodu hakkında detaylı bilgi.',
-    keywords: ['risk değerlendirmesi nedir', 'risk analizi nasıl yapılır', 'fine kinney metodu', '6331 isg kanunu', 'iş güvenliği risk analizi'],
+    keywords: ['risk değerlendirmesi nedir', 'risk analizi nasıl yapılır', 'fine kinney metodu', '6331 isg kanunu', 'iş güvenliği risk analizi', 'risk skoru hesaplama', 'tehlike analizi'],
+    openGraph: {
+        title: 'Risk Değerlendirmesi Nedir? | İSG Pratik',
+        description: 'Risk değerlendirmesi nedir, nasıl yapılır? 6331 sayılı kanuna göre risk analizi zorunluluğu ve Fine-Kinney metodu hakkında detaylı bilgi.',
+        url: 'https://isgpratik.com/risk-degerlendirme-nedir',
+        type: 'article',
+    },
+    alternates: {
+        canonical: 'https://isgpratik.com/risk-degerlendirme-nedir',
+    },
 };
 
 export default function RiskDegerlendirmeNedir() {

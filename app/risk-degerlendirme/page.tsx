@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from 'react';
 import {
   AlertTriangle, Download, Save, Plus, Trash2, CheckCircle, Shield,
-  Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut, MinusCircle, Building2, Eye, FileCheck, LayoutDashboard, Moon, Sun
+  Lock, Menu, X, FileText, Calendar, User, ChevronRight, BookOpen, ArrowRightCircle, Search, Image as ImageIcon, Upload, PlusCircle, AlertCircle, RefreshCw, Briefcase, Printer, ChevronDown, ChevronUp, Zap, LogIn, UserPlus, LogOut, MinusCircle, Building2, Eye, FileCheck, LayoutDashboard, Moon, Sun, Loader2
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jsPDF ve autoTable lazy load edilecek (PDF oluşturulurken yüklenecek)
 import { RiskItem, RiskCategory, RiskLibraryItem, HeaderInfo, RiskForm, Notification, Company, VALIDITY_YEARS, DangerClass, DANGER_CLASS_LABELS } from '../types';
 import { calculateRiskScore, getRiskLevel, formatDate, P_VALUES, F_VALUES, S_VALUES } from '../utils';
 import { useSession, signOut } from "next-auth/react";
@@ -161,6 +160,8 @@ function RiskAssessmentContent() {
   const tableTopRef = useRef<HTMLDivElement>(null);
 
   const [loadingReport, setLoadingReport] = useState(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0); // Progress bar için (0-100)
 
   // --- LOCAL STORAGE ---
   useEffect(() => {
@@ -244,10 +245,17 @@ function RiskAssessmentContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const showNotification = (msg: string, type: 'success' | 'error' = 'success') => {
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
     setNotification({ show: true, message: msg, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 4000);
-  };
+  }, []);
+
+  // Filtered risks - useMemo ile optimize edildi
+  const filteredRisks = useMemo(() => {
+    if (severityFilter === 0) return risks;
+    const minScore = severityFilter === 2 ? 200 : (severityFilter === 1 ? 70 : 0);
+    return risks.filter((r: any) => r.score >= minScore);
+  }, [risks, severityFilter]);
 
   // Kullanıcı risklerini çek
   const fetchUserRisks = async () => {
@@ -914,6 +922,18 @@ function RiskAssessmentContent() {
       return;
     }
 
+    setIsGenerating(true);
+    setProgress(0);
+
+    try {
+      // jsPDF ve autoTable'ı lazy load et (sadece gerektiğinde yükle)
+      setProgress(5);
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+      ]);
+      setProgress(10);
+
     // Ana belge - önce dikey (portrait) prosedür sayfaları için başlat
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
@@ -950,8 +970,10 @@ function RiskAssessmentContent() {
       doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
 
       doc.setFont('Roboto');
+      setProgress(20); // Font yükleme tamamlandı
     } catch (error) {
       console.error("Font yüklenirken hata oluştu:", error);
+      setProgress(20);
     }
 
     // ============ PROSEDÜR SAYFALARI (DİKEY) ============
@@ -1921,6 +1943,8 @@ function RiskAssessmentContent() {
 
     prosedurPageCount = doc.getNumberOfPages();
 
+    setProgress(50); // Prosedür sayfaları tamamlandı
+
     // ============ TABLO SAYFALARI (YATAY) ============
     // Yeni yatay sayfa ekle (prosedür varsa)
     if (prosedurPageCount > 0) {
@@ -2246,6 +2270,8 @@ function RiskAssessmentContent() {
     const safeTitle = titleWords.slice(0, 2).join(' ').replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ ]/g, "") || 'Firma';
     const filename = `${safeTitle} RİSK DEĞERLENDİRME FORMU.pdf`;
 
+    setProgress(80); // Risk tablosu oluşturuldu
+
     // Risk Prosedürü tikli değilse, prosedür sayfalarını (1-8) sil
     if (!includeProcedure && prosedurPageCount > 0) {
       // Prosedür sayfalarını sondan başa doğru sil (sayfa numaraları kaymaması için)
@@ -2322,6 +2348,8 @@ function RiskAssessmentContent() {
       }
     }
 
+    setProgress(90); // Sayfa numaraları ve footer'lar eklendi
+
     // Veritabanına kaydet
     try {
       if (headerInfo.title) {
@@ -2347,7 +2375,21 @@ function RiskAssessmentContent() {
       console.error('Rapor kayıt hatası:', e);
     }
 
+    setProgress(95); // Veritabanı kaydı başlatıldı
     doc.save(filename);
+    setProgress(100); // PDF kaydedildi
+    showNotification('PDF başarıyla indirildi!', 'success');
+  } catch (error: any) {
+    console.error('PDF hatası:', error);
+    showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
+    setProgress(0);
+  } finally {
+    // Kısa bir gecikme ile progress'i sıfırla (kullanıcı %100'ü görebilsin)
+    setTimeout(() => {
+      setIsGenerating(false);
+      setProgress(0);
+    }, 500);
+  }
   };
 
   const handleSelectPreset = (item: any, categoryCode: any) => {
@@ -3492,7 +3534,7 @@ function RiskAssessmentContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white">
-                    {risks.map((r, idx) => (
+                    {filteredRisks.map((r, idx) => (
                       <tr key={`${r.id}-${idx}`} className="hover:bg-indigo-50/10 transition-colors">
                         <td className="px-2 py-3 border border-slate-200 font-mono font-bold text-slate-600 text-center text-xs">{r.riskNo}</td>
                         <td className="px-2 py-3 border border-slate-200 align-top">
@@ -3853,6 +3895,39 @@ function RiskAssessmentContent() {
           </button>
         )
       }
+
+      {/* Loading Overlay with Progress Bar */}
+      {isGenerating && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex flex-col items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-bounce-in max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">PDF Hazırlanıyor</h3>
+            <p className="text-slate-500 mb-6">Lütfen bekleyiniz, belgeniz oluşturuluyor...</p>
+            
+            {/* Progress Bar */}
+            <div className="w-full mb-3">
+              <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
+                <div 
+                  className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-500 h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2 relative"
+                  style={{ width: `${progress}%` }}
+                >
+                  {progress > 20 && (
+                    <span className="text-xs font-bold text-white drop-shadow-sm">{progress}%</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between w-full text-sm">
+              <span className="text-slate-500">
+                {progress < 30 ? 'Hazırlanıyor...' : progress < 70 ? 'Oluşturuluyor...' : progress < 100 ? 'Son düzenlemeler...' : 'Tamamlandı!'}
+              </span>
+              <span className="font-bold text-slate-700">{progress}%</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 }

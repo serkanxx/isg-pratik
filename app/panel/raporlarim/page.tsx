@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { FileText, Download, RefreshCw, AlertTriangle, Shield, CheckCircle, Search, Calendar, Trash2, Filter } from 'lucide-react';
+import { FileText, Download, RefreshCw, AlertTriangle, Shield, CheckCircle, Search, Calendar, Trash2, Filter, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -11,6 +11,7 @@ interface ReportHistory {
     type: string;
     title: string;
     createdAt: string;
+    documentNo?: string; // Acil Durum Planı için doküman no
     data: any;
 }
 
@@ -21,6 +22,8 @@ export default function ReportsPage() {
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isGenerating, setIsGenerating] = useState<boolean>(false);
+    const [progress, setProgress] = useState<number>(0); // Progress bar için (0-100)
 
     // Yeni: Arama ve Filtreleme State'leri
     const [searchQuery, setSearchQuery] = useState('');
@@ -44,9 +47,111 @@ export default function ReportsPage() {
         }
     };
 
+    const handleDownloadWorkPermit = async (report: ReportHistory) => {
+        setDownloadingId(report.id);
+        setIsGenerating(true);
+        setProgress(0);
+
+        try {
+            // Rapor verisinden iş izin formu bilgilerini al
+            const reportData = report.data as any;
+            
+            // API'nin beklediği formata dönüştür
+            const apiPayload = {
+                permitNo: reportData.permitNo || '',
+                companyName: reportData.companyName || report.title || '',
+                location: reportData.location || '',
+                workDescription: reportData.workDescription || '',
+                startTime: reportData.startTime || '',
+                endTime: reportData.endTime || '',
+                permitTypes: reportData.permitTypes || [],
+                safetyMeasures: reportData.safetyMeasures || [],
+                ppeList: reportData.ppeList || [],
+                requesterLabel: reportData.requesterLabel || 'İzni İsteyen',
+                requesterName: reportData.requesterName || '',
+                approverLabel: reportData.approverLabel || 'İzni Onaylayan',
+                approverName: reportData.approverName || ''
+            };
+
+            // XMLHttpRequest ile progress tracking
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/is-izin-pdf', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.responseType = 'blob';
+
+                // Progress event listener
+                xhr.addEventListener('progress', (event) => {
+                    if (event.lengthComputable && event.total > 0) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        setProgress(percentComplete);
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        setProgress(100);
+                        resolve(xhr.response);
+                    } else {
+                        reject(new Error(`PDF oluşturulamadı: ${xhr.statusText}`));
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    reject(new Error('PDF oluşturulurken bir hata oluştu'));
+                });
+
+                // Simüle edilmiş progress (eğer progress event gelmezse veya yavaşsa)
+                const progressInterval = setInterval(() => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        clearInterval(progressInterval);
+                        setProgress(prev => prev < 100 ? 100 : prev);
+                        return;
+                    }
+                    // Yavaş yavaş artır (maksimum %90'a kadar, gerçek progress gelirse override edilir)
+                    setProgress(prev => {
+                        if (prev < 90) {
+                            return Math.min(prev + 2, 90);
+                        }
+                        return prev;
+                    });
+                }, 300);
+
+                xhr.send(JSON.stringify(apiPayload));
+            });
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const permitNo = reportData.permitNo || '0000';
+            a.download = `Is-Izin-Formu-${permitNo}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('İndirme hatası:', error);
+            alert('PDF indirilirken bir hata oluştu.');
+            setProgress(0);
+        } finally {
+            setDownloadingId(null);
+            // Kısa bir gecikme ile progress'i sıfırla (kullanıcı %100'ü görebilsin)
+            setTimeout(() => {
+                setIsGenerating(false);
+                setProgress(0);
+            }, 500);
+        }
+    };
+
     const handleDownloadEmergencyPlan = async (report: ReportHistory) => {
         setDownloadingId(report.id);
+        setIsGenerating(true);
+        setProgress(0);
+
         try {
+            // Doküman no'yu önce kolondan, yoksa data JSON'ından oku (geriye dönük uyumluluk)
+            const documentNo = (report as any).documentNo || report.data?.documentNo || '';
+            
             // API'nin beklediği formata dönüştür
             const apiPayload = {
                 companyName: report.data.company?.title,
@@ -55,18 +160,57 @@ export default function ReportsPage() {
                 employer: report.data.company?.employer,
                 isgUzmani: report.data.company?.igu,
                 reportDate: report.data.date,
-                validityDate: report.data.validity
+                validityDate: report.data.validity,
+                documentNo: documentNo // Doküman no'yu da gönder
             };
 
-            const response = await fetch('/api/acil-durum-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(apiPayload)
+            // XMLHttpRequest ile progress tracking
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/acil-durum-pdf', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.responseType = 'blob';
+
+                // Progress event listener
+                xhr.addEventListener('progress', (event) => {
+                    if (event.lengthComputable && event.total > 0) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        setProgress(percentComplete);
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        setProgress(100);
+                        resolve(xhr.response);
+                    } else {
+                        reject(new Error(`PDF oluşturulamadı: ${xhr.statusText}`));
+                    }
+                });
+
+                xhr.addEventListener('error', () => {
+                    reject(new Error('PDF oluşturulurken bir hata oluştu'));
+                });
+
+                // Simüle edilmiş progress (eğer progress event gelmezse veya yavaşsa)
+                const progressInterval = setInterval(() => {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        clearInterval(progressInterval);
+                        setProgress(prev => prev < 100 ? 100 : prev);
+                        return;
+                    }
+                    // Yavaş yavaş artır (maksimum %90'a kadar, gerçek progress gelirse override edilir)
+                    setProgress(prev => {
+                        if (prev < 90) {
+                            return Math.min(prev + 2, 90);
+                        }
+                        return prev;
+                    });
+                }, 300);
+
+                xhr.send(JSON.stringify(apiPayload));
             });
 
-            if (!response.ok) throw new Error('PDF oluşturulamadı');
-
-            const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -78,8 +222,14 @@ export default function ReportsPage() {
         } catch (error) {
             console.error('İndirme hatası:', error);
             alert('PDF indirilirken bir hata oluştu.');
+            setProgress(0);
         } finally {
             setDownloadingId(null);
+            // Kısa bir gecikme ile progress'i sıfırla (kullanıcı %100'ü görebilsin)
+            setTimeout(() => {
+                setIsGenerating(false);
+                setProgress(0);
+            }, 500);
         }
     };
 
@@ -227,14 +377,14 @@ export default function ReportsPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <div className="mb-6 flex items-end justify-between">
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="mb-4 flex items-end justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <FileText className="w-7 h-7 text-indigo-600" />
+                    <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <FileText className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
                         Raporlarım
                     </h1>
-                    <p className="text-slate-500 mt-1">Geçmişte oluşturduğunuz tüm risk analizleri ve acil durum planları</p>
+                    <p className="text-xs md:text-sm text-slate-500 mt-0.5">Geçmişte oluşturduğunuz tüm risk analizleri ve acil durum planları</p>
                 </div>
 
                 {selectedIds.length > 0 && (
@@ -250,35 +400,35 @@ export default function ReportsPage() {
             </div>
 
             {/* Arama ve Filtreler */}
-            <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-4">
                 {/* Arama Kutusu */}
-                <div className="relative flex-1 min-w-[200px] max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="relative flex-1 min-w-[180px] max-w-xs">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Firma adı ile ara..."
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs md:text-sm bg-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all"
                     />
                 </div>
 
                 {/* Tür Filtresi */}
-                <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-500">Filtrele:</span>
+                <div className="flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs text-slate-500 hidden sm:inline">Filtre:</span>
                 </div>
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
                     {[
                         { value: 'all', label: 'Tümü' },
-                        { value: 'RISK_ASSESSMENT', label: 'Risk Analizi' },
-                        { value: 'EMERGENCY_PLAN', label: 'Acil Durum' },
-                        { value: 'WORK_PERMIT', label: 'İş İzin Formu' }
+                        { value: 'RISK_ASSESSMENT', label: 'Risk' },
+                        { value: 'EMERGENCY_PLAN', label: 'Acil' },
+                        { value: 'WORK_PERMIT', label: 'İzin' }
                     ].map((opt) => (
                         <button
                             key={opt.value}
                             onClick={() => setFilterType(opt.value as any)}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === opt.value
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${filterType === opt.value
                                 ? 'bg-white text-slate-800 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
@@ -287,7 +437,7 @@ export default function ReportsPage() {
                         </button>
                     ))}
                 </div>
-                <span className="text-sm text-slate-400">
+                <span className="text-xs text-slate-400 whitespace-nowrap">
                     {filteredReports.length} rapor
                 </span>
             </div>
@@ -328,19 +478,19 @@ export default function ReportsPage() {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
-                                    <th className="px-6 py-4 w-10">
+                                    <th className="px-2 py-2 w-8">
                                         <input
                                             type="checkbox"
                                             checked={filteredReports.length > 0 && selectedIds.length === filteredReports.length}
                                             onChange={toggleSelectAll}
-                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rapor Türü</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Başlık / Firma</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rapor Tarihi</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Oluşturulma Tarihi</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">İşlemler</th>
+                                    <th className="px-3 py-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Tür</th>
+                                    <th className="px-3 py-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Firma</th>
+                                    <th className="px-3 py-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Rapor Tarihi</th>
+                                    <th className="px-3 py-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider hidden lg:table-cell">Oluşturulma</th>
+                                    <th className="px-3 py-2 text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider text-right w-20">İşlem</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -352,86 +502,93 @@ export default function ReportsPage() {
 
                                     return (
                                         <tr key={report.id} className={`transition-colors ${isSelected ? 'bg-indigo-50 hover:bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                                            <td className="px-6 py-4">
+                                            <td className="px-2 py-2">
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
                                                     onChange={() => toggleSelect(report.id)}
-                                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                    className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                 />
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${report.type === 'RISK_ASSESSMENT'
+                                            <td className="px-3 py-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={`p-1 rounded ${report.type === 'RISK_ASSESSMENT'
                                                             ? 'bg-indigo-100 text-indigo-600'
                                                             : report.type === 'WORK_PERMIT'
                                                                 ? 'bg-blue-100 text-blue-600'
                                                                 : 'bg-orange-100 text-orange-600'
                                                         }`}>
                                                         {report.type === 'RISK_ASSESSMENT'
-                                                            ? <Shield className="w-5 h-5" />
+                                                            ? <Shield className="w-3.5 h-3.5" />
                                                             : report.type === 'WORK_PERMIT'
-                                                                ? <FileText className="w-5 h-5" />
-                                                                : <AlertTriangle className="w-5 h-5" />}
+                                                                ? <FileText className="w-3.5 h-3.5" />
+                                                                : <AlertTriangle className="w-3.5 h-3.5" />}
                                                     </div>
-                                                    <span className="font-medium text-slate-700">
+                                                    <span className="font-medium text-slate-700 text-xs">
                                                         {report.type === 'RISK_ASSESSMENT'
-                                                            ? 'Risk Analizi'
+                                                            ? 'Risk Değerlendirme'
                                                             : report.type === 'WORK_PERMIT'
-                                                                ? 'İş İzin Formu'
-                                                                : 'Acil Durum Planı'}
+                                                                ? 'İş İzin'
+                                                                : 'Acil Durum'}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 py-2">
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-slate-800 mb-1">{companyInfo.name || '-'}</span>
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full w-fit font-bold ${dangerStatus.class}`}>
-                                                        {dangerStatus.label}
-                                                    </span>
+                                                    <span className="font-bold text-slate-800 text-xs leading-tight line-clamp-1">{companyInfo.name || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center text-slate-600 text-sm font-medium">
-                                                    <Calendar className="w-4 h-4 mr-2 opacity-50" />
+                                            <td className="px-3 py-2 hidden md:table-cell">
+                                                <div className="flex items-center text-slate-600 text-xs font-medium">
+                                                    <Calendar className="w-3 h-3 mr-1 opacity-50" />
                                                     {reportDate}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center text-slate-500 text-sm">
+                                            <td className="px-3 py-2 hidden lg:table-cell">
+                                                <div className="text-slate-500 text-xs">
                                                     {new Date(report.createdAt).toLocaleDateString('tr-TR', {
-                                                        day: 'numeric', month: 'long', year: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit'
+                                                        day: '2-digit', month: 'short', year: 'numeric'
                                                     })}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <td className="px-3 py-2 text-right">
+                                                <div className="flex justify-end gap-1">
                                                     {report.type === 'RISK_ASSESSMENT' ? (
                                                         <Link
                                                             href={`/risk-degerlendirme?reportId=${report.id}`}
-                                                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                            title="Düzenle/Oluştur"
                                                         >
-                                                            <RefreshCw className="w-4 h-4" />
-                                                            Düzenle/Oluştur
+                                                            <RefreshCw className="w-3.5 h-3.5" />
+                                                            <span className="hidden sm:inline">Düzenle</span>
                                                         </Link>
                                                     ) : report.type === 'WORK_PERMIT' ? (
-                                                        <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-500">
-                                                            <FileText className="w-4 h-4" />
-                                                            {(report.data as any)?.permitNo || 'İzin Formu'}
-                                                        </span>
+                                                        <button
+                                                            onClick={() => handleDownloadWorkPermit(report)}
+                                                            disabled={downloadingId === report.id}
+                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded transition-colors disabled:opacity-50"
+                                                            title="İndir"
+                                                        >
+                                                            {downloadingId === report.id ? (
+                                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <Download className="w-3.5 h-3.5" />
+                                                            )}
+                                                            <span className="hidden sm:inline">İndir</span>
+                                                        </button>
                                                     ) : (
                                                         <button
                                                             onClick={() => handleDownloadEmergencyPlan(report)}
                                                             disabled={downloadingId === report.id}
-                                                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200 disabled:opacity-50"
+                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded transition-colors disabled:opacity-50"
+                                                            title="İndir"
                                                         >
                                                             {downloadingId === report.id ? (
-                                                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                                                             ) : (
-                                                                <Download className="w-4 h-4" />
+                                                                <Download className="w-3.5 h-3.5" />
                                                             )}
-                                                            İndir
+                                                            <span className="hidden sm:inline">İndir</span>
                                                         </button>
                                                     )}
                                                 </div>
@@ -444,6 +601,39 @@ export default function ReportsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Loading Overlay with Progress Bar */}
+            {isGenerating && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex flex-col items-center justify-center p-4">
+                    <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-bounce-in max-w-md w-full text-center">
+                        <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                            <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">PDF Hazırlanıyor</h3>
+                        <p className="text-slate-500 mb-6">Lütfen bekleyiniz, belgeniz oluşturuluyor...</p>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-full mb-3">
+                            <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
+                                <div 
+                                    className="bg-gradient-to-r from-orange-500 via-orange-600 to-red-500 h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2 relative"
+                                    style={{ width: `${progress}%` }}
+                                >
+                                    {progress > 20 && (
+                                        <span className="text-xs font-bold text-white drop-shadow-sm">{progress}%</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between w-full text-sm">
+                            <span className="text-slate-500">
+                                {progress < 30 ? 'Hazırlanıyor...' : progress < 70 ? 'Oluşturuluyor...' : progress < 100 ? 'Son düzenlemeler...' : 'Tamamlandı!'}
+                            </span>
+                            <span className="font-bold text-slate-700">{progress}%</span>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

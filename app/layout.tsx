@@ -40,7 +40,18 @@ export const metadata: Metadata = {
     "risk değerlendirme formu",
     "risk skoru hesaplama",
     "isg yazılımı",
-    "online risk değerlendirme"
+    "online risk değerlendirme",
+    "acil durum eylem planı",
+    "ieyep",
+    "iş izin formu",
+    "nace kod sorgulama",
+    "tehlike sınıfı",
+    "6331 sayılı kanun",
+    "iş güvenliği platformu",
+    "isg yönetim sistemi",
+    "risk değerlendirme programı",
+    "iş güvenliği raporu",
+    "isg dokümantasyon"
   ],
   authors: [{ name: "İSG Pratik", url: "https://isgpratik.com" }],
   creator: "İSG Pratik",
@@ -62,10 +73,10 @@ export const metadata: Metadata = {
     url: "https://isgpratik.com",
     siteName: "İSG Pratik",
     title: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
-    description: "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı.",
+    description: "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı. Acil durum planları, iş izin formları ve NACE kod sorgulama.",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://isgpratik.com/logo.png",
         width: 1200,
         height: 630,
         alt: "İSG Pratik - Risk Değerlendirme Sistemi",
@@ -112,32 +123,79 @@ export default function RootLayout({
   // JSON-LD yapılandırılmış veri
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "İSG Pratik",
-    "alternateName": "İSG Pratik Risk Değerlendirme Sistemi",
-    "description": "İş Sağlığı ve Güvenliği Risk Değerlendirme Sistemi. Fine-Kinney metoduyla profesyonel risk analizi yapın.",
-    "url": "https://isgpratik.com",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Web",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "TRY",
-      "description": "3 ay ücretsiz premium deneme"
-    },
-    "provider": {
-      "@type": "Organization",
-      "name": "İSG Pratik",
-      "url": "https://isgpratik.com"
-    },
-    "featureList": [
-      "Fine-Kinney risk değerlendirme metodu",
-      "Otomatik risk skoru hesaplama",
-      "PDF rapor oluşturma",
-      "Risk kütüphanesi",
-      "Sektörel risk analizi"
-    ],
-    "inLanguage": "tr"
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://isgpratik.com/#organization",
+        "name": "İSG Pratik",
+        "url": "https://isgpratik.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://isgpratik.com/logo.png",
+          "width": 512,
+          "height": 512
+        },
+        "sameAs": [
+          "https://www.isgpratik.com"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer service",
+          "availableLanguage": "Turkish"
+        }
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://isgpratik.com/#webapp",
+        "name": "İSG Pratik",
+        "alternateName": "İSG Pratik Risk Değerlendirme Sistemi",
+        "description": "İş Sağlığı ve Güvenliği Risk Değerlendirme Sistemi. Fine-Kinney metoduyla profesyonel risk analizi yapın.",
+        "url": "https://isgpratik.com",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "TRY",
+          "description": "Ücretsiz risk değerlendirme aracı"
+        },
+        "provider": {
+          "@id": "https://isgpratik.com/#organization"
+        },
+        "featureList": [
+          "Fine-Kinney risk değerlendirme metodu",
+          "Otomatik risk skoru hesaplama",
+          "PDF rapor oluşturma",
+          "Risk kütüphanesi",
+          "Sektörel risk analizi",
+          "Acil durum eylem planı",
+          "İş izin formları",
+          "NACE kod sorgulama",
+          "Firma ziyaret programı"
+        ],
+        "inLanguage": "tr",
+        "audience": {
+          "@type": "Audience",
+          "audienceType": "İş Güvenliği Uzmanları, OSGB'ler, İSG Profesyonelleri"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://isgpratik.com/#website",
+        "url": "https://isgpratik.com",
+        "name": "İSG Pratik",
+        "description": "İş Güvenliği Risk Değerlendirme ve Yönetim Sistemi",
+        "publisher": {
+          "@id": "https://isgpratik.com/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://isgpratik.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        },
+        "inLanguage": "tr"
+      }
+    ]
   };
 
   return (
@@ -147,6 +205,14 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <link rel="canonical" href="https://isgpratik.com" />
+        <meta name="google-site-verification" content="j4rFgnURFww2H9HH7z5kWXtedMvdalOyefFAJqPlsr8" />
+        <meta name="geo.region" content="TR" />
+        <meta name="geo.placename" content="Türkiye" />
+        <meta name="language" content="Turkish" />
+        <meta name="revisit-after" content="7 days" />
+        <meta name="distribution" content="global" />
+        <meta name="rating" content="general" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${kalam.variable} antialiased`}

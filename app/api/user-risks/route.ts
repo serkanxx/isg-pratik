@@ -46,7 +46,12 @@ export async function GET(request: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json(data);
+        // Kullanıcıya özel cache (2 dakika, stale-while-revalidate 30 dakika)
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'private, s-maxage=120, stale-while-revalidate=1800',
+            },
+        });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

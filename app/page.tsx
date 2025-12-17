@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Shield, Brain, AlertTriangle, Calendar, BookOpen, Eye, FileText, Users, Building,
   CheckCircle, Clock, ChevronRight, Star, Zap, Target, BarChart3, FileCheck, Map, LogOut, User,
-  StickyNote, CalendarDays, Flame, Moon
+  StickyNote, CalendarDays, Flame, Moon, Search
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -14,6 +14,38 @@ import LiveDashboard from './components/LiveDashboard';
 export default function LandingPage() {
   const router = useRouter();
   const { data: session } = useSession();
+
+  // SEO için structured data
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
+    "description": "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı.",
+    "url": "https://isgpratik.com",
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Risk Değerlendirme",
+          "description": "Fine Kinney metodolojisi ile hızlı ve kapsayıcı Risk Değerlendirme dosyanı hazırla"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Acil Durum Planları",
+          "description": "İEYEP uyumlu planlar, tatbikat kayıtları, görevlendirmeler"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "İş İzin Formu",
+          "description": "Sıcak iş, yüksekte çalışma, kapalı alan ve elektrik çalışmaları için izin formları"
+        }
+      ]
+    }
+  };
   const features = [
     {
       icon: Shield,
@@ -64,6 +96,14 @@ export default function LandingPage() {
       href: "/panel/notlarim"
     },
     {
+      icon: Search,
+      title: "NACE Kod Sorgulama",
+      description: "NACE kodunu girerek faaliyet alanı ve tehlike sınıfını anında öğrenin.",
+      color: "bg-indigo-500",
+      active: true,
+      href: "/panel/nace-kod"
+    },
+    {
       icon: Eye,
       title: "Saha Gözlem Formları",
       description: "AI destekli gözlem raporları. Fotoğraf ekleme, DÖF atama.",
@@ -101,7 +141,8 @@ export default function LandingPage() {
         "Tehlike sınıfı takibi",
         "İSG ekibi bilgileri",
         "Firma bazlı raporlama",
-        "Ziyaret programı entegrasyonu"
+        "Ziyaret programı entegrasyonu",
+        "NACE kod sorgulama"
       ]
     },
     {
@@ -119,7 +160,12 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <div className="min-h-screen bg-white">
       {/* NAVBAR */}
       {/* NAVBAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md">
@@ -244,7 +290,7 @@ export default function LandingPage() {
 
 
       {/* FEATURES SECTION */}
-      <section id="moduller" className="py-20">
+      <section id="moduller" className="py-20" itemScope itemType="https://schema.org/ItemList">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <span className="text-indigo-600 font-semibold text-sm uppercase tracking-wide">KAPSAMLI İSG YÖNETİM PLATFORMU</span>
@@ -252,14 +298,16 @@ export default function LandingPage() {
               Tek Platformda <span className="text-indigo-600">Tüm İSG İhtiyaçlarınız</span>
             </h2>
             <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-              6 aktif modül ile İSG süreçlerinizi kolayca yönetin
+              7 aktif modül ile İSG süreçlerinizi kolayca yönetin
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <div
+              <article
                 key={index}
+                itemScope
+                itemType="https://schema.org/SoftwareApplication"
                 className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${feature.active
                   ? 'border-indigo-200 bg-white shadow-lg hover:shadow-xl cursor-pointer hover:border-indigo-400'
                   : 'border-gray-100 bg-gray-50 hover:bg-white hover:border-gray-200'
@@ -276,15 +324,15 @@ export default function LandingPage() {
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
 
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2" itemProp="name">{feature.title}</h3>
+                <p className="text-sm text-gray-600" itemProp="description">{feature.description}</p>
 
                 {feature.active && (
                   <div className="mt-4 flex items-center text-indigo-600 font-semibold text-sm">
                     Hemen Başla <ChevronRight className="w-4 h-4 ml-1" />
                   </div>
                 )}
-              </div>
+              </article>
             ))}
           </div>
         </div>
@@ -367,10 +415,13 @@ export default function LandingPage() {
               <p className="text-xs sm:text-sm">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
             </div>
 
-            {/* Orta: Risk Değerlendirme Nedir? */}
-            <div className="flex flex-col items-center">
+            {/* Orta: Bilgilendirme Linkleri */}
+            <div className="flex flex-col items-center gap-2">
               <Link href="/risk-degerlendirme-nedir" className="hover:text-white text-sm">
                 Risk Değerlendirme Nedir?
+              </Link>
+              <Link href="/acil-durum-eylem-plani-hakkinda" className="hover:text-white text-sm">
+                Acil Durum Eylem Planı Hakkında
               </Link>
             </div>
 
@@ -385,5 +436,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

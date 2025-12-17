@@ -36,7 +36,12 @@ export async function GET(request: Request) {
         // Eğer user_id olarak email kullanan eski bir yapı varsa ve biz id'ye geçiyorsak
         // bunu dikkate almalıyız. Ama tablo sıfırlandığı için id ile devam etmek en doğrusu.
 
-        return NextResponse.json(companies);
+        // Kullanıcıya özel cache (5 dakika, stale-while-revalidate 1 saat)
+        return NextResponse.json(companies, {
+            headers: {
+                'Cache-Control': 'private, s-maxage=300, stale-while-revalidate=3600',
+            },
+        });
     } catch (error) {
         console.error('API error:', error);
         return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 });

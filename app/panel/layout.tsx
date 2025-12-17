@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Mail, Lightbulb, Moon, Sun, Calendar
+    Headphones as HeadphonesIcon, Mail, Lightbulb, Moon, Sun, Calendar, Search
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -75,6 +75,13 @@ const menuItems = [
         icon: Calendar,
         active: true,
         dataTour: 'ziyaret-programi'
+    },
+    {
+        name: 'Nace  Teh. Sınıf Sorgula',
+        href: '/panel/nace-kod',
+        icon: Search,
+        active: true,
+        dataTour: 'nace-kod'
     },
     {
         name: 'Saha Gözlem Formları',
