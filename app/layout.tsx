@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/app/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/next";
+import { ReactQueryProvider } from "@/lib/react-query";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -219,7 +220,9 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ThemeProvider>
-            {children}
+            <ReactQueryProvider>
+              {children}
+            </ReactQueryProvider>
           </ThemeProvider>
         </AuthProvider>
         <Analytics />

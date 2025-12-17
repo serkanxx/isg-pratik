@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries';
 import { Company, VALIDITY_YEARS, DANGER_CLASS_LABELS } from '@/app/types';
 import { formatDate } from '@/app/utils';
 
@@ -75,19 +77,22 @@ export default function AcilDurumPage() {
         setShowBulkModalStep2(true);
     };
 
-    // Firmaları çek
+    // Firmaları çek (React Query ile cache'lenmiş)
+    const { data: companiesData } = useQuery({
+        queryKey: queryKeys.companies,
+        queryFn: async () => {
+            const res = await fetch('/api/companies');
+            if (!res.ok) throw new Error('Firmalar alınamadı');
+            return res.json();
+        },
+        enabled: !!session?.user?.email,
+    });
+
     useEffect(() => {
-        if (session?.user?.email) {
-            fetch('/api/companies')
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        setCompanies(data);
-                    }
-                })
-                .catch(err => console.error('Firmalar alınamadı:', err));
+        if (companiesData && Array.isArray(companiesData)) {
+            setCompanies(companiesData);
         }
-    }, [session]);
+    }, [companiesData]);
 
     // İkinci modal açıldığında otomatik numaraları güncelle
     useEffect(() => {

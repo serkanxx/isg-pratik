@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, apiFetchers } from '@/lib/queries';
 import {
     Building2, FileText, Shield, Plus, TrendingUp,
     AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle,
@@ -89,96 +91,97 @@ export default function PanelPage() {
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + i);
 
+    const queryClient = useQueryClient();
+
+    // React Query hooks
+    const { data: companiesData, isLoading: companiesLoading } = useQuery({
+        queryKey: queryKeys.companies,
+        queryFn: apiFetchers.companies,
+    });
+
+    const { data: userRisksData, isLoading: risksLoading } = useQuery({
+        queryKey: queryKeys.userRisks,
+        queryFn: apiFetchers.userRisks,
+    });
+
+    const { data: reportsData, isLoading: reportsLoading } = useQuery({
+        queryKey: queryKeys.reports,
+        queryFn: apiFetchers.reports,
+    });
+
+    const { data: notesData } = useQuery({
+        queryKey: queryKeys.notes,
+        queryFn: apiFetchers.notes,
+    });
+
+    const { data: upcomingNotesData } = useQuery({
+        queryKey: queryKeys.upcomingNotes,
+        queryFn: apiFetchers.upcomingNotes,
+    });
+
+    const { data: visitProgramsData } = useQuery({
+        queryKey: queryKeys.visitPrograms,
+        queryFn: apiFetchers.visitPrograms,
+    });
+
+    // Data geldiğinde state'i güncelle
     useEffect(() => {
-        fetchData();
-        fetchNotes();
-        fetchUpcomingNotes();
-        fetchVisitPrograms();
-    }, []);
+        if (companiesData) {
+            setCompanies(companiesData);
+            setStats(prev => ({ ...prev, companyCount: companiesData.length }));
+        }
+    }, [companiesData]);
 
-    const fetchData = async () => {
-        try {
-            // Firmaları çek
-            const res = await fetch('/api/companies');
-            if (res.ok) {
-                const data = await res.json();
-                setCompanies(data);
-                setStats(prev => ({ ...prev, companyCount: data.length }));
-            }
+    useEffect(() => {
+        if (userRisksData) {
+            setUserRisks(userRisksData);
+            setStats(prev => ({ ...prev, riskCount: userRisksData.length }));
+        }
+    }, [userRisksData]);
 
-            // Kullanıcı risklerini çek
-            const risksRes = await fetch('/api/user-risks');
-            if (risksRes.ok) {
-                const risksData = await risksRes.json();
-                setUserRisks(risksData);
-                setStats(prev => ({ ...prev, riskCount: risksData.length }));
-            }
+    useEffect(() => {
+        if (reportsData) {
+            const allReports: ReportData[] = reportsData;
+            setRecentReports(allReports.slice(0, 5));
 
-            // Raporları çek ve analiz et
-            const allReportsRes = await fetch('/api/reports');
-            if (allReportsRes.ok) {
-                const allReports: ReportData[] = await allReportsRes.json();
+            const riskReports = allReports.filter(r => r.type === 'RISK_ASSESSMENT').length;
+            const emergencyReports = allReports.filter(r => r.type === 'EMERGENCY_PLAN').length;
+            const workPermitReports = allReports.filter(r => r.type === 'WORK_PERMIT').length;
 
-                // Son 5 raporu kaydet
-                setRecentReports(allReports.slice(0, 5));
+            setStats(prev => ({
+                ...prev,
+                reportCount: allReports.length,
+                riskReportCount: riskReports,
+                emergencyReportCount: emergencyReports,
+                workPermitCount: workPermitReports
+            }));
+        }
+    }, [reportsData]);
 
-                const riskReports = allReports.filter(r => r.type === 'RISK_ASSESSMENT').length;
-                const emergencyReports = allReports.filter(r => r.type === 'EMERGENCY_PLAN').length;
-                const workPermitReports = allReports.filter(r => r.type === 'WORK_PERMIT').length;
+    useEffect(() => {
+        if (notesData) {
+            setNotes(notesData);
+        }
+    }, [notesData]);
 
-                setStats(prev => ({
-                    ...prev,
-                    reportCount: allReports.length,
-                    riskReportCount: riskReports,
-                    emergencyReportCount: emergencyReports,
-                    workPermitCount: workPermitReports
-                }));
-            }
-        } catch (error) {
-            console.error('Veri alınamadı:', error);
-        } finally {
+    useEffect(() => {
+        if (upcomingNotesData) {
+            setUpcomingNotes(upcomingNotesData);
+        }
+    }, [upcomingNotesData]);
+
+    useEffect(() => {
+        if (visitProgramsData) {
+            setVisitPrograms(visitProgramsData);
+        }
+    }, [visitProgramsData]);
+
+    // Loading state
+    useEffect(() => {
+        if (!companiesLoading && !risksLoading && !reportsLoading) {
             setLoading(false);
         }
-    };
-
-    // Tüm notları getir
-    const fetchNotes = async () => {
-        try {
-            const res = await fetch('/api/notes');
-            if (res.ok) {
-                const data = await res.json();
-                setNotes(data);
-            }
-        } catch (error) {
-            console.error('Notlar alınamadı:', error);
-        }
-    };
-
-    // Yaklaşan hatırlatmalar (5 gün içinde)
-    const fetchUpcomingNotes = async () => {
-        try {
-            const res = await fetch('/api/notes?upcoming=true');
-            if (res.ok) {
-                const data = await res.json();
-                setUpcomingNotes(data);
-            }
-        } catch (error) {
-            console.error('Hatırlatmalar alınamadı:', error);
-        }
-    };
-
-    // Ziyaret programlarını getir
-    const fetchVisitPrograms = async () => {
-        try {
-            const res = await fetch('/api/visit-programs');
-            if (res.ok) {
-                const data = await res.json();
-                setVisitPrograms(data);
-            }
-        } catch (error) {
-            console.error('Programlar alınamadı:', error);
-        }
-    };
+    }, [companiesLoading, risksLoading, reportsLoading]);
 
     // Not ekle
     const handleAddNote = async () => {
@@ -207,8 +210,8 @@ export default function PanelPage() {
                 setDueDateYear('');
                 setNewNoteCompanyId('');
                 setShowNoteForm(false);
-                fetchNotes();
-                fetchUpcomingNotes();
+                queryClient.invalidateQueries({ queryKey: queryKeys.notes });
+                queryClient.invalidateQueries({ queryKey: queryKeys.upcomingNotes });
             }
         } catch (error) {
             console.error('Not eklenemedi:', error);
@@ -223,8 +226,8 @@ export default function PanelPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, isCompleted: !currentStatus })
             });
-            fetchNotes();
-            fetchUpcomingNotes();
+            queryClient.invalidateQueries({ queryKey: queryKeys.notes });
+            queryClient.invalidateQueries({ queryKey: queryKeys.upcomingNotes });
         } catch (error) {
             console.error('Not güncellenemedi:', error);
         }
@@ -235,8 +238,8 @@ export default function PanelPage() {
         if (!confirm('Bu notu silmek istediğinize emin misiniz?')) return;
         try {
             await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
-            fetchNotes();
-            fetchUpcomingNotes();
+            queryClient.invalidateQueries({ queryKey: queryKeys.notes });
+            queryClient.invalidateQueries({ queryKey: queryKeys.upcomingNotes });
         } catch (error) {
             console.error('Not silinemedi:', error);
         }

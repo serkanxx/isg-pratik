@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, apiFetchers } from '@/lib/queries';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
     Building2, Plus, Search, Edit2, Trash2, X, Upload,
@@ -53,44 +55,45 @@ export default function FirmalarPage() {
         support: ''
     });
 
+    const queryClient = useQueryClient();
+    
+    const { data: companiesData, isLoading: companiesLoading, refetch } = useQuery({
+        queryKey: queryKeys.companies,
+        queryFn: apiFetchers.companies,
+    });
+
     useEffect(() => {
-        fetchCompanies();
-    }, []);
+        if (companiesData) {
+            setCompanies(companiesData);
 
-    const fetchCompanies = async () => {
-        try {
-            const res = await fetch('/api/companies');
-            if (res.ok) {
-                const data = await res.json();
-                setCompanies(data);
-
-                // Edit parametresi varsa firmayı düzenleme modunda aç
-                if (editId && data.length > 0) {
-                    const companyToEdit = data.find((c: Company) => c.id === editId);
-                    if (companyToEdit) {
-                        setForm({
-                            title: companyToEdit.title,
-                            address: companyToEdit.address,
-                            registration_number: companyToEdit.registration_number,
-                            danger_class: companyToEdit.danger_class,
-                            logo: companyToEdit.logo,
-                            employer: companyToEdit.employer,
-                            igu: companyToEdit.igu,
-                            doctor: companyToEdit.doctor,
-                            representative: companyToEdit.representative,
-                            support: companyToEdit.support
-                        });
-                        setEditingId(companyToEdit.id);
-                        setShowForm(true);
-                    }
+            // Edit parametresi varsa firmayı düzenleme modunda aç
+            if (editId && companiesData.length > 0) {
+                const companyToEdit = companiesData.find((c: Company) => c.id === editId);
+                if (companyToEdit) {
+                    setForm({
+                        title: companyToEdit.title,
+                        address: companyToEdit.address,
+                        registration_number: companyToEdit.registration_number,
+                        danger_class: companyToEdit.danger_class,
+                        logo: companyToEdit.logo,
+                        employer: companyToEdit.employer,
+                        igu: companyToEdit.igu,
+                        doctor: companyToEdit.doctor,
+                        representative: companyToEdit.representative,
+                        support: companyToEdit.support
+                    });
+                    setEditingId(companyToEdit.id);
+                    setShowForm(true);
                 }
             }
-        } catch (error) {
-            console.error('Firmalar alınamadı:', error);
-        } finally {
+        }
+    }, [companiesData, editId]);
+
+    useEffect(() => {
+        if (!companiesLoading) {
             setLoading(false);
         }
-    };
+    }, [companiesLoading]);
 
     const showNotif = (message: string, type: 'success' | 'error' = 'success') => {
         setNotification({ show: true, message, type });
@@ -234,7 +237,7 @@ export default function FirmalarPage() {
             if (res.ok) {
                 setBulkResult(result);
                 if (result.successCount > 0) {
-                    fetchCompanies();
+                    queryClient.invalidateQueries({ queryKey: queryKeys.companies });
                     // Başarılı yüklemeden sonra modal'ı kapat
                     if (result.success) {
                         showNotif(`${result.successCount} firma başarıyla eklendi!`, 'success');
@@ -331,7 +334,7 @@ export default function FirmalarPage() {
             const res = await fetch(`/api/companies/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 showNotif('Firma silindi!');
-                fetchCompanies();
+                queryClient.invalidateQueries({ queryKey: queryKeys.companies });
             } else {
                 showNotif('Firma silinemedi', 'error');
             }
