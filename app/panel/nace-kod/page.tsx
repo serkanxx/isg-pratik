@@ -83,6 +83,10 @@ export default function NaceKodPage() {
         }
     };
 
+    const handleSearchClick = () => {
+        handleSearch();
+    };
+
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSearch();
@@ -137,7 +141,7 @@ export default function NaceKodPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     </div>
                     <button
-                        onClick={handleSearch}
+                        onClick={handleSearchClick}
                         disabled={loading || !naceCode}
                         className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
                     >
