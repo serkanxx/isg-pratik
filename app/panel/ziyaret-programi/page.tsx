@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, apiFetchers } from '@/lib/queries';
 import {
     Calendar, Building2, Check, Plus, Trash2, Save, Edit2, X,
     ChevronDown, MapPin, AlertCircle, CheckCircle, Loader2, RefreshCw, GripVertical, CheckSquare, Download
@@ -173,37 +175,37 @@ export default function ZiyaretProgramiPage() {
         return options;
     }
 
-    // Firmaları çek
-    useEffect(() => {
-        fetchCompanies();
-        fetchPrograms();
-    }, []);
+    const queryClient = useQueryClient();
 
-    const fetchCompanies = async () => {
-        try {
-            const res = await fetch('/api/companies');
-            if (res.ok) {
-                const data = await res.json();
-                setCompanies(data);
-            }
-        } catch (error) {
-            console.error('Firmalar yüklenemedi:', error);
-        } finally {
+    // Firmaları çek (React Query ile cache'lenmiş)
+    const { data: companiesData, isLoading: companiesLoading } = useQuery({
+        queryKey: queryKeys.companies,
+        queryFn: apiFetchers.companies,
+    });
+
+    // Ziyaret programlarını çek (React Query ile cache'lenmiş)
+    const { data: programsData, isLoading: programsLoading } = useQuery({
+        queryKey: queryKeys.visitPrograms,
+        queryFn: apiFetchers.visitPrograms,
+    });
+
+    useEffect(() => {
+        if (companiesData) {
+            setCompanies(companiesData);
+        }
+    }, [companiesData]);
+
+    useEffect(() => {
+        if (programsData) {
+            setSavedPrograms(programsData);
+        }
+    }, [programsData]);
+
+    useEffect(() => {
+        if ((companiesData && programsData) || (!companiesLoading && !programsLoading)) {
             setLoading(false);
         }
-    };
-
-    const fetchPrograms = async () => {
-        try {
-            const res = await fetch('/api/visit-programs');
-            if (res.ok) {
-                const data = await res.json();
-                setSavedPrograms(data);
-            }
-        } catch (error) {
-            console.error('Programlar yüklenemedi:', error);
-        }
-    };
+    }, [companiesData, programsData, companiesLoading, programsLoading]);
 
     const showNotif = (message: string, type: 'success' | 'error' = 'success') => {
         setNotification({ show: true, message, type });
@@ -658,7 +660,7 @@ export default function ZiyaretProgramiPage() {
 
             if (res.ok) {
                 showNotif(editingProgram ? 'Program güncellendi!' : 'Program kaydedildi!');
-                fetchPrograms();
+                queryClient.invalidateQueries({ queryKey: queryKeys.visitPrograms });
                 resetForm();
             } else {
                 showNotif('Kaydetme hatası!', 'error');
@@ -678,7 +680,7 @@ export default function ZiyaretProgramiPage() {
             const res = await fetch(`/api/visit-programs/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 showNotif('Program silindi!');
-                fetchPrograms();
+                queryClient.invalidateQueries({ queryKey: queryKeys.visitPrograms });
             } else {
                 showNotif('Silme hatası!', 'error');
             }
@@ -1936,7 +1938,7 @@ export default function ZiyaretProgramiPage() {
                                             });
                                             if (res.ok) {
                                                 showNotif(isNewProgram ? 'Program kaydedildi!' : 'Program güncellendi!');
-                                                fetchPrograms();
+                                                queryClient.invalidateQueries({ queryKey: queryKeys.visitPrograms });
                                                 setSelectedProgramForView(null);
                                             } else {
                                                 showNotif('Kaydetme hatası!', 'error');

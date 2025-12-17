@@ -5,6 +5,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { FileText, Download, RefreshCw, AlertTriangle, Shield, CheckCircle, Search, Calendar, Trash2, Filter, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, apiFetchers } from '@/lib/queries';
 
 interface ReportHistory {
     id: string;
@@ -29,23 +31,25 @@ export default function ReportsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState<'all' | 'RISK_ASSESSMENT' | 'EMERGENCY_PLAN' | 'WORK_PERMIT'>('all');
 
-    useEffect(() => {
-        fetchReports();
-    }, [session]);
+    const queryClient = useQueryClient();
 
-    const fetchReports = async () => {
-        try {
-            const res = await fetch('/api/reports');
-            if (res.ok) {
-                const data = await res.json();
-                setReports(data);
-            }
-        } catch (error) {
-            console.error('Raporlar alınamadı:', error);
-        } finally {
+    const { data: reportsData, isLoading: reportsLoading } = useQuery({
+        queryKey: queryKeys.reports,
+        queryFn: apiFetchers.reports,
+        enabled: !!session,
+    });
+
+    useEffect(() => {
+        if (reportsData) {
+            setReports(reportsData);
+        }
+    }, [reportsData]);
+
+    useEffect(() => {
+        if (reportsData || !reportsLoading) {
             setLoading(false);
         }
-    };
+    }, [reportsData, reportsLoading]);
 
     const handleDownloadWorkPermit = async (report: ReportHistory) => {
         setDownloadingId(report.id);
@@ -263,10 +267,8 @@ export default function ReportsPage() {
             });
 
             if (res.ok) {
-                // Listeden silinenleri çıkar
-                setReports(reports.filter(r => !selectedIds.includes(r.id)));
                 setSelectedIds([]);
-                // Opsiyonel: Bildirim göster
+                queryClient.invalidateQueries({ queryKey: queryKeys.reports });
             } else {
                 alert('Silme işlemi başarısız oldu.');
             }

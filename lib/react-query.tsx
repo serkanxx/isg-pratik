@@ -10,10 +10,11 @@ export function ReactQueryProvider({ children }: { children: ReactNode }) {
         defaultOptions: {
           queries: {
             // Cache süreleri
-            staleTime: 5 * 60 * 1000, // 5 dakika - veri taze kabul edilir
-            gcTime: 30 * 60 * 1000, // 30 dakika (eski adı cacheTime) - cache'te tutulur
+            staleTime: 10 * 60 * 1000, // 10 dakika - veri taze kabul edilir (cache'ten hemen gösterilir)
+            gcTime: 60 * 60 * 1000, // 1 saat (eski adı cacheTime) - cache'te tutulur
             refetchOnWindowFocus: false, // Pencere odağa geldiğinde otomatik yenileme kapalı
-            refetchOnMount: false, // Component mount olduğunda otomatik yenileme kapalı
+            refetchOnMount: false, // Component mount olduğunda cache'ten direkt göster (yenileme yapma)
+            refetchOnReconnect: false, // İnternet bağlantısı geldiğinde otomatik yenileme kapalı
             retry: 1, // Hata durumunda 1 kez daha dene
           },
         },

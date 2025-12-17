@@ -176,12 +176,15 @@ export default function PanelPage() {
         }
     }, [visitProgramsData]);
 
-    // Loading state
+    // Loading state - cache'den veri varsa loading'i false yap
     useEffect(() => {
-        if (!companiesLoading && !risksLoading && !reportsLoading) {
+        const hasData = companiesData || userRisksData || reportsData;
+        const isLoading = companiesLoading || risksLoading || reportsLoading;
+        
+        if (hasData || !isLoading) {
             setLoading(false);
         }
-    }, [companiesLoading, risksLoading, reportsLoading]);
+    }, [companiesData, userRisksData, reportsData, companiesLoading, risksLoading, reportsLoading]);
 
     // Not ekle
     const handleAddNote = async () => {

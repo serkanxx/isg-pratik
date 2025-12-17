@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, apiFetchers } from '@/lib/queries';
 import {
     StickyNote, Plus, Clock, Check, Trash2, X, Building2,
     Calendar, ChevronRight, Filter
@@ -36,36 +38,35 @@ export default function NotlarimPage() {
     const [filterCompany, setFilterCompany] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('all');
 
-    useEffect(() => {
-        fetchNotes();
-        fetchCompanies();
-    }, []);
+    const queryClient = useQueryClient();
 
-    const fetchNotes = async () => {
-        try {
-            const res = await fetch('/api/notes');
-            if (res.ok) {
-                const data = await res.json();
-                setNotes(data);
-            }
-        } catch (error) {
-            console.error('Notlar alınamadı:', error);
-        } finally {
+    const { data: notesData, isLoading: notesLoading } = useQuery({
+        queryKey: queryKeys.notes,
+        queryFn: apiFetchers.notes,
+    });
+
+    const { data: companiesData, isLoading: companiesLoading } = useQuery({
+        queryKey: queryKeys.companies,
+        queryFn: apiFetchers.companies,
+    });
+
+    useEffect(() => {
+        if (notesData) {
+            setNotes(notesData);
+        }
+    }, [notesData]);
+
+    useEffect(() => {
+        if (companiesData) {
+            setCompanies(companiesData);
+        }
+    }, [companiesData]);
+
+    useEffect(() => {
+        if ((notesData && companiesData) || (!notesLoading && !companiesLoading)) {
             setLoading(false);
         }
-    };
-
-    const fetchCompanies = async () => {
-        try {
-            const res = await fetch('/api/companies');
-            if (res.ok) {
-                const data = await res.json();
-                setCompanies(data);
-            }
-        } catch (error) {
-            console.error('Firmalar alınamadı:', error);
-        }
-    };
+    }, [notesData, companiesData, notesLoading, companiesLoading]);
 
     const handleAddNote = async () => {
         if (!newNote.trim()) {
@@ -97,7 +98,7 @@ export default function NotlarimPage() {
                 setDueDateMonth('');
                 setDueDateYear('');
                 setShowForm(false);
-                fetchNotes();
+                queryClient.invalidateQueries({ queryKey: queryKeys.notes });
             } else {
                 const error = await res.json();
                 alert('Hata: ' + (error.error || 'Not eklenemedi'));
@@ -115,7 +116,7 @@ export default function NotlarimPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, isCompleted: !currentStatus })
             });
-            fetchNotes();
+            queryClient.invalidateQueries({ queryKey: queryKeys.notes });
         } catch (error) {
             console.error('Not güncellenemedi:', error);
         }
@@ -125,7 +126,7 @@ export default function NotlarimPage() {
         if (!confirm('Bu notu silmek istediğinize emin misiniz?')) return;
         try {
             await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
-            fetchNotes();
+            queryClient.invalidateQueries({ queryKey: queryKeys.notes });
         } catch (error) {
             console.error('Not silinemedi:', error);
         }
