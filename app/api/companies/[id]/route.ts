@@ -16,18 +16,32 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Kullanıcı ID'sini bul
-        let userId = (session.user as any).id;
+        // Kullanıcı ID'sini bul (session'da zaten var)
+        const userId = (session.user as any).id;
         if (!userId) {
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-            if (user) userId = user.id;
-            else return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            return NextResponse.json({ error: 'User ID not found in session' }, { status: 401 });
         }
 
         const company = await prisma.company.findFirst({
             where: {
                 id: id,
                 user_id: userId
+            },
+            select: {
+                id: true,
+                title: true,
+                address: true,
+                registration_number: true,
+                danger_class: true,
+                logo: true,
+                employer: true,
+                igu: true,
+                doctor: true,
+                representative: true,
+                support: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true
             }
         });
 

@@ -5,7 +5,16 @@ import { authOptions } from '@/lib/auth';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+        db: {
+            schema: 'public',
+        },
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+        },
+    }
 );
 
 // Sonraki risk numarasını hesapla
@@ -40,9 +49,10 @@ export async function GET(request: NextRequest) {
 
         const { data, error } = await supabase
             .from('user_risks')
-            .select('*')
+            .select('id, risk_no, category_name, sub_category, source, hazard, risk, affected, probability, frequency, severity, probability2, frequency2, severity2, measures, image, status, created_at, updated_at')
             .eq('user_email', session.user.email)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(1000); // Limit ekle
 
         if (error) throw error;
 

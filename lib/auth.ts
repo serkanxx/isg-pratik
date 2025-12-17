@@ -88,16 +88,20 @@ export const authOptions: NextAuthOptions = {
             }
             return true;
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger }) {
+            // İlk girişte veya session güncellendiğinde
             if (user) {
                 token.id = user.id;
             }
-            // Kullanıcı bilgilerini token'a ekle
-            if (token.email) {
+            
+            // Kullanıcı bilgilerini token'a ekle (sadece gerekirse)
+            if (token.email && (!token.id || trigger === 'update')) {
                 // HARDCODED ADMIN CHECK
                 if (token.email === 'serkanxx@gmail.com') {
                     token.role = 'ADMIN';
-                } else {
+                    token.id = token.id || 'admin-id'; // Admin ID cache'lenebilir
+                } else if (!token.id || !token.plan) {
+                    // Sadece eksik bilgiler varsa DB'ye sorgu at
                     const dbUser = await prisma.user.findUnique({
                         where: { email: token.email },
                         select: { id: true, plan: true, trialEndsAt: true, role: true },

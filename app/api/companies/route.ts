@@ -12,21 +12,32 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Kullanıcı ID'sini bul
-        let userId = (session.user as any).id;
+        // Kullanıcı ID'sini bul (session'da zaten var, DB query yapmadan)
+        const userId = (session.user as any).id;
         if (!userId) {
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-            if (user) userId = user.id;
-            else return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            return NextResponse.json({ error: 'User ID not found in session' }, { status: 401 });
         }
 
-        // Prisma ile sorgula (Prisma modelinde user_id alanı var)
+        // Prisma ile sorgula - sadece gerekli field'ları seç
         const companies = await prisma.company.findMany({
             where: {
-                user_id: userId, // Artık email değil, user.id kullanıyoruz (tutarlılık için)
-                // Ancak eski veriler email ile kaydedildiyse bu sorun olabilir.
-                // Resetlendiği için sorun yok.
+                user_id: userId,
                 is_active: true
+            },
+            select: {
+                id: true,
+                title: true,
+                address: true,
+                registration_number: true,
+                danger_class: true,
+                logo: true,
+                employer: true,
+                igu: true,
+                doctor: true,
+                representative: true,
+                support: true,
+                created_at: true,
+                updated_at: true
             },
             orderBy: {
                 created_at: 'desc'

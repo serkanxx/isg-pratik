@@ -12,11 +12,9 @@ export async function GET(request: Request) {
         }
 
         // @ts-ignore
-        let userId = session.user.id;
+        const userId = session.user.id;
         if (!userId) {
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-            if (user) userId = user.id;
-            else return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            return NextResponse.json({ error: 'User ID not found in session' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -45,6 +43,15 @@ export async function GET(request: Request) {
 
         const notes = await prisma.note.findMany({
             where: whereClause,
+            select: {
+                id: true,
+                companyId: true,
+                content: true,
+                dueDate: true,
+                isCompleted: true,
+                createdAt: true,
+                updatedAt: true
+            },
             orderBy: [
                 { isCompleted: 'asc' },
                 { dueDate: 'asc' },
@@ -52,7 +59,11 @@ export async function GET(request: Request) {
             ]
         });
 
-        return NextResponse.json(notes);
+        return NextResponse.json(notes, {
+            headers: {
+                'Cache-Control': 'private, s-maxage=120, stale-while-revalidate=600',
+            },
+        });
     } catch (error) {
         console.error('Notları getirme hatası:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

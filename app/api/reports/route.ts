@@ -14,10 +14,7 @@ export async function POST(request: Request) {
         const userId = session.user.id;
 
         if (!userId) {
-            // Fallback if id is missing, fetch user by email
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-            if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-            return createReport(user.id, request);
+            return NextResponse.json({ error: 'User ID not found in session' }, { status: 401 });
         }
 
         return createReport(userId, request);
@@ -87,51 +84,64 @@ export async function GET(request: Request) {
         }
 
         // @ts-ignore
-        let userId = session.user.id;
+        const userId = session.user.id;
         if (!userId) {
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-            if (user) userId = user.id;
-            else return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            return NextResponse.json({ error: 'User ID not found in session' }, { status: 401 });
         }
 
         const { searchParams } = new URL(request.url);
-        const limit = searchParams.get('limit');
+        const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50; // Default limit
         const companyId = searchParams.get('company_id');
+        const skip = searchParams.get('skip') ? parseInt(searchParams.get('skip')!) : 0;
 
+        // Sadece gerekli field'ları seç
         let reports = await prisma.reportHistory.findMany({
             where: {
-                userId
+                userId,
+                ...(companyId ? {
+                    data: {
+                        path: ['companyId'],
+                        equals: companyId
+                    }
+                } : {})
+            },
+            select: {
+                id: true,
+                type: true,
+                title: true,
+                data: true,
+                documentNo: true,
+                createdAt: true
             },
             orderBy: {
                 createdAt: 'desc'
             },
-            take: limit ? parseInt(limit) : undefined
+            take: limit,
+            skip: skip
         });
 
-        // company_id filtresi varsa, rapor verisindeki firma bilgisine göre filtrele
-        if (companyId) {
-            // Önce firma bilgisini al
+        // Eğer companyId filtresi varsa ve JSON path ile eşleşmediyse, client-side filter yap
+        if (companyId && reports.length > 0) {
             const company = await prisma.company.findUnique({
-                where: { id: companyId }
+                where: { id: companyId },
+                select: { title: true }
             });
 
             if (company) {
-                // Rapor verisindeki firma unvanına göre filtrele
                 reports = reports.filter((report: any) => {
                     const reportData = report.data as any;
-                    // headerInfo.title veya companyId kontrolü
-                    if (reportData?.headerInfo?.title === company.title) {
-                        return true;
-                    }
-                    if (reportData?.companyId === companyId) {
-                        return true;
-                    }
-                    return false;
+                    return reportData?.headerInfo?.title === company.title || 
+                           reportData?.companyId === companyId;
                 });
             }
         }
 
-        return NextResponse.json(reports);
+        // Cache için headers ekle
+        return NextResponse.json(reports, {
+            headers: {
+                'Cache-Control': 'private, s-maxage=60, stale-while-revalidate=300',
+            },
+        });
     } catch (error) {
         console.error('Raporları getirme hatası:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -24,7 +24,11 @@ export async function GET() {
             orderBy: { createdAt: 'desc' }
         });
 
-        return NextResponse.json(programs);
+        return NextResponse.json(programs, {
+            headers: {
+                'Cache-Control': 'private, s-maxage=120, stale-while-revalidate=600',
+            },
+        });
     } catch (error) {
         console.error('Visit programs GET error:', error);
         return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 });
@@ -56,7 +60,7 @@ export async function POST(request: Request) {
 
         const program = await prisma.visitProgram.create({
             data: {
-                userId: user.id,
+                userId: userId,
                 name,
                 type,
                 visitsPerDay: visitsPerDay || 3,
