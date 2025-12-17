@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
         const program = await prisma.visitProgram.create({
             data: {
-                userId: userId,
+                userId: user.id,
                 name,
                 type,
                 visitsPerDay: visitsPerDay || 3,

@@ -15,37 +15,6 @@ export default function LandingPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  // SEO için structured data
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
-    "description": "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı.",
-    "url": "https://isgpratik.com",
-    "mainEntity": {
-      "@type": "ItemList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Risk Değerlendirme",
-          "description": "Fine Kinney metodolojisi ile hızlı ve kapsayıcı Risk Değerlendirme dosyanı hazırla"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "Acil Durum Planları",
-          "description": "İEYEP uyumlu planlar, tatbikat kayıtları, görevlendirmeler"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "İş İzin Formu",
-          "description": "Sıcak iş, yüksekte çalışma, kapalı alan ve elektrik çalışmaları için izin formları"
-        }
-      ]
-    }
-  };
   const features = [
     {
       icon: Shield,
@@ -118,6 +87,26 @@ export default function LandingPage() {
       active: false
     }
   ];
+
+  // SEO için structured data - tüm aktif özellikleri dahil et
+  const activeFeatures = features.filter(f => f.active);
+  const activeFeatureCount = activeFeatures.length;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
+    "description": "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı.",
+    "url": "https://isgpratik.com",
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": activeFeatures.map((feature, index) => ({
+        "@type": "ListItem",
+        "position": index + 1,
+        "name": feature.title,
+        "description": feature.description
+      }))
+    }
+  };
 
   const enterpriseFeatures = [
     {
@@ -298,7 +287,7 @@ export default function LandingPage() {
               Tek Platformda <span className="text-indigo-600">Tüm İSG İhtiyaçlarınız</span>
             </h2>
             <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-              7 aktif modül ile İSG süreçlerinizi kolayca yönetin
+              {activeFeatureCount} aktif modül ile İSG süreçlerinizi kolayca yönetin
             </p>
           </div>
 
