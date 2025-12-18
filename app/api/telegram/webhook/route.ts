@@ -145,18 +145,80 @@ export async function POST(request: Request) {
   }
 }
 
-// GET - Webhook durumunu kontrol et
+// GET - Webhook durumunu kontrol et ve gerekirse düzelt
 export async function GET() {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const hasToken = !!botToken;
-  
-  return NextResponse.json({
-    message: 'Telegram Webhook endpoint aktif',
-    status: hasToken ? 'ready' : 'missing_token',
-    note: hasToken 
-      ? 'Bot token bulundu. Webhook kurulumu yapılabilir.'
-      : 'TELEGRAM_BOT_TOKEN environment variable bulunamadı. Lütfen .env.local dosyanıza ekleyin.',
-    webhookUrl: 'https://www.isgpratik.com/api/telegram/webhook'
-  });
+  try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const hasToken = !!botToken;
+    const correctWebhookUrl = 'https://www.isgpratik.com/api/telegram/webhook';
+    
+    if (!hasToken) {
+      return NextResponse.json({
+        message: 'Telegram Webhook endpoint aktif',
+        status: 'missing_token',
+        note: 'TELEGRAM_BOT_TOKEN environment variable bulunamadı. Lütfen .env.local dosyanıza ekleyin.',
+        webhookUrl: correctWebhookUrl
+      });
+    }
+
+    // Telegram'dan mevcut webhook bilgilerini al
+    const webhookInfoResponse = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`);
+    const webhookInfo = await webhookInfoResponse.json();
+
+    const currentUrl = webhookInfo.result?.url || null;
+    const isCorrect = currentUrl === correctWebhookUrl;
+    let fixed = false;
+
+    // Eğer webhook yanlış URL'ye yönlendirilmişse, otomatik düzelt
+    if (!isCorrect && currentUrl) {
+      console.log(`⚠️ Webhook yanlış URL'ye yönlendirilmiş: ${currentUrl}`);
+      console.log(`🔧 Doğru URL'ye yönlendiriliyor: ${correctWebhookUrl}`);
+      
+      try {
+        const setWebhookResponse = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: correctWebhookUrl })
+        });
+        
+        const setWebhookResult = await setWebhookResponse.json();
+        
+        if (setWebhookResult.ok) {
+          fixed = true;
+          console.log(`✅ Webhook başarıyla düzeltildi: ${correctWebhookUrl}`);
+        } else {
+          console.error(`❌ Webhook düzeltilemedi:`, setWebhookResult);
+        }
+      } catch (error: any) {
+        console.error('Webhook düzeltme hatası:', error);
+      }
+    }
+
+    return NextResponse.json({
+      message: 'Telegram Webhook endpoint aktif',
+      status: isCorrect || fixed ? 'ready' : 'incorrect_url',
+      currentWebhookUrl: currentUrl,
+      correctWebhookUrl: correctWebhookUrl,
+      fixed: fixed,
+      pendingUpdates: webhookInfo.result?.pending_update_count || 0,
+      lastError: webhookInfo.result?.last_error_message || null,
+      note: isCorrect 
+        ? 'Webhook doğru URL\'ye yönlendirilmiş.'
+        : fixed
+          ? 'Webhook otomatik olarak düzeltildi.'
+          : 'Webhook yanlış URL\'ye yönlendirilmiş. Lütfen manuel olarak düzeltin.',
+      webhookUrl: correctWebhookUrl
+    });
+  } catch (error: any) {
+    console.error('Webhook kontrol hatası:', error);
+    return NextResponse.json({
+      message: 'Telegram Webhook endpoint aktif',
+      status: 'error',
+      error: error.message,
+      webhookUrl: 'https://www.isgpratik.com/api/telegram/webhook'
+    }, { status: 500 });
+  }
 }
 
