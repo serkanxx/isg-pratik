@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, apiFetchers } from '@/lib/queries';
 import {
     StickyNote, Plus, Clock, Check, Trash2, X, Building2,
-    Calendar, ChevronRight, Filter
+    Calendar, ChevronRight, Filter, Edit, Save
 } from 'lucide-react';
 import { Company } from '../../types';
 
@@ -33,6 +33,14 @@ export default function NotlarimPage() {
     const [dueDateDay, setDueDateDay] = useState('');
     const [dueDateMonth, setDueDateMonth] = useState('');
     const [dueDateYear, setDueDateYear] = useState('');
+
+    // Düzenleme state
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [editNoteContent, setEditNoteContent] = useState('');
+    const [editNoteCompanyId, setEditNoteCompanyId] = useState('');
+    const [editDueDateDay, setEditDueDateDay] = useState('');
+    const [editDueDateMonth, setEditDueDateMonth] = useState('');
+    const [editDueDateYear, setEditDueDateYear] = useState('');
 
     // Filtre
     const [filterCompany, setFilterCompany] = useState('');
@@ -129,6 +137,70 @@ export default function NotlarimPage() {
             queryClient.invalidateQueries({ queryKey: queryKeys.notes });
         } catch (error) {
             console.error('Not silinemedi:', error);
+        }
+    };
+
+    const handleEditNote = (note: Note) => {
+        setEditingNoteId(note.id);
+        setEditNoteContent(note.content);
+        setEditNoteCompanyId(note.companyId || '');
+        
+        // Tarihi parse et
+        if (note.dueDate) {
+            const date = new Date(note.dueDate);
+            setEditDueDateDay(String(date.getDate()));
+            setEditDueDateMonth(String(date.getMonth() + 1).padStart(2, '0'));
+            setEditDueDateYear(String(date.getFullYear()));
+        } else {
+            setEditDueDateDay('');
+            setEditDueDateMonth('');
+            setEditDueDateYear('');
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingNoteId(null);
+        setEditNoteContent('');
+        setEditNoteCompanyId('');
+        setEditDueDateDay('');
+        setEditDueDateMonth('');
+        setEditDueDateYear('');
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingNoteId || !editNoteContent.trim()) {
+            alert('Not içeriği gerekli');
+            return;
+        }
+
+        // Tarih oluştur
+        let dueDate = null;
+        if (editDueDateDay && editDueDateMonth && editDueDateYear) {
+            dueDate = `${editDueDateYear}-${editDueDateMonth.padStart(2, '0')}-${editDueDateDay.padStart(2, '0')}`;
+        }
+
+        try {
+            const res = await fetch('/api/notes', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: editingNoteId,
+                    content: editNoteContent.trim(),
+                    companyId: editNoteCompanyId || null,
+                    dueDate
+                })
+            });
+
+            if (res.ok) {
+                handleCancelEdit();
+                queryClient.invalidateQueries({ queryKey: queryKeys.notes });
+            } else {
+                const error = await res.json();
+                alert('Hata: ' + (error.error || 'Not güncellenemedi'));
+            }
+        } catch (error) {
+            console.error('Not güncellenemedi:', error);
+            alert('Not güncellenirken bir hata oluştu');
         }
     };
 
@@ -348,48 +420,143 @@ export default function NotlarimPage() {
                                         : 'border-slate-200 hover:border-amber-300 hover:shadow-md'
                                 }`}
                         >
-                            <div className="flex items-start gap-4">
-                                <button
-                                    onClick={() => toggleNoteComplete(note.id, note.isCompleted)}
-                                    className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${note.isCompleted
-                                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                                            : 'border-slate-300 hover:border-emerald-500'
-                                        }`}
-                                >
-                                    {note.isCompleted && <Check className="w-4 h-4" />}
-                                </button>
+                            {editingNoteId === note.id ? (
+                                // Düzenleme Modu
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">Not İçeriği *</label>
+                                        <textarea
+                                            value={editNoteContent}
+                                            onChange={(e) => setEditNoteContent(e.target.value)}
+                                            placeholder="Notunuzu yazın..."
+                                            className="w-full p-3 border border-amber-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            rows={3}
+                                        />
+                                    </div>
 
-                                <div className="flex-1 min-w-0">
-                                    <p className={`text-base ${note.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                        {note.content}
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-3 mt-2">
-                                        <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                                            <Building2 className="w-3 h-3" />
-                                            {getCompanyName(note.companyId)}
-                                        </span>
-                                        {note.dueDate && (
-                                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded ${isOverdue(note.dueDate) && !note.isCompleted
-                                                    ? 'bg-red-100 text-red-700 font-medium'
-                                                    : 'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                <Calendar className="w-3 h-3" />
-                                                {formatDate(note.dueDate)}
-                                            </span>
-                                        )}
-                                        <span className="text-xs text-slate-400">
-                                            Eklendi: {formatDate(note.createdAt)}
-                                        </span>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Firma</label>
+                                            <select
+                                                value={editNoteCompanyId}
+                                                onChange={(e) => setEditNoteCompanyId(e.target.value)}
+                                                className="w-full p-3 border border-amber-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                            >
+                                                <option value="">Genel Not</option>
+                                                {companies.map((c) => (
+                                                    <option key={c.id} value={c.id}>{c.title}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Hedef Tarih</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={editDueDateDay}
+                                                    onChange={(e) => setEditDueDateDay(e.target.value)}
+                                                    className="flex-1 p-3 border border-amber-200 rounded-xl text-sm bg-white"
+                                                >
+                                                    <option value="">Gün</option>
+                                                    {days.map(d => (
+                                                        <option key={d} value={String(d)}>{d}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    value={editDueDateMonth}
+                                                    onChange={(e) => setEditDueDateMonth(e.target.value)}
+                                                    className="flex-1 p-3 border border-amber-200 rounded-xl text-sm bg-white"
+                                                >
+                                                    <option value="">Ay</option>
+                                                    {months.map(m => (
+                                                        <option key={m.value} value={m.value}>{m.label}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    value={editDueDateYear}
+                                                    onChange={(e) => setEditDueDateYear(e.target.value)}
+                                                    className="flex-1 p-3 border border-amber-200 rounded-xl text-sm bg-white"
+                                                >
+                                                    <option value="">Yıl</option>
+                                                    {years.map(y => (
+                                                        <option key={y} value={String(y)}>{y}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            onClick={handleCancelEdit}
+                                            className="px-4 py-2 text-slate-600 hover:text-slate-800 rounded-xl font-medium transition-colors"
+                                        >
+                                            İptal
+                                        </button>
+                                        <button
+                                            onClick={handleSaveEdit}
+                                            className="px-6 py-2 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors flex items-center gap-2"
+                                        >
+                                            <Save className="w-4 h-4" />
+                                            Kaydet
+                                        </button>
                                     </div>
                                 </div>
+                            ) : (
+                                // Görüntüleme Modu
+                                <div className="flex items-start gap-4">
+                                    <button
+                                        onClick={() => toggleNoteComplete(note.id, note.isCompleted)}
+                                        className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${note.isCompleted
+                                                ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                : 'border-slate-300 hover:border-emerald-500'
+                                            }`}
+                                    >
+                                        {note.isCompleted && <Check className="w-4 h-4" />}
+                                    </button>
 
-                                <button
-                                    onClick={() => handleDeleteNote(note.id)}
-                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                            </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-base ${note.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                            {note.content}
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-3 mt-2">
+                                            <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                                <Building2 className="w-3 h-3" />
+                                                {getCompanyName(note.companyId)}
+                                            </span>
+                                            {note.dueDate && (
+                                                <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded ${isOverdue(note.dueDate) && !note.isCompleted
+                                                        ? 'bg-red-100 text-red-700 font-medium'
+                                                        : 'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                    <Calendar className="w-3 h-3" />
+                                                    {formatDate(note.dueDate)}
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-slate-400">
+                                                Eklendi: {formatDate(note.createdAt)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => handleEditNote(note)}
+                                            className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                                            title="Düzenle"
+                                        >
+                                            <Edit className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteNote(note.id)}
+                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Sil"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
