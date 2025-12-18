@@ -110,3 +110,4 @@ ALTER COLUMN "telegramMessageId" TYPE BIGINT USING "telegramMessageId"::BIGINT;
 **Çözüm:**
 - Bu hata, mevcut verilerin INT4 sınırlarını aştığını gösterir
 - Önce verileri temizleyin veya migration'ı yapmadan önce verileri kontrol edin
+

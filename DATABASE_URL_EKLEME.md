@@ -97,3 +97,4 @@ SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
    ```
 3. Dosyayı kaydedin
 4. `npx prisma db push` komutunu tekrar çalıştırın
+

@@ -50,3 +50,4 @@ if (Test-Path $envPath) {
 Write-Host ""
 Write-Host "Simdi 'npx prisma db push' komutunu calistirabilirsiniz."
 Write-Host ""
+

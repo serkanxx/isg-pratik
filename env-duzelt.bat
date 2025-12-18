@@ -38,3 +38,4 @@ echo Ornek dogru format:
 echo DATABASE_URL="postgresql://postgres:serkan7356Y*@db.bskxzjgjxebqbwglinkr.supabase.co:5432/postgres"
 echo.
 pause
+

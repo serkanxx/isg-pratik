@@ -177,3 +177,4 @@ npm install
 - Şu an için bot sadece yeni mesajları dinler. Geçmiş mesajları çekmek için farklı bir yöntem gerekir (Telegram Client API - MTProto).
 - İleride admin paneli eklenerek bot yönetimi kolaylaştırılabilir.
 - Medya dosyalarını indirmek için Telegram Bot API'nin `getFile` metodunu kullanabilirsiniz.
+

@@ -20,3 +20,4 @@ echo 1. Prisma Studio'yu yenileyin (F5)
 echo 2. Veya http://localhost:3000/is-ilanlari sayfasini acin
 echo.
 pause
+

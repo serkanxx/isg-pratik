@@ -161,3 +161,4 @@ fetch('https://www.isgpratik.com/api/test/add-job-posting?key=YOUR_KEY', {
   })
 })
 ```
+

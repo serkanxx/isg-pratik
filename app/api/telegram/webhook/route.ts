@@ -130,3 +130,4 @@ export async function GET() {
     webhookUrl: 'https://www.isgpratik.com/api/telegram/webhook'
   });
 }
+

@@ -43,3 +43,4 @@ echo NOT: Eger yukaridaki satir bos veya hatali gorunuyorsa,
 echo .env dosyasini duzenleyip tekrar deneyin.
 echo.
 pause
+

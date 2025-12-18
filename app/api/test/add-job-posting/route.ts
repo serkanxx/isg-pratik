@@ -5,18 +5,12 @@ import { prisma } from '@/lib/prisma';
 // Production'da secret key ile korunur
 
 export async function POST(request: Request) {
-  // Production'da secret key kontrolü
+  // Production'da bu endpoint tamamen devre dışı
   if (process.env.NODE_ENV === 'production') {
-    const { searchParams } = new URL(request.url);
-    const secretKey = searchParams.get('key') || request.headers.get('x-test-key');
-    const expectedKey = process.env.TEST_API_SECRET_KEY || 'test-secret-key-change-in-production';
-    
-    if (secretKey !== expectedKey) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Secret key gerekli' },
-        { status: 401 }
-      );
-    }
+    return NextResponse.json(
+      { error: 'Bu endpoint production\'da devre dışı bırakılmıştır' },
+      { status: 403 }
+    );
   }
 
   try {
@@ -101,3 +95,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

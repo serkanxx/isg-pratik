@@ -161,3 +161,4 @@ curl -X POST "https://api.telegram.org/bot8030105705:AAE_tkUwlHjJcycYTRFNrY-Cei0
 3. **Rate Limiting:**
    - Telegram'ın rate limit'lerine dikkat edin
    - Çok fazla istek göndermeyin
+

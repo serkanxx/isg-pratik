@@ -14,3 +14,4 @@ TELEGRAM_BOT_TOKEN="your-bot-token-here"
 # Supabase (eğer kullanıyorsanız)
 NEXT_PUBLIC_SUPABASE_URL="https://xxxxx.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+

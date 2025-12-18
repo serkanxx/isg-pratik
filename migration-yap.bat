@@ -58,3 +58,4 @@ echo.
 echo Kontrol etmek icin: npx prisma studio
 echo.
 pause
+

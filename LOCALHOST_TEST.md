@@ -126,3 +126,4 @@ https://www.isgpratik.com/api/telegram/webhook
 - Production'da test etmek en güvenilir yöntemdir
 - ngrok sadece geliştirme için geçici bir çözümdür
 - Production'da SSL sertifikası olmalı (HTTPS)
+

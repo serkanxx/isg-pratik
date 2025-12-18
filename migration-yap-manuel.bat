@@ -20,3 +20,4 @@ echo Veya tek seferde:
 echo npx prisma generate && npx prisma db push
 echo.
 pause
+

@@ -274,3 +274,4 @@ npx prisma db push
 - [Prisma Migrate Dokümantasyonu](https://www.prisma.io/docs/concepts/components/prisma-migrate)
 - [Prisma DB Push Dokümantasyonu](https://www.prisma.io/docs/concepts/components/prisma-migrate/db-push)
 - [Vercel Environment Variables](https://vercel.com/docs/concepts/projects/environment-variables)
+

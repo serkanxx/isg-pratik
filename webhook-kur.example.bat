@@ -19,3 +19,4 @@ powershell -Command "Invoke-RestMethod -Uri 'https://api.telegram.org/bot%BOT_TO
 echo.
 echo Kurulum tamamlandi!
 pause
+
