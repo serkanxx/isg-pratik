@@ -36,11 +36,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setIsDark(prev => !prev);
     };
 
-    // SSR uyumluluğu için mount olana kadar bekle
-    if (!mounted) {
-        return <>{children}</>;
-    }
-
+    // Her zaman Provider'ı render et (SSR uyumluluğu için)
+    // Context her zaman mevcut olmalı, sadece değerler mount olana kadar default olabilir
     return (
         <ThemeContext.Provider value={{ isDark, toggleTheme }}>
             {children}
