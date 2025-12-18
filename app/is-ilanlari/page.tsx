@@ -11,8 +11,9 @@ import {
   Image as ImageIcon, MessageSquare, Filter, X, ChevronLeft, ChevronRight,
   Trash2, Menu, Moon, Sun, Home, LayoutDashboard, LogOut,
   Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
-  ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon
+  ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin
 } from 'lucide-react';
+import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
 
 const ADMIN_EMAIL = 'serkanxx@gmail.com';
 
@@ -116,21 +117,72 @@ interface JobPosting {
   createdAt: string;
 }
 
-// Telefon numarası ve email tespit ve link'e çevirme fonksiyonu
+// Vurgulanacak terimler (kalın yazılacak)
+const HIGHLIGHT_TERMS = [
+  'DSP',
+  'Diğer Sağlık Personeli',
+  'C sınıfı İş Güvenlik Uzmanı',
+  'B sınıfı İş Güvenlik Uzmanı',
+  'A sınıfı İş Güvenlik Uzmanı',
+  'İşyeri Hekimi',
+  'İş Sağlığı ve Güvenliği Teknikeri',
+  'İSG Teknikeri',
+  'A Sınıfı İSG Uzmanı',
+  'B Sınıfı İSG Uzmanı',
+  'C Sınıfı İSG Uzmanı',
+  'A sınıfı İSG Uzmanı',
+  'B sınıfı İSG Uzmanı',
+  'C sınıfı İSG Uzmanı',
+  'A Sınıfı İş Güvenlik Uzmanı',
+  'B Sınıfı İş Güvenlik Uzmanı',
+  'C Sınıfı İş Güvenlik Uzmanı'
+];
+
+// Telefon numarası, email, il isimleri ve özel terimleri tespit ve formatla
 const parseContent = (content: string) => {
   // Telefon numarası regex (Türk formatı: 05XX XXX XX XX, 0XXX XXX XX XX, +90 5XX XXX XX XX, (0XXX) XXX XX XX)
-  // Daha esnek: boşluk, tire, parantez içeren formatları da yakalar
   const phoneRegex = /(\+?90\s?)?(\(?0?[5][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2})|(\(?0?[1-9][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2})/g;
   
-  // Email regex (daha kapsamlı)
+  // Email regex
   const emailRegex = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
+  
+  // İl isimlerini bul
+  const foundIls = findIlsInText(content);
+  
+  // Özel terimleri bul (case-insensitive)
+  const foundTerms: Array<{ index: number; length: number; value: string }> = [];
+  for (const term of HIGHLIGHT_TERMS) {
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      foundTerms.push({
+        index: match.index,
+        length: match[0].length,
+        value: match[0]
+      });
+    }
+  }
+  
+  // İl isimlerini bul
+  const foundIlMatches: Array<{ index: number; length: number; value: string }> = [];
+  for (const il of foundIls) {
+    const regex = new RegExp(il.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      foundIlMatches.push({
+        index: match.index,
+        length: match[0].length,
+        value: match[0]
+      });
+    }
+  }
 
-  const parts: Array<{ type: 'text' | 'phone' | 'email'; content: string; link?: string }> = [];
+  const parts: Array<{ type: 'text' | 'phone' | 'email' | 'highlight' | 'city'; content: string; link?: string }> = [];
   let lastIndex = 0;
   let match;
 
   // Tüm eşleşmeleri bul ve sırala
-  const matches: Array<{ index: number; length: number; type: 'phone' | 'email'; value: string }> = [];
+  const matches: Array<{ index: number; length: number; type: 'phone' | 'email' | 'highlight' | 'city'; value: string }> = [];
 
   // Telefon numaralarını bul
   while ((match = phoneRegex.exec(content)) !== null) {
@@ -152,10 +204,30 @@ const parseContent = (content: string) => {
     });
   }
 
+  // Özel terimleri ekle
+  for (const term of foundTerms) {
+    matches.push({
+      index: term.index,
+      length: term.length,
+      type: 'highlight',
+      value: term.value
+    });
+  }
+
+  // İl isimlerini ekle
+  for (const il of foundIlMatches) {
+    matches.push({
+      index: il.index,
+      length: il.length,
+      type: 'city',
+      value: il.value
+    });
+  }
+
   // Eşleşmeleri index'e göre sırala
   matches.sort((a, b) => a.index - b.index);
 
-  // Çakışmaları önle (email ve telefon aynı yerdeyse, email öncelikli)
+  // Çakışmaları önle (öncelik sırası: email > phone > highlight > city > text)
   const filteredMatches: typeof matches = [];
   for (let i = 0; i < matches.length; i++) {
     const current = matches[i];
@@ -165,16 +237,21 @@ const parseContent = (content: string) => {
     );
     if (!overlaps) {
       filteredMatches.push(current);
-    } else if (current.type === 'email') {
-      // Email öncelikli, telefon'u kaldır
-      const phoneIndex = filteredMatches.findIndex(m => 
-        m.type === 'phone' &&
-        ((current.index >= m.index && current.index < m.index + m.length) ||
-         (m.index >= current.index && m.index < current.index + current.length))
+    } else {
+      // Öncelik kontrolü
+      const priority: Record<string, number> = { email: 4, phone: 3, highlight: 2, city: 1 };
+      const currentPriority = priority[current.type] || 0;
+      const overlappingIndex = filteredMatches.findIndex(m => 
+        (current.index >= m.index && current.index < m.index + m.length) ||
+        (m.index >= current.index && m.index < current.index + current.length)
       );
-      if (phoneIndex !== -1) {
-        filteredMatches.splice(phoneIndex, 1);
-        filteredMatches.push(current);
+      if (overlappingIndex !== -1) {
+        const overlapping = filteredMatches[overlappingIndex];
+        const overlappingPriority = priority[overlapping.type] || 0;
+        if (currentPriority > overlappingPriority) {
+          filteredMatches.splice(overlappingIndex, 1);
+          filteredMatches.push(current);
+        }
       }
     }
   }
@@ -192,9 +269,7 @@ const parseContent = (content: string) => {
     // Eşleşme
     if (match.type === 'phone') {
       // Telefon numarasını temizle ve tel: link'e çevir
-      // Boşluk, tire, parantez ve +90'ı kaldır
       let cleanPhone = match.value.replace(/[\s\-\(\)]/g, '').replace(/^\+?90/, '');
-      // Eğer 0 ile başlamıyorsa ekle
       if (!cleanPhone.startsWith('0')) {
         cleanPhone = '0' + cleanPhone;
       }
@@ -203,11 +278,21 @@ const parseContent = (content: string) => {
         content: match.value,
         link: `tel:${cleanPhone}`
       });
-    } else {
+    } else if (match.type === 'email') {
       parts.push({
         type: 'email',
         content: match.value,
         link: `mailto:${match.value}`
+      });
+    } else if (match.type === 'highlight') {
+      parts.push({
+        type: 'highlight',
+        content: match.value
+      });
+    } else if (match.type === 'city') {
+      parts.push({
+        type: 'city',
+        content: match.value
       });
     }
 
@@ -238,10 +323,9 @@ export default function IsIlanlariPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [channels, setChannels] = useState<string[]>([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -250,41 +334,7 @@ export default function IsIlanlariPage() {
   // İş ilanlarını çek - filtreler değiştiğinde
   useEffect(() => {
     fetchJobPostings();
-  }, [page, searchTerm, selectedChannel]);
-
-  // Kanalları sadece bir kez çek
-  useEffect(() => {
-    fetchChannels();
-  }, []);
-
-  const fetchChannels = async () => {
-    try {
-      const response = await fetch('/api/job-postings?limit=1000');
-      const data = await response.json();
-      
-      if (!response.ok || data.error) {
-        console.error('API hatası:', data.error || response.status);
-        setChannels([]);
-        return;
-      }
-      
-      if (data && Array.isArray(data.data)) {
-        const uniqueChannels: string[] = Array.from(new Set(
-          data.data
-            .map((post: JobPosting) => post.channelUsername)
-            .filter((channel: string | null | undefined): channel is string => 
-              typeof channel === 'string' && channel.length > 0
-            )
-        ));
-        setChannels(uniqueChannels);
-      } else {
-        setChannels([]);
-      }
-    } catch (error) {
-      console.error('Kanal listesi alınamadı:', error);
-      setChannels([]);
-    }
-  };
+  }, [page, searchTerm, selectedCity]);
 
   const fetchJobPostings = async () => {
     try {
@@ -298,8 +348,8 @@ export default function IsIlanlariPage() {
         params.append('search', searchTerm);
       }
 
-      if (selectedChannel) {
-        params.append('channel', selectedChannel);
+      if (selectedCity) {
+        params.append('city', selectedCity);
       }
 
       const response = await fetch(`/api/job-postings?${params}`);
@@ -642,11 +692,11 @@ export default function IsIlanlariPage() {
                 />
               </div>
               <div className="relative">
-                <Filter className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+                <MapPin className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
                 <select
-                  value={selectedChannel}
+                  value={selectedCity}
                   onChange={(e) => {
-                    setSelectedChannel(e.target.value);
+                    setSelectedCity(e.target.value);
                     setPage(1);
                   }}
                   className={`pl-10 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none ${
@@ -655,19 +705,19 @@ export default function IsIlanlariPage() {
                       : 'bg-white border-gray-300 text-slate-900'
                   }`}
                 >
-                  <option value="">Tüm Kanallar</option>
-                  {channels.map((channel) => (
-                    <option key={channel} value={channel}>
-                      @{channel}
+                  <option value="">Tüm İller</option>
+                  {TURKIYE_ILLERI.sort().map((il) => (
+                    <option key={il} value={il}>
+                      {il}
                     </option>
                   ))}
                 </select>
               </div>
-              {(searchTerm || selectedChannel) && (
+              {(searchTerm || selectedCity) && (
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedChannel('');
+                    setSelectedCity('');
                     setPage(1);
                   }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
@@ -697,7 +747,7 @@ export default function IsIlanlariPage() {
                 İlan bulunamadı
               </h3>
               <p className={isDark ? 'text-slate-400' : 'text-gray-600'}>
-                {searchTerm || selectedChannel
+                {searchTerm || selectedCity
                   ? 'Arama kriterlerinize uygun ilan bulunamadı.'
                   : 'Henüz hiç ilan eklenmemiş.'}
               </p>
@@ -791,6 +841,32 @@ export default function IsIlanlariPage() {
                                 >
                                   ✉️ {part.content}
                                 </a>
+                              );
+                            } else if (part.type === 'highlight') {
+                              return (
+                                <strong
+                                  key={index}
+                                  className={`font-bold ${
+                                    isDark
+                                      ? 'text-yellow-300'
+                                      : 'text-yellow-700'
+                                  }`}
+                                >
+                                  {part.content}
+                                </strong>
+                              );
+                            } else if (part.type === 'city') {
+                              return (
+                                <strong
+                                  key={index}
+                                  className={`font-bold ${
+                                    isDark
+                                      ? 'text-purple-300'
+                                      : 'text-purple-700'
+                                  }`}
+                                >
+                                  {part.content}
+                                </strong>
                               );
                             }
                             return null;

@@ -7,8 +7,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const channel = searchParams.get('channel');
     const search = searchParams.get('search');
+    const city = searchParams.get('city'); // İl bazlı filtreleme
 
     const skip = (page - 1) * limit;
 
@@ -17,13 +17,21 @@ export async function GET(request: Request) {
       isActive: true
     };
 
-    if (channel) {
-      where.channelUsername = channel.replace('@', '');
-    }
-
-    if (search) {
+    // Hem search hem city varsa, AND mantığı kullan (her ikisini de içeren mesajlar)
+    if (search && city) {
+      where.AND = [
+        { content: { contains: search, mode: 'insensitive' } },
+        { content: { contains: city.toLowerCase(), mode: 'insensitive' } }
+      ];
+    } else if (search) {
       where.content = {
         contains: search,
+        mode: 'insensitive'
+      };
+    } else if (city) {
+      // İl bazlı filtreleme (case-insensitive, fuzzy matching için içerikte arama)
+      where.content = {
+        contains: city.toLowerCase(),
         mode: 'insensitive'
       };
     }
