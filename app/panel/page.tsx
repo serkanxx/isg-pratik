@@ -49,9 +49,12 @@ interface VisitProgram {
     schedule: any[];
 }
 
+const ADMIN_EMAIL = 'serkanxx@gmail.com';
+
 export default function PanelPage() {
     const { data: session } = useSession();
     const { isDark } = useTheme();
+    const isAdmin = session?.user?.email === ADMIN_EMAIL || (session?.user as any)?.role === 'ADMIN';
     const [companies, setCompanies] = useState<Company[]>([]);
     const [userRisks, setUserRisks] = useState<UserRisk[]>([]);
     const [recentReports, setRecentReports] = useState<ReportData[]>([]);
@@ -311,8 +314,7 @@ export default function PanelPage() {
                         </p>
 
                         {/* Admin Butonları */}
-                        {/* @ts-ignore */}
-                        {session?.user?.role === 'ADMIN' && (
+                        {isAdmin && (
                             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
                                 <Link
                                     href="/admin"

@@ -90,7 +90,8 @@ export default function LandingPage() {
 
   // SEO için structured data - tüm aktif özellikleri dahil et
   const activeFeatures = features.filter(f => f.active);
-  const activeFeatureCount = activeFeatures.length;
+  // Sabit değer kullanarak hydration mismatch'i önle
+  const activeFeatureCount = 7;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -269,7 +270,7 @@ export default function LandingPage() {
             </div>
 
             {/* Sağ: Dashboard Mockup (Canlı Animasyon) */}
-            <div className="relative hidden lg:block">
+            <div className="relative hidden lg:block" suppressHydrationWarning>
               <LiveDashboard />
             </div>
           </div>
@@ -279,7 +280,7 @@ export default function LandingPage() {
 
 
       {/* FEATURES SECTION */}
-      <section id="moduller" className="py-20" itemScope itemType="https://schema.org/ItemList">
+      <section id="moduller" className="py-20" itemScope itemType="https://schema.org/ItemList" suppressHydrationWarning>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <span className="text-indigo-600 font-semibold text-sm uppercase tracking-wide">KAPSAMLI İSG YÖNETİM PLATFORMU</span>
