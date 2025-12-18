@@ -24,7 +24,7 @@ const kalam = Kalam({
 
 export const metadata: Metadata = {
   title: {
-    default: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
+    default: "İSG Pratik - İş Güvenliği için Pratik Dijital Çözümler",
     template: "%s | İSG Pratik"
   },
   description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası. Ücretsiz İSG yönetim platformu.",
@@ -73,20 +73,20 @@ export const metadata: Metadata = {
     locale: "tr_TR",
     url: "https://isgpratik.com",
     siteName: "İSG Pratik",
-    title: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
+    title: "İSG Pratik - İş Güvenliği için Pratik Dijital Çözümler",
     description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası. Ücretsiz İSG yönetim platformu.",
     images: [
       {
         url: "https://isgpratik.com/logo.png",
         width: 1200,
         height: 630,
-        alt: "İSG Pratik - Risk Değerlendirme Sistemi",
+        alt: "İSG Pratik - İş Güvenliği için Pratik Dijital Çözümler",
       }
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
+    title: "İSG Pratik - İş Güvenliği için Pratik Dijital Çözümler",
     description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası.",
     images: ["/og-image.png"],
     creator: "@isgpratik",
