@@ -5,28 +5,13 @@ import { Shield, AlertTriangle, CheckCircle, Activity, Search, FileText, Zap } f
 
 export default function LiveDashboard() {
     const [scanPosition, setScanPosition] = useState(0);
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
         const interval = setInterval(() => {
             setScanPosition((prev) => (prev + 1) % 100);
         }, 50);
         return () => clearInterval(interval);
     }, []);
-
-    // Client-side render için
-    if (!mounted) {
-        return (
-            <div className="relative w-full max-w-2xl mx-auto">
-                <div className="relative bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden p-6">
-                    <div className="h-64 flex items-center justify-center">
-                        <div className="text-slate-500 text-sm">Yükleniyor...</div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="relative w-full max-w-2xl mx-auto perspective-1000">

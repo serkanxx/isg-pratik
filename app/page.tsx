@@ -1,6 +1,7 @@
 "use client";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import React from 'react';
+import dynamic from 'next/dynamic';
 import Link from "next/link";
 import {
   Shield, Brain, AlertTriangle, Calendar, BookOpen, Eye, FileText, Users, Building,
@@ -9,7 +10,20 @@ import {
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import LiveDashboard from './components/LiveDashboard';
+
+// LiveDashboard'u client-only olarak yükle (hydration hatasını önlemek için)
+const LiveDashboard = dynamic(() => import('./components/LiveDashboard'), {
+  ssr: false,
+  loading: () => (
+    <div className="relative w-full max-w-2xl mx-auto">
+      <div className="relative bg-slate-900 rounded-xl border border-slate-700 shadow-2xl overflow-hidden p-6">
+        <div className="h-64 flex items-center justify-center">
+          <div className="text-slate-500 text-sm">Yükleniyor...</div>
+        </div>
+      </div>
+    </div>
+  )
+});
 
 export default function LandingPage() {
   const router = useRouter();
