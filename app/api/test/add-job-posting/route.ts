@@ -39,6 +39,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Veritabanı bağlantısını test et
+    try {
+      await prisma.$connect();
+      console.log('Prisma bağlantısı başarılı');
+    } catch (connectError: any) {
+      console.error('Prisma bağlantı hatası:', connectError);
+      return NextResponse.json(
+        { error: `Veritabanı bağlantı hatası: ${connectError.message}` },
+        { status: 500 }
+      );
+    }
+
     // Test verisi oluştur
     const testPosting = await prisma.jobPosting.create({
       data: {
