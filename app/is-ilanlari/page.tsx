@@ -706,11 +706,19 @@ export default function IsIlanlariPage() {
                   }`}
                 >
                   <option value="">Tüm İller</option>
-                  {TURKIYE_ILLERI.sort().map((il) => (
-                    <option key={il} value={il}>
-                      {il}
-                    </option>
-                  ))}
+                  {(() => {
+                    // İstanbul, Ankara, İzmir'i en üste al, diğerlerini alfabetik sırala
+                    const priorityIls = ['İstanbul', 'Ankara', 'İzmir'];
+                    const otherIls = TURKIYE_ILLERI
+                      .filter(il => !priorityIls.includes(il))
+                      .sort();
+                    const sortedIls = [...priorityIls, ...otherIls];
+                    return sortedIls.map((il) => (
+                      <option key={il} value={il}>
+                        {il}
+                      </option>
+                    ));
+                  })()}
                 </select>
               </div>
               {(searchTerm || selectedCity) && (
