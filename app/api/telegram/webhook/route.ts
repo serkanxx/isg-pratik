@@ -22,9 +22,9 @@ export async function POST(request: Request) {
     // Kanal mesajları channel_post olarak gelir, normal mesajlar message olarak gelir
     const message = update.channel_post || update.message;
     let channelUsername = 'unknown';
-    let messageId: number;
+    let messageId: number | undefined;
     let messageText = '';
-    let messageDate: Date;
+    let messageDate: Date | undefined;
     let hasMedia = false;
     let mediaUrl: string | null = null;
     let shouldProcess = false;
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         }
       }
 
-      if (shouldProcess) {
+      if (shouldProcess && messageId !== undefined && messageDate !== undefined) {
         // Medya kontrolü
         hasMedia = !!(message.photo || message.video || message.document);
 
