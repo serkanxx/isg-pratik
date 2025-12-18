@@ -126,7 +126,7 @@ export async function PUT(request: Request) {
         }
 
         const body = await request.json();
-        const { id, isCompleted, content, dueDate } = body;
+        const { id, isCompleted, content, dueDate, companyId } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'Not ID gerekli' }, { status: 400 });
@@ -134,8 +134,9 @@ export async function PUT(request: Request) {
 
         const updateData: any = {};
         if (typeof isCompleted === 'boolean') updateData.isCompleted = isCompleted;
-        if (content !== undefined) updateData.content = content;
+        if (content !== undefined) updateData.content = content.trim();
         if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+        if (companyId !== undefined) updateData.companyId = companyId || null;
 
         const note = await prisma.note.updateMany({
             where: { id, userId },
