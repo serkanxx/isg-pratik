@@ -378,13 +378,6 @@ export default function LandingPage() {
               Ücretsiz Başla
               <ChevronRight className="w-5 h-5" />
             </Link>
-            <Link
-              href="/risk-degerlendirme"
-              className="inline-flex items-center gap-2 bg-indigo-500/30 text-white border-2 border-white/30 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-500/50 transition-colors"
-            >
-              Demo İncele
-              <Eye className="w-5 h-5" />
-            </Link>
           </div>
         </div>
       </section>

@@ -10,16 +10,19 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [isDark, setIsDark] = useState(false);
+    const [isDark, setIsDark] = useState(true); // Default olarak karanlık mod
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        // LocalStorage'dan tercihi oku
+        // LocalStorage'dan tercihi oku, yoksa default karanlık mod
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
+        if (savedTheme === 'light') {
+            setIsDark(false);
+        } else if (savedTheme === 'dark') {
             setIsDark(true);
         }
+        // Eğer hiç kayıtlı tercih yoksa, default olarak karanlık mod (zaten true)
     }, []);
 
     useEffect(() => {

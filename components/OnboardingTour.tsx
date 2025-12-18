@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { useTheme } from '@/app/context/ThemeContext';
 
 interface TourStep {
     target: string; // CSS selector veya ID
@@ -54,6 +55,18 @@ const TOUR_STEPS: TourStep[] = [
         position: 'right'
     },
     {
+        target: '[data-tour="ziyaret-programi"]',
+        title: '📅 Firma Ziyaret Programı',
+        description: 'Firmalarınız için haftalık ve aylık ziyaret programları oluşturun, takip edin ve yönetin.',
+        position: 'right'
+    },
+    {
+        target: '[data-tour="nace-kod"]',
+        title: '🔍 NACE Kod Sorgulama',
+        description: 'NACE kodunu girerek faaliyet alanı ve tehlike sınıfını anında öğrenin.',
+        position: 'right'
+    },
+    {
         target: '[data-tour="dark-mode"]',
         title: '🌙 Karanlık Mod',
         description: 'Göz yorgunluğunu azaltmak için karanlık modu açıp kapatabilirsiniz. Tercihiniz kaydedilir.',
@@ -68,6 +81,7 @@ interface OnboardingTourProps {
 }
 
 export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
+    const { isDark } = useTheme();
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
@@ -169,7 +183,11 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
 
             {/* Tooltip */}
             <div
-                className="fixed z-[999] w-80 bg-white rounded-2xl shadow-2xl border border-indigo-100 overflow-hidden animate-fade-in"
+                className={`fixed z-[999] w-80 rounded-2xl shadow-2xl overflow-hidden animate-fade-in transition-colors ${
+                    isDark 
+                        ? 'bg-slate-800 border border-slate-700' 
+                        : 'bg-white border border-indigo-100'
+                }`}
                 style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
             >
                 {/* Header */}
@@ -191,15 +209,15 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
 
                 {/* Content */}
                 <div className="p-4">
-                    <h3 className="font-bold text-slate-800 text-lg mb-2">{step.title}</h3>
-                    <p className="text-slate-600 text-sm leading-relaxed">{step.description}</p>
+                    <h3 className={`font-bold text-lg mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>{step.title}</h3>
+                    <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{step.description}</p>
                 </div>
 
                 {/* Footer */}
                 <div className="px-4 pb-4 flex items-center justify-between">
                     <button
                         onClick={handleSkip}
-                        className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                        className={`text-sm transition-colors ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         Atla
                     </button>
@@ -207,7 +225,11 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                         {currentStep > 0 && (
                             <button
                                 onClick={handlePrev}
-                                className="px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1"
+                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1 ${
+                                    isDark 
+                                        ? 'text-slate-300 hover:bg-slate-700' 
+                                        : 'text-slate-600 hover:bg-slate-100'
+                                }`}
                             >
                                 <ChevronLeft className="w-4 h-4" />
                                 Geri
@@ -228,12 +250,13 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                     {TOUR_STEPS.map((_, index) => (
                         <div
                             key={index}
-                            className={`w-2 h-2 rounded-full transition-colors ${index === currentStep
+                            className={`w-2 h-2 rounded-full transition-colors ${
+                                index === currentStep
                                     ? 'bg-indigo-600'
                                     : index < currentStep
-                                        ? 'bg-indigo-300'
-                                        : 'bg-slate-200'
-                                }`}
+                                        ? isDark ? 'bg-indigo-400' : 'bg-indigo-300'
+                                        : isDark ? 'bg-slate-600' : 'bg-slate-200'
+                            }`}
                         />
                     ))}
                 </div>

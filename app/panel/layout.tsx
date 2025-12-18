@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Mail, Lightbulb, Moon, Sun, Calendar, Search
+    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -117,7 +117,6 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const [editingRisk, setEditingRisk] = useState<any | null>(null);
     const [editForm, setEditForm] = useState<any>({});
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-    const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [showHamburgerTooltip, setShowHamburgerTooltip] = useState(false);
 
     const isAdmin = session?.user?.email === ADMIN_EMAIL;
@@ -289,18 +288,22 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             <aside className={`
                 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0
-                w-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col fixed h-screen z-50 transition-transform duration-300
+                w-72 flex flex-col fixed h-screen z-50 transition-all duration-300
+                ${isDark 
+                    ? 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white' 
+                    : 'bg-gradient-to-b from-white via-slate-50 to-white text-slate-900 border-r border-slate-200'
+                }
             `}>
                 {/* Logo + Premium Bilgisi */}
-                <div className="p-6 border-b border-white/10">
+                <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between">
                         <Link href="/" className="flex items-center group">
                             <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
                             <div className="ml-3">
-                                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
+                                <span className={`text-xl font-bold bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-white to-blue-200' : 'bg-gradient-to-r from-indigo-600 to-purple-600'}`}>
                                     İSG Pratik
                                 </span>
-                                <span className="block text-[10px] text-blue-300/70 tracking-widest uppercase">
+                                <span className={`block text-[10px] tracking-widest uppercase ${isDark ? 'text-blue-300/70' : 'text-slate-500'}`}>
                                     Yönetim Paneli
                                 </span>
                             </div>
@@ -308,7 +311,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                         {/* Mobil Kapat Butonu */}
                         <button
                             onClick={() => setIsMobileSidebarOpen(false)}
-                            className="md:hidden p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg"
+                            className={`md:hidden p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -316,16 +319,16 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Kullanıcı Bilgisi */}
-                <div className="px-6 py-4 border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer">
+                <div className={`px-6 py-4 border-b ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'} transition-colors cursor-pointer`}>
                     <Link href="/panel" className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                             {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">
+                            <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 {session.user?.name || session.user?.email}
                             </p>
-                            <p className="text-xs text-slate-400">Kullanıcı</p>
+                            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kullanıcı</p>
                         </div>
                     </Link>
                 </div>
@@ -335,7 +338,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     <ul className="space-y-1">
                         {menuItems.map((item, index) => {
                             if (item.type === 'divider') {
-                                return <li key={index} className="my-4 border-t border-white/10" />;
+                                return <li key={index} className={`my-4 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`} />;
                             }
 
                             const isActive = pathname === item.href;
@@ -352,16 +355,22 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                                                 : item.active
                                                     ? item.highlight
-                                                        ? 'text-emerald-400 hover:bg-white/5'
-                                                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                                                    : 'text-slate-500 cursor-not-allowed'
+                                                        ? isDark
+                                                            ? 'text-emerald-400 hover:bg-white/5'
+                                                            : 'text-emerald-600 hover:bg-slate-100'
+                                                        : isDark
+                                                            ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                                            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                                                    : isDark
+                                                        ? 'text-slate-500 cursor-not-allowed'
+                                                        : 'text-slate-400 cursor-not-allowed'
                                             }
                                         `}
                                     >
                                         {Icon && <Icon className="w-5 h-5" />}
                                         <span className="flex-1">{item.name}</span>
                                         {item.badge && (
-                                            <span className="text-[9px] px-2 py-0.5 bg-white/10 rounded-full text-slate-400 font-bold">
+                                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${isDark ? 'bg-white/10 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>
                                                 {item.badge}
                                             </span>
                                         )}
@@ -375,56 +384,24 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     </ul>
                 </nav>
 
-                {/* Destek Bölümü - Açılıp Kapanabilir */}
-                <div className="px-4 py-2 border-t border-white/10">
-                    <button
-                        onClick={() => setIsSupportOpen(!isSupportOpen)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-all"
-                    >
-                        <HeadphonesIcon className="w-5 h-5" />
-                        <span className="flex-1 text-left">Destek</span>
-                        <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isSupportOpen ? 'rotate-90' : ''}`} />
-                    </button>
-
-                    {/* Destek Alt Menüsü */}
-                    <div className={`overflow-hidden transition-all duration-200 ${isSupportOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-                        <div className="pl-4 mt-1 space-y-1">
-                            <Link
-                                href="/iletisim"
-                                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-all"
-                            >
-                                <Mail className="w-4 h-4" />
-                                <span>İletişim</span>
-                            </Link>
-                            <Link
-                                href="/destek"
-                                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-all"
-                            >
-                                <Lightbulb className="w-4 h-4" />
-                                <span>Öneride Bulun</span>
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Alt Menü - Dark Mode Toggle + Çıkış */}
-                <div className="p-4 border-t border-white/10">
-                    <div className="flex items-center gap-2">
+                {/* Alt Menü - Dark Mode Toggle + Destek */}
+                <div className={`p-4 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                    <div className="flex items-center justify-center gap-2">
                         <button
                             onClick={toggleTheme}
                             data-tour="dark-mode"
-                            className="flex items-center justify-center w-10 h-10 rounded-xl text-slate-300 hover:bg-white/10 transition-all"
+                            className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
                             title={isDark ? 'Açık Mod' : 'Karanlık Mod'}
                         >
                             {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
                         </button>
-                        <button
-                            onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                            className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                        <Link
+                            href="/destek"
+                            className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
+                            title="Destek"
                         >
-                            <LogOut className="w-5 h-5" />
-                            <span>Çıkış Yap</span>
-                        </button>
+                            <HeadphonesIcon className="w-5 h-5" />
+                        </Link>
                     </div>
                 </div>
             </aside>
@@ -432,41 +409,59 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Ana İçerik */}
             <main className={`flex-1 md:ml-72 min-h-screen ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
                 {/* Üst Navbar - Tam Genişlik */}
-                <nav className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 shadow-xl border-b border-white/10 backdrop-blur-md sticky top-0 z-40">
+                <nav className={`shadow-xl backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${
+                    isDark 
+                        ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10' 
+                        : 'bg-gradient-to-r from-white via-indigo-50 to-white border-b border-slate-200'
+                }`}>
                     <div className="w-full px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between h-14">
                             {/* Mobil Hamburger Menü */}
                             <div className="relative md:hidden">
                                 <button
                                     onClick={handleHamburgerClick}
-                                    className="p-2 text-blue-100 hover:bg-white/10 rounded-lg relative z-10"
+                                    className={`p-2 rounded-lg relative z-10 transition-colors ${
+                                        isDark 
+                                            ? 'text-blue-100 hover:bg-white/10' 
+                                            : 'text-indigo-600 hover:bg-indigo-100'
+                                    }`}
                                 >
                                     <Menu className="w-6 h-6" />
                                 </button>
                                 
                                 {/* Hamburger Menü Tooltip - İlk Giriş */}
                                 {showHamburgerTooltip && (
-                                    <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-white rounded-xl shadow-2xl border-2 border-indigo-200 animate-fade-in">
+                                    <div className={`absolute left-0 top-full mt-2 z-50 w-64 rounded-xl shadow-2xl border-2 animate-fade-in ${
+                                        isDark 
+                                            ? 'bg-slate-800 border-indigo-500' 
+                                            : 'bg-white border-indigo-200'
+                                    }`}>
                                         {/* Ok işareti */}
-                                        <div className="absolute -top-2 left-6 w-4 h-4 bg-white border-l-2 border-t-2 border-indigo-200 transform rotate-45"></div>
+                                        <div className={`absolute -top-2 left-6 w-4 h-4 transform rotate-45 border-l-2 border-t-2 ${
+                                            isDark 
+                                                ? 'bg-slate-800 border-indigo-500' 
+                                                : 'bg-white border-indigo-200'
+                                        }`}></div>
                                         
                                         {/* İçerik */}
                                         <div className="p-4">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                                        <Menu className="w-5 h-5 text-indigo-600" />
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                        isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'
+                                                    }`}>
+                                                        <Menu className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
                                                     </div>
-                                                    <h3 className="font-bold text-slate-800 text-sm">Menüyü Keşfedin</h3>
+                                                    <h3 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>Menüyü Keşfedin</h3>
                                                 </div>
                                                 <button
                                                     onClick={handleCloseTooltip}
-                                                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                                                    className={`transition-colors ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                            <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                                                 Bu butona tıklayarak tüm menü seçeneklerine erişebilirsiniz. Firmalar, riskler, raporlar ve daha fazlası burada!
                                             </p>
                                         </div>
@@ -489,13 +484,17 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     Panel
                                 </Link>
                                 <div className="hidden sm:flex flex-col items-end mr-2">
-                                    <span className="text-xs font-bold text-blue-100">
+                                    <span className={`text-xs font-bold ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
                                         {session?.user?.name || session?.user?.email}
                                     </span>
                                 </div>
                                 <button
                                     onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                                    className="bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 p-2 rounded-xl transition-all border border-white/10 hover:border-red-400/30 shadow-sm"
+                                    className={`p-2 rounded-xl transition-all shadow-sm ${
+                                        isDark 
+                                            ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30' 
+                                            : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
+                                    }`}
                                     title="Çıkış Yap"
                                 >
                                     <LogOut className="w-5 h-5" />
