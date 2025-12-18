@@ -14,12 +14,12 @@ echo.
 
 REM Secret key - Production'da environment variable olarak ayarlanmalı
 REM Vercel Dashboard -> Settings -> Environment Variables -> TEST_API_SECRET_KEY
-   set SECRET_KEY=my-secret-test-key-2025
+set SECRET_KEY=my-secret-test-key-2025
 
 echo Test is ilani ekleniyor...
 echo.
 
-powershell -Command "$body = @{content = 'Test İş İlanı - İSG Uzmanı aranıyor. Deneyimli, sertifikalı İSG uzmanı aranmaktadır.'; channelUsername = 'test_channel'} | ConvertTo-Json; $headers = @{'x-test-key' = '%SECRET_KEY%'}; Invoke-RestMethod -Uri 'https://www.isgpratik.com/api/test/add-job-posting' -Method Post -ContentType 'application/json' -Headers $headers -Body $body | ConvertTo-Json -Depth 10"
+powershell -Command "try { $body = @{content = 'Test İş İlanı - İSG Uzmanı aranıyor. Deneyimli, sertifikalı İSG uzmanı aranmaktadır.'; channelUsername = 'test_channel'} | ConvertTo-Json; $headers = @{'x-test-key' = '%SECRET_KEY%'}; $response = Invoke-RestMethod -Uri 'https://www.isgpratik.com/api/test/add-job-posting' -Method Post -ContentType 'application/json' -Headers $headers -Body $body -ErrorAction Stop; Write-Host 'Başarılı:' -ForegroundColor Green; $response | ConvertTo-Json -Depth 10 } catch { Write-Host 'Hata:' -ForegroundColor Red; Write-Host $_.Exception.Message -ForegroundColor Red; if ($_.ErrorDetails.Message) { Write-Host 'Detay:' -ForegroundColor Yellow; Write-Host $_.ErrorDetails.Message -ForegroundColor Yellow } }"
 
 echo.
 echo Test tamamlandi!

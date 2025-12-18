@@ -20,6 +20,15 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Veritabanı bağlantı kontrolü
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL bulunamadı');
+      return NextResponse.json(
+        { error: 'Veritabanı bağlantı bilgisi bulunamadı' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { content, channelUsername } = body;
 
@@ -52,8 +61,19 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error name:', error.name);
+    
+    // Daha detaylı hata mesajı
+    const errorMessage = error.message || 'Bilinmeyen hata';
+    const errorName = error.name || 'UnknownError';
+    
     return NextResponse.json(
-      { error: `Sunucu hatası: ${error.message}` },
+      { 
+        error: `Sunucu hatası: ${errorMessage}`,
+        errorType: errorName,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
