@@ -100,12 +100,12 @@ export const metadata: Metadata = {
   category: "İş Güvenliği",
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: 'https://isgpratik.com/favicon.ico', sizes: 'any' },
+      { url: 'https://isgpratik.com/favicon.svg', type: 'image/svg+xml' },
+      { url: 'https://isgpratik.com/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    shortcut: 'https://isgpratik.com/favicon.ico',
+    apple: 'https://isgpratik.com/apple-touch-icon.png',
   },
 };
 
@@ -207,6 +207,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <link rel="canonical" href="https://isgpratik.com" />
+        <link rel="icon" href="https://isgpratik.com/favicon.ico" sizes="any" />
+        <link rel="icon" href="https://isgpratik.com/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="https://isgpratik.com/favicon-96x96.png" type="image/png" sizes="96x96" />
+        <link rel="shortcut icon" href="https://isgpratik.com/favicon.ico" />
+        <link rel="apple-touch-icon" href="https://isgpratik.com/apple-touch-icon.png" />
         <meta name="google-site-verification" content="j4rFgnURFww2H9HH7z5kWXtedMvdalOyefFAJqPlsr8" />
         <meta name="geo.region" content="TR" />
         <meta name="geo.placename" content="Türkiye" />
