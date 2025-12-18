@@ -7,8 +7,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
+    console.log('=== Telegram Webhook İsteği Alındı ===');
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
+      console.error('TELEGRAM_BOT_TOKEN bulunamadı');
       return NextResponse.json(
         { error: 'TELEGRAM_BOT_TOKEN bulunamadı' },
         { status: 500 }
@@ -17,6 +19,10 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const update = body;
+    
+    // Gelen update'i logla
+    console.log('Update tipi:', update.channel_post ? 'channel_post' : update.message ? 'message' : 'unknown');
+    console.log('Update içeriği:', JSON.stringify(update, null, 2));
 
     // Telegram update objesi
     // Kanal mesajları channel_post olarak gelir, normal mesajlar message olarak gelir
@@ -30,17 +36,21 @@ export async function POST(request: Request) {
     let shouldProcess = false;
 
     if (message) {
+      console.log('Mesaj bulundu, işleniyor...');
       // 1. Kanal mesajı (channel_post) - Bot'un gönderdiği mesajlar
       if (update.channel_post) {
+        console.log('Kanal mesajı tespit edildi (channel_post)');
         const chat = message.chat;
         channelUsername = chat.username || chat.title || 'unknown';
         messageId = message.message_id;
         messageText = message.text || message.caption || '';
         messageDate = new Date(message.date * 1000);
         shouldProcess = true;
+        console.log(`Kanal: ${channelUsername}, Mesaj ID: ${messageId}, Metin uzunluğu: ${messageText.length}`);
       }
       // 2. Forward edilmiş kanal mesajı
       else if (update.message && update.message.forward_from_chat) {
+        console.log('Forward edilmiş mesaj tespit edildi');
         const forwardedChat = update.message.forward_from_chat;
         if (forwardedChat.type === 'channel') {
           channelUsername = forwardedChat.username || forwardedChat.title || 'unknown';
@@ -52,21 +62,32 @@ export async function POST(request: Request) {
             ? new Date(message.forward_date * 1000)
             : new Date(message.date * 1000);
           shouldProcess = true;
+          console.log(`Forward - Kanal: ${channelUsername}, Mesaj ID: ${messageId}, Metin uzunluğu: ${messageText.length}`);
+        } else {
+          console.log(`Forward edilmiş mesaj kanal değil, tip: ${forwardedChat.type}`);
         }
       }
       // 3. Normal grup/kanal mesajı (bot grup üyesi ise)
       else if (update.message) {
+        console.log('Normal mesaj tespit edildi');
         const chat = message.chat;
+        console.log(`Chat tipi: ${chat.type}, Username: ${chat.username || chat.title || 'unknown'}`);
         if (chat.type === 'channel' || chat.type === 'supergroup') {
           channelUsername = chat.username || chat.title || 'unknown';
           messageId = message.message_id;
           messageText = message.text || message.caption || '';
           messageDate = new Date(message.date * 1000);
           shouldProcess = true;
+          console.log(`Grup/Kanal mesajı - Kanal: ${channelUsername}, Mesaj ID: ${messageId}, Metin uzunluğu: ${messageText.length}`);
+        } else {
+          console.log(`Mesaj işlenmedi - Chat tipi: ${chat.type} (channel veya supergroup değil)`);
         }
+      } else {
+        console.log('Mesaj bulunamadı veya işlenemedi');
       }
 
       if (shouldProcess && messageId !== undefined && messageDate !== undefined) {
+        console.log('Mesaj işleniyor...');
         // Medya kontrolü
         hasMedia = !!(message.photo || message.video || message.document);
 
@@ -85,6 +106,7 @@ export async function POST(request: Request) {
         });
 
         if (!existing) {
+          console.log('Yeni mesaj, veritabanına kaydediliyor...');
           // Veritabanına kaydet
           await prisma.jobPosting.create({
             data: {
@@ -99,18 +121,25 @@ export async function POST(request: Request) {
             }
           });
 
-          console.log(`Yeni iş ilanı kaydedildi: ${messageId} - ${channelUsername}`);
+          console.log(`✅ Yeni iş ilanı kaydedildi: ${messageId} - ${channelUsername}`);
         } else {
-          console.log(`Mesaj zaten kayıtlı: ${messageId}`);
+          console.log(`⚠️ Mesaj zaten kayıtlı: ${messageId}`);
         }
+      } else {
+        console.log(`❌ Mesaj işlenmedi - shouldProcess: ${shouldProcess}, messageId: ${messageId}, messageDate: ${messageDate}`);
       }
+    } else {
+      console.log('❌ Update içinde mesaj bulunamadı');
     }
 
     // Telegram'a OK döndür
+    console.log('=== Webhook İsteği Tamamlandı ===');
     return NextResponse.json({ ok: true });
 
   } catch (error: any) {
-    console.error('Webhook error:', error);
+    console.error('❌ Webhook error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
     // Telegram'a hata döndürme, sadece logla
     return NextResponse.json({ ok: true }); // Telegram tekrar denemesin diye
   }
