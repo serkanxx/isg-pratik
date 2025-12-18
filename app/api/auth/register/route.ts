@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail } from "@/lib/email";
+import { sendVerificationEmail, sendNewUserNotificationEmail } from "@/lib/email";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -87,6 +87,12 @@ export async function POST(request: NextRequest) {
             console.error("Email gönderilemedi:", emailResult.error);
             // Email gönderilemese bile kayıt başarılı sayılsın
         }
+
+        // Yeni üyelik bildirimi emaili gönder (arka planda, hata olsa bile kayıt başarılı sayılsın)
+        sendNewUserNotificationEmail(name, email, phone).catch((error) => {
+            console.error("Yeni üyelik bildirimi emaili gönderilemedi:", error);
+            // Hata olsa bile kayıt işlemi devam eder
+        });
 
         console.log(`SMS Kodu: ${phoneCode} -> +90${phone}`);
 

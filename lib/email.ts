@@ -97,3 +97,76 @@ export async function sendPasswordResetEmail(email: string, token: string) {
         return { success: false, error };
     }
 }
+
+// Yeni üyelik bildirimi emaili gönder
+export async function sendNewUserNotificationEmail(userName: string, userEmail: string, userPhone: string | null) {
+    const registrationDate = new Date().toLocaleDateString('tr-TR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: 'İSG Pratik <noreply@isgpratik.com>',
+            to: 'serkanxx@gmail.com',
+            subject: `🎉 Yeni Üyelik - ${userName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background: linear-gradient(135deg, #4F46E5, #7C3AED); padding: 20px; border-radius: 12px 12px 0 0;">
+                        <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Yeni Üyelik Bildirimi</h1>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                        <p style="color: #1e293b; font-size: 16px; margin-bottom: 20px;">
+                            İSG Pratik platformuna yeni bir kullanıcı kayıt oldu.
+                        </p>
+                        
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; width: 140px; background: #f8fafc;">İsim:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${userName || 'Belirtilmemiş'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; background: #f8fafc;">E-Posta:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+                                    <a href="mailto:${userEmail}" style="color: #4F46E5; text-decoration: none;">${userEmail}</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; background: #f8fafc;">Telefon:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${userPhone ? `+90${userPhone}` : 'Belirtilmemiş'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; font-weight: bold; color: #4F46E5; background: #f8fafc;">Kayıt Tarihi:</td>
+                                <td style="padding: 12px 15px; color: #1e293b;">${registrationDate}</td>
+                            </tr>
+                        </table>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                            <p style="margin: 0; color: #92400e; font-size: 14px;">
+                                <strong>Not:</strong> Bu email otomatik olarak gönderilmiştir. Kullanıcı henüz email adresini doğrulamamış olabilir.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">
+                        Bu email İSG Pratik yeni üyelik bildirim sistemi tarafından gönderilmiştir.
+                    </p>
+                </div>
+            `,
+        });
+
+        if (error) {
+            console.error('Yeni üyelik bildirimi email gönderme hatası:', error);
+            return { success: false, error };
+        }
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Yeni üyelik bildirimi email gönderme hatası:', error);
+        return { success: false, error };
+    }
+}

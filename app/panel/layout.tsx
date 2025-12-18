@@ -118,6 +118,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const [editForm, setEditForm] = useState<any>({});
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isSupportOpen, setIsSupportOpen] = useState(false);
+    const [showHamburgerTooltip, setShowHamburgerTooltip] = useState(false);
 
     const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
@@ -144,6 +145,37 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             fetchPendingCount();
         }
     }, [isAdmin]);
+
+    // Hamburger menü tooltip kontrolü - sadece mobil ve ilk girişte
+    useEffect(() => {
+        const hasSeenTooltip = localStorage.getItem('hamburger_menu_tooltip_seen');
+        if (!hasSeenTooltip) {
+            // Mobil cihaz kontrolü
+            const isMobile = window.innerWidth < 768; // md breakpoint
+            if (isMobile) {
+                // Sayfa yüklendikten kısa bir süre sonra göster
+                const timer = setTimeout(() => {
+                    setShowHamburgerTooltip(true);
+                }, 1500);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, []);
+
+    // Hamburger menüye tıklandığında tooltip'i kapat
+    const handleHamburgerClick = () => {
+        setIsMobileSidebarOpen(true);
+        if (showHamburgerTooltip) {
+            setShowHamburgerTooltip(false);
+            localStorage.setItem('hamburger_menu_tooltip_seen', 'true');
+        }
+    };
+
+    // Tooltip'i manuel kapat
+    const handleCloseTooltip = () => {
+        setShowHamburgerTooltip(false);
+        localStorage.setItem('hamburger_menu_tooltip_seen', 'true');
+    };
 
     const fetchPendingCount = async () => {
         try {
@@ -404,12 +436,43 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     <div className="w-full px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between h-14">
                             {/* Mobil Hamburger Menü */}
-                            <button
-                                onClick={() => setIsMobileSidebarOpen(true)}
-                                className="md:hidden p-2 text-blue-100 hover:bg-white/10 rounded-lg"
-                            >
-                                <Menu className="w-6 h-6" />
-                            </button>
+                            <div className="relative md:hidden">
+                                <button
+                                    onClick={handleHamburgerClick}
+                                    className="p-2 text-blue-100 hover:bg-white/10 rounded-lg relative z-10"
+                                >
+                                    <Menu className="w-6 h-6" />
+                                </button>
+                                
+                                {/* Hamburger Menü Tooltip - İlk Giriş */}
+                                {showHamburgerTooltip && (
+                                    <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-white rounded-xl shadow-2xl border-2 border-indigo-200 animate-fade-in">
+                                        {/* Ok işareti */}
+                                        <div className="absolute -top-2 left-6 w-4 h-4 bg-white border-l-2 border-t-2 border-indigo-200 transform rotate-45"></div>
+                                        
+                                        {/* İçerik */}
+                                        <div className="p-4">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                        <Menu className="w-5 h-5 text-indigo-600" />
+                                                    </div>
+                                                    <h3 className="font-bold text-slate-800 text-sm">Menüyü Keşfedin</h3>
+                                                </div>
+                                                <button
+                                                    onClick={handleCloseTooltip}
+                                                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Bu butona tıklayarak tüm menü seçeneklerine erişebilirsiniz. Firmalar, riskler, raporlar ve daha fazlası burada!
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Desktop Nav Links */}
                             {/* Desktop Nav Links - Linkler kaldırıldı */}

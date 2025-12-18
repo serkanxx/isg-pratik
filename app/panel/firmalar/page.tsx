@@ -34,6 +34,15 @@ export default function FirmalarPage() {
     const [bulkData, setBulkData] = useState<{ title: string; address: string; registration_number: string; danger_class: string }[]>([]);
     const [bulkUploading, setBulkUploading] = useState(false);
     const [bulkResult, setBulkResult] = useState<{ success: boolean; successCount: number; errorCount: number; errors: { row: number; message: string }[] } | null>(null);
+    
+    // Adres düzenleme modal state'leri
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(null);
+    const [tempAddress, setTempAddress] = useState('');
+    
+    // Otomatik adres bulma state'leri
+    const [findingAddresses, setFindingAddresses] = useState(false);
+    const [addressFindProgress, setAddressFindProgress] = useState({ current: 0, total: 0 });
 
     const logoInputRef = useRef<HTMLInputElement>(null);
     const csvInputRef = useRef<HTMLInputElement>(null);
@@ -179,17 +188,107 @@ export default function FirmalarPage() {
                     return;
                 }
 
-                // Başlık satırını atla
-                const dataRows = jsonData.slice(1);
+                // Dinamik başlık araması
+                let titleColIndex = -1;
+                let addressColIndex = -1;
+                let registrationColIndex = -1;
+                let dangerClassColIndex = -1;
+                let headerRowIndex = -1;
+
+                // Başlık satırını bul (ilk 10 satırda ara)
+                const searchRows = Math.min(10, jsonData.length);
+                for (let i = 0; i < searchRows; i++) {
+                    const row = jsonData[i] || [];
+                    for (let j = 0; j < row.length; j++) {
+                        const cellValue = (row[j] || '').toString().trim();
+                        
+                        // "Hizmet Veren" ile başlayan sütunları göz ardı et
+                        if (cellValue.startsWith('Hizmet Veren')) {
+                            continue;
+                        }
+                        
+                        // "Hizmet Alan İşyeri Unvanı" veya benzeri
+                        if (titleColIndex === -1 && (
+                            cellValue.includes('Hizmet Alan İşyeri Unvanı') ||
+                            cellValue.includes('İşyeri Unvanı') ||
+                            cellValue.includes('Firma') ||
+                            cellValue.includes('Unvan')
+                        )) {
+                            titleColIndex = j;
+                            headerRowIndex = i;
+                        }
+                        
+                        // "Hizmet Alan İşyeri SGK/DETSİS No" veya benzeri
+                        if (registrationColIndex === -1 && (
+                            cellValue.includes('Hizmet Alan İşyeri SGK/DETSİS No') ||
+                            cellValue.includes('SGK/DETSİS No') ||
+                            cellValue.includes('Sicil No') ||
+                            cellValue.includes('SGK')
+                        )) {
+                            registrationColIndex = j;
+                            if (headerRowIndex === -1) headerRowIndex = i;
+                        }
+                        
+                        // "Hizmet Alan İşyeri Tehlike Sınıfı" veya benzeri
+                        if (dangerClassColIndex === -1 && (
+                            cellValue.includes('Hizmet Alan İşyeri Tehlike Sınıfı') ||
+                            cellValue.includes('Tehlike Sınıfı') ||
+                            cellValue.includes('Tehlike')
+                        )) {
+                            dangerClassColIndex = j;
+                            if (headerRowIndex === -1) headerRowIndex = i;
+                        }
+                        
+                        // Adres için genel arama (sadece "Hizmet Veren" ile başlamayanlar)
+                        if (addressColIndex === -1 && (
+                            cellValue.includes('Adres') ||
+                            cellValue.includes('Address')
+                        )) {
+                            addressColIndex = j;
+                            if (headerRowIndex === -1) headerRowIndex = i;
+                        }
+                    }
+                    
+                    // Eğer en az bir başlık bulunduysa, bu satır başlık satırıdır
+                    if (titleColIndex !== -1 || registrationColIndex !== -1 || dangerClassColIndex !== -1) {
+                        break;
+                    }
+                }
+
+                // Eğer dinamik başlık bulunamadıysa, varsayılan şablon yapısını kullan
+                if (titleColIndex === -1 && registrationColIndex === -1 && dangerClassColIndex === -1) {
+                    // Varsayılan şablon: A=Firma, B=Adres, C=Sicil No, D=Tehlike Sınıfı
+                    titleColIndex = 0;
+                    addressColIndex = 1;
+                    registrationColIndex = 2;
+                    dangerClassColIndex = 3;
+                    headerRowIndex = 0;
+                } else {
+                    // Başlık bulundu, eksik sütunlar için varsayılan değerler
+                    // Adres sütunu bulunamazsa boş bırakılabilir (addressColIndex -1 kalabilir)
+                    if (titleColIndex === -1) titleColIndex = 0;
+                    // addressColIndex -1 kalabilir, adres boş bırakılacak
+                    if (registrationColIndex === -1) registrationColIndex = 2;
+                    if (dangerClassColIndex === -1) dangerClassColIndex = 3;
+                }
+
+                // Başlık satırından sonraki verileri al
+                const dataRows = jsonData.slice(headerRowIndex + 1);
                 const parsedData: { title: string; address: string; registration_number: string; danger_class: string }[] = [];
 
                 dataRows.forEach(row => {
-                    if (row && row[0]) { // En az firma adı olmalı (A sütunu)
-                        const dangerClassValue = (row[3] || '').toString();
+                    const title = (row[titleColIndex] || '').toString().trim();
+                    // En az firma adı olmalı
+                    if (title) {
+                        // Adres sütunu bulunamadıysa boş bırak
+                        const address = addressColIndex !== -1 ? (row[addressColIndex] || '').toString().trim() : '';
+                        const registrationNumber = (row[registrationColIndex] || '').toString().trim();
+                        const dangerClassValue = (row[dangerClassColIndex] || '').toString();
+                        
                         parsedData.push({
-                            title: (row[0] || '').toString().trim(),
-                            address: (row[1] || '').toString().trim(),
-                            registration_number: (row[2] || '').toString().trim(),
+                            title: title,
+                            address: address,
+                            registration_number: registrationNumber,
                             danger_class: detectDangerClass(dangerClassValue)
                         });
                     }
@@ -212,6 +311,116 @@ export default function FirmalarPage() {
         // Input'u sıfırla (aynı dosya tekrar seçilebilsin)
         if (csvInputRef.current) {
             csvInputRef.current.value = '';
+        }
+    };
+
+    // Adres güncelleme fonksiyonu
+    const handleAddressUpdate = () => {
+        if (editingAddressIndex !== null) {
+            const updatedData = [...bulkData];
+            updatedData[editingAddressIndex] = {
+                ...updatedData[editingAddressIndex],
+                address: tempAddress.trim()
+            };
+            setBulkData(updatedData);
+            setShowAddressModal(false);
+            setEditingAddressIndex(null);
+            setTempAddress('');
+        }
+    };
+
+    // Otomatik adres bulma fonksiyonu
+    const handleAutoFindAddresses = async () => {
+        if (bulkData.length === 0) {
+            showNotif('Yüklenecek firma verisi yok!', 'error');
+            return;
+        }
+
+        setFindingAddresses(true);
+        
+        try {
+            // Adresi olmayan firmaları filtrele
+            const companiesToSearch = bulkData.map((company, index) => ({
+                ...company,
+                originalIndex: index
+            })).filter(company => !company.address || company.address.trim() === '');
+
+            if (companiesToSearch.length === 0) {
+                showNotif('Tüm firmaların adresi mevcut!', 'success');
+                setFindingAddresses(false);
+                return;
+            }
+
+            setAddressFindProgress({ current: 0, total: companiesToSearch.length });
+
+            // Progress tracking için interval (tahmini)
+            const progressInterval = setInterval(() => {
+                setAddressFindProgress(prev => {
+                    if (prev.current < prev.total) {
+                        return { ...prev, current: Math.min(prev.current + 1, prev.total) };
+                    }
+                    return prev;
+                });
+            }, 1200); // Her 1.2 saniyede bir artır (rate limit'e göre)
+
+            // API'ye istek at
+            const res = await fetch('/api/companies/find-address', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    companies: companiesToSearch.map(c => ({ 
+                        title: c.title, 
+                        address: c.address,
+                        registration_number: c.registration_number 
+                    }))
+                })
+            });
+
+            clearInterval(progressInterval);
+            setAddressFindProgress({ current: companiesToSearch.length, total: companiesToSearch.length });
+
+            if (!res.ok) {
+                throw new Error('Adres arama hatası');
+            }
+
+            const result = await res.json();
+            
+            if (result.success && result.results) {
+                // Sonuçları güncelle
+                const updatedData = [...bulkData];
+                let foundCount = 0;
+                let notFoundCount = 0;
+
+                result.results.forEach((item: { index: number; address: string | null; status: string }) => {
+                    const originalIndex = companiesToSearch[item.index].originalIndex;
+                    if (item.status === 'found' && item.address) {
+                        updatedData[originalIndex] = {
+                            ...updatedData[originalIndex],
+                            address: item.address
+                        };
+                        foundCount++;
+                    } else if (item.status === 'not_found') {
+                        // Bulunamadı durumunda boş bırak (zaten boş)
+                        notFoundCount++;
+                    }
+                });
+
+                setBulkData(updatedData);
+                
+                if (foundCount > 0) {
+                    showNotif(`${foundCount} firma için adres bulundu${notFoundCount > 0 ? `, ${notFoundCount} firma için adres bulunamadı` : ''}!`, 'success');
+                } else {
+                    showNotif('Adres bulunamadı. Lütfen manuel olarak ekleyin.', 'error');
+                }
+            } else {
+                showNotif('Adres arama başarısız oldu', 'error');
+            }
+        } catch (error) {
+            console.error('Auto find addresses error:', error);
+            showNotif('Adres arama sırasında bir hata oluştu', 'error');
+        } finally {
+            setFindingAddresses(false);
+            setAddressFindProgress({ current: 0, total: 0 });
         }
     };
 
@@ -403,6 +612,14 @@ export default function FirmalarPage() {
 
                         {/* Modal Body */}
                         <div className="p-6 overflow-y-auto flex-1">
+                            {/* Bilgilendirme Metni */}
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                <p className="text-sm text-blue-800 flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span>İsgkatip Platformundan Dışa Aktarılan Belgelerinizi Yükleyebilirsiniz (Adres Bilgisini Manuel Girmelisiniz)</span>
+                                </p>
+                            </div>
+
                             {/* Şablon İndirme ve Dosya Yükleme */}
                             <div className="flex flex-col sm:flex-row gap-4 mb-6">
                                 <button
@@ -420,6 +637,46 @@ export default function FirmalarPage() {
                                     Excel Dosyası Seç
                                 </button>
                             </div>
+
+                            {/* Otomatik Adres Bul Butonu */}
+                            {bulkData.length > 0 && (
+                                <div className="mb-4 flex items-center justify-end gap-2">
+                                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+                                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                                        <span className="whitespace-nowrap">Adres Sonuçlarının Doğruluğu Garanti Edilmez, Kontrol Ediniz</span>
+                                    </div>
+                                    <button
+                                        onClick={handleAutoFindAddresses}
+                                        disabled={findingAddresses || bulkUploading}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-indigo-400 hover:text-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                        title="Firmaların adreslerini otomatik olarak bul"
+                                    >
+                                        {findingAddresses ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                                                <span className="text-xs">
+                                                    Aranıyor... ({addressFindProgress.current}/{addressFindProgress.total})
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Search className="w-4 h-4 text-indigo-600" />
+                                                <span>Adresleri Bul</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    {findingAddresses && addressFindProgress.total > 0 && (
+                                        <div className="w-40">
+                                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                                <div 
+                                                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                                                    style={{ width: `${(addressFindProgress.current / addressFindProgress.total) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Önizleme Tablosu */}
                             {bulkData.length > 0 && (
@@ -445,7 +702,38 @@ export default function FirmalarPage() {
                                                     <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
                                                         <td className="px-4 py-2 text-slate-400">{index + 1}</td>
                                                         <td className="px-4 py-2 text-slate-800 font-medium max-w-[250px]"><div className="truncate" title={item.title}>{item.title}</div></td>
-                                                        <td className="px-4 py-2 text-slate-600 max-w-[300px]"><div className="truncate" title={item.address || '-'}>{item.address || '-'}</div></td>
+                                                        <td className="px-4 py-2 text-slate-600 max-w-[300px]">
+                                                            {item.address ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="truncate flex-1" title={item.address}>{item.address}</div>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingAddressIndex(index);
+                                                                            setTempAddress(item.address);
+                                                                            setShowAddressModal(true);
+                                                                        }}
+                                                                        className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors font-medium flex-shrink-0"
+                                                                        title="Adresi düzenle"
+                                                                    >
+                                                                        Düzenle
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-slate-400">-</span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingAddressIndex(index);
+                                                                            setTempAddress('');
+                                                                            setShowAddressModal(true);
+                                                                        }}
+                                                                        className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors font-medium"
+                                                                    >
+                                                                        Ekle
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </td>
                                                         <td className="px-4 py-2 text-slate-600">{item.registration_number || '-'}</td>
                                                         <td className="px-4 py-2">
                                                             <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${item.danger_class.toLowerCase().includes('çok') || item.danger_class.toLowerCase().includes('cok')
@@ -516,6 +804,76 @@ export default function FirmalarPage() {
                                         Firmaları Yükle
                                     </>
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Adres Düzenleme Modal */}
+            {showAddressModal && editingAddressIndex !== null && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <Edit2 className="w-5 h-5 text-indigo-600" />
+                                    Adres Ekle/Düzenle
+                                </h2>
+                                <p className="text-sm text-slate-500 mt-1">
+                                    {bulkData[editingAddressIndex]?.title || 'Firma'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowAddressModal(false);
+                                    setEditingAddressIndex(null);
+                                    setTempAddress('');
+                                }}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-slate-500" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                                    Adres
+                                </label>
+                                <textarea
+                                    value={tempAddress}
+                                    onChange={(e) => setTempAddress(e.target.value)}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                                    placeholder="Firma adresini giriniz..."
+                                    rows={4}
+                                    autoFocus
+                                />
+                                <p className="text-xs text-slate-400 mt-2">
+                                    Adres girmek zorunlu değildir. İsterseniz boş bırakabilirsiniz.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-4 border-t border-slate-200 flex gap-3 bg-slate-50">
+                            <button
+                                onClick={() => {
+                                    setShowAddressModal(false);
+                                    setEditingAddressIndex(null);
+                                    setTempAddress('');
+                                }}
+                                className="flex-1 px-4 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-white transition-colors"
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={handleAddressUpdate}
+                                className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+                            >
+                                Kaydet
                             </button>
                         </div>
                     </div>
