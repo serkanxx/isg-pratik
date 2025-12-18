@@ -57,7 +57,9 @@ export default function IsIlanlariPage() {
         const uniqueChannels: string[] = Array.from(new Set(
           data.data
             .map((post: JobPosting) => post.channelUsername)
-            .filter((channel): channel is string => typeof channel === 'string' && channel.length > 0)
+            .filter((channel: string | null | undefined): channel is string => 
+              typeof channel === 'string' && channel.length > 0
+            )
         ));
         setChannels(uniqueChannels);
       } else {
