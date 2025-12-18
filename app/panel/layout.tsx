@@ -84,7 +84,7 @@ const menuItems = [
         dataTour: 'nace-kod'
     },
     {
-        name: 'İş İlanları',
+        name: 'İSG İş İlanları',
         href: '/is-ilanlari',
         icon: Briefcase,
         active: true,
