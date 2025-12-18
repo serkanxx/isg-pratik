@@ -84,7 +84,7 @@ const menuItems = [
     dataTour: 'nace-kod'
   },
   {
-    name: 'İş İlanları',
+    name: 'İSG İş İlanları',
     href: '/is-ilanlari',
     icon: Briefcase,
     active: true,
@@ -593,25 +593,25 @@ export default function IsIlanlariPage() {
               <div className="hidden md:flex items-center space-x-1.5">
               </div>
 
-              {/* Sağ taraf - Kullanıcı bilgisi */}
-              <div className="flex items-center gap-3">
+              {/* Sağ taraf - Kullanıcı bilgisi - Layout shift önleme için min-width */}
+              <div className="flex items-center gap-3 min-w-[200px] sm:min-w-[280px] justify-end">
                 {session ? (
                   <>
                     <Link
                       href="/panel"
-                      className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                      className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
                     >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Panel
+                      <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+                      <span>Panel</span>
                     </Link>
-                    <div className="hidden sm:flex flex-col items-end mr-2">
-                      <span className={`text-xs font-bold ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
-                        {session?.user?.name || session?.user?.email}
+                    <div className="hidden sm:flex flex-col items-end mr-2 min-w-[120px]">
+                      <span className={`text-xs font-bold truncate max-w-[120px] ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
+                        {session?.user?.name || session?.user?.email || ''}
                       </span>
                     </div>
                     <button
                       onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                      className={`p-2 rounded-xl transition-all shadow-sm ${
+                      className={`p-2 rounded-xl transition-all shadow-sm flex-shrink-0 ${
                         isDark 
                           ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30' 
                           : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
@@ -622,16 +622,18 @@ export default function IsIlanlariPage() {
                     </button>
                   </>
                 ) : (
-                  <Link
-                    href="/login"
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg ${
-                      isDark
-                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                    }`}
-                  >
-                    Giriş Yap
-                  </Link>
+                  <div className="w-full sm:w-auto flex justify-end">
+                    <Link
+                      href="/login"
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap ${
+                        isDark
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                          : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                      }`}
+                    >
+                      Giriş Yap
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>
