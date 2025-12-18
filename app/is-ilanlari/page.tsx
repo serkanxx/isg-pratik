@@ -341,7 +341,7 @@ export default function IsIlanlariPage() {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '20'
+        limit: '15'
       });
 
       if (searchTerm) {
@@ -745,8 +745,11 @@ export default function IsIlanlariPage() {
 
           {/* Job Postings List */}
           {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <div className="flex flex-col justify-center items-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-4" />
+              <p className={`text-lg font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                İlanlar Hazırlanıyor
+              </p>
             </div>
           ) : jobPostings.length === 0 ? (
             <div className={`text-center py-20 rounded-lg shadow-sm ${
