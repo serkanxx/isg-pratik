@@ -231,7 +231,7 @@ model VisitProgram {
 // Telegram'dan çekilen İş İlanları
 model JobPosting {
   id              String   @id @default(cuid())
-  telegramMessageId Int    @unique // Telegram mesaj ID'si (duplicate kontrolü için)
+  telegramMessageId BigInt    @unique // Telegram mesaj ID'si (duplicate kontrolü için)
   channelUsername String   // Telegram kanal kullanıcı adı
   content         String   @db.Text // İlan içeriği
   rawText         String?  @db.Text // Ham mesaj metni

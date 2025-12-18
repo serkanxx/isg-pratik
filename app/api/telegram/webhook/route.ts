@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         // Duplicate kontrolü
         const existing = await prisma.jobPosting.findUnique({
           where: {
-            telegramMessageId: messageId
+            telegramMessageId: BigInt(messageId) // BigInt'e çevir
           }
         });
 
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
           // Veritabanına kaydet
           await prisma.jobPosting.create({
             data: {
-              telegramMessageId: messageId,
+              telegramMessageId: BigInt(messageId), // BigInt'e çevir
               channelUsername: channelUsername,
               content: messageText,
               rawText: JSON.stringify(message),

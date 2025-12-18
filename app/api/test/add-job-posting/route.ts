@@ -52,9 +52,10 @@ export async function POST(request: Request) {
     }
 
     // Test verisi oluştur
+    // BigInt kullanıyoruz, bu yüzden Date.now() direkt kullanabiliriz
     const testPosting = await prisma.jobPosting.create({
       data: {
-        telegramMessageId: Date.now(), // Test için unique ID
+        telegramMessageId: BigInt(Date.now()), // Test için unique ID (BigInt)
         channelUsername: channelUsername || 'test_channel',
         content: content,
         rawText: JSON.stringify({ test: true }),
