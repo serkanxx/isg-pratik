@@ -66,10 +66,20 @@ export async function POST(request: Request) {
       }
     });
 
+    // BigInt'i string'e çevir (JSON serialization için)
+    const serializedPosting = {
+      ...testPosting,
+      telegramMessageId: testPosting.telegramMessageId.toString()
+    };
+
     return NextResponse.json({
       success: true,
       message: 'Test iş ilanı eklendi',
-      data: testPosting
+      data: serializedPosting
+    }, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      }
     });
 
   } catch (error: any) {

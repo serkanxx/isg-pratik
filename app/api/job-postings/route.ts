@@ -59,6 +59,10 @@ export async function GET(request: Request) {
         total,
         totalPages: Math.ceil(total / limit)
       }
+    }, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      }
     });
 
   } catch (error: any) {
