@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search
+    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -82,6 +82,13 @@ const menuItems = [
         icon: Search,
         active: true,
         dataTour: 'nace-kod'
+    },
+    {
+        name: 'İş İlanları',
+        href: '/is-ilanlari',
+        icon: Briefcase,
+        active: true,
+        dataTour: 'is-ilanlari'
     },
     {
         name: 'Saha Gözlem Formları',

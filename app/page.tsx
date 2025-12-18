@@ -406,6 +406,9 @@ export default function LandingPage() {
               <Link href="/acil-durum-eylem-plani-hakkinda" className="hover:text-white text-sm">
                 Acil Durum Eylem Planı Hakkında
               </Link>
+              <Link href="/is-ilanlari" className="hover:text-white text-sm">
+                İş İlanları
+              </Link>
             </div>
 
             {/* Sağ: Gizlilik, Kullanım, KVKK - mobilde yatay, masaüstünde dikey */}
