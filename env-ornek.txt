@@ -1,0 +1,16 @@
+# .env dosyası örneği
+# Bu dosyayı .env olarak kaydedin ve değerleri doldurun
+
+# Database Connection (Vercel Dashboard'dan alın)
+DATABASE_URL="postgresql://user:password@host:port/database?schema=public"
+
+# NextAuth Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"
+
+# Telegram Bot Token
+TELEGRAM_BOT_TOKEN="your-bot-token-here"
+
+# Supabase (eğer kullanıyorsanız)
+NEXT_PUBLIC_SUPABASE_URL="https://xxxxx.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"

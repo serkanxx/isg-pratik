@@ -54,11 +54,11 @@ export default function IsIlanlariPage() {
       
       // Güvenli kontrol: data ve data.data var mı?
       if (data && Array.isArray(data.data)) {
-        const uniqueChannels = [...new Set(
+        const uniqueChannels: string[] = Array.from(new Set(
           data.data
             .map((post: JobPosting) => post.channelUsername)
-            .filter(Boolean)
-        )];
+            .filter((channel): channel is string => typeof channel === 'string' && channel.length > 0)
+        ));
         setChannels(uniqueChannels);
       } else {
         // Boş array veya hata durumu

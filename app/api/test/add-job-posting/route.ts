@@ -2,15 +2,21 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // Test için manuel iş ilanı ekleme endpoint'i
-// Sadece development için - production'da kaldırılmalı
+// Production'da secret key ile korunur
 
 export async function POST(request: Request) {
-  // Production'da bu endpoint'i devre dışı bırak
+  // Production'da secret key kontrolü
   if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json(
-      { error: 'Bu endpoint sadece development için' },
-      { status: 403 }
-    );
+    const { searchParams } = new URL(request.url);
+    const secretKey = searchParams.get('key') || request.headers.get('x-test-key');
+    const expectedKey = process.env.TEST_API_SECRET_KEY || 'test-secret-key-change-in-production';
+    
+    if (secretKey !== expectedKey) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Secret key gerekli' },
+        { status: 401 }
+      );
+    }
   }
 
   try {
