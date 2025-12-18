@@ -31,10 +31,7 @@ function VerifyEmailContent() {
             if (res.ok) {
                 setStatus("success");
                 setMessage(data.message);
-                // 3 saniye sonra login'e yönlendir
-                setTimeout(() => {
-                    router.push("/login?verified=true");
-                }, 3000);
+                // Otomatik yönlendirme yok - sadece doğrulama yapıldı
             } else {
                 setStatus("error");
                 setMessage(data.error || "Doğrulama başarısız");
@@ -73,14 +70,22 @@ function VerifyEmailContent() {
                         </h1>
                         <p className="text-gray-500 mb-6">{message}</p>
                         <p className="text-sm text-gray-400 mb-4">
-                            Giriş sayfasına yönlendiriliyorsunuz...
+                            Email adresiniz başarıyla doğrulandı. Kayıt sayfasına dönebilirsiniz.
                         </p>
-                        <Link
-                            href="/login"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
-                        >
-                            Hemen Giriş Yap
-                        </Link>
+                        <div className="space-y-3">
+                            <Link
+                                href="/register"
+                                className="block w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all text-center"
+                            >
+                                Kayıt Sayfasına Dön
+                            </Link>
+                            <Link
+                                href="/login"
+                                className="block w-full py-3 border-2 border-indigo-600 text-indigo-600 font-bold rounded-lg hover:bg-indigo-50 transition-all text-center"
+                            >
+                                Giriş Yap
+                            </Link>
+                        </div>
                     </>
                 )}
 
@@ -98,7 +103,7 @@ function VerifyEmailContent() {
                                 href="/register"
                                 className="block w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
                             >
-                                Tekrar Kayıt Ol
+                                Kayıt Ol Sayfasına Dön
                             </Link>
                             <Link
                                 href="/"

@@ -8,10 +8,10 @@ export async function POST(request: NextRequest) {
     try {
         const { name, email, password, phone } = await request.json();
 
-        // Validasyon
-        if (!name || !email || !password || !phone) {
+        // Validasyon (telefon zorunlu değil)
+        if (!name || !email || !password) {
             return NextResponse.json(
-                { error: "Tüm alanlar zorunludur" },
+                { error: "Ad Soyad, Email ve Şifre zorunludur" },
                 { status: 400 }
             );
         }
@@ -28,16 +28,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Telefon kontrolü
-        const existingPhone = await prisma.user.findUnique({
-            where: { phone },
-        });
+        // Telefon kontrolü (varsa)
+        if (phone) {
+            const existingPhone = await prisma.user.findUnique({
+                where: { phone },
+            });
 
-        if (existingPhone) {
-            return NextResponse.json(
-                { error: "Bu telefon numarası zaten kullanılıyor" },
-                { status: 400 }
-            );
+            if (existingPhone) {
+                return NextResponse.json(
+                    { error: "Bu telefon numarası zaten kullanılıyor" },
+                    { status: 400 }
+                );
+            }
         }
 
         // Şifre hashle
@@ -51,15 +53,15 @@ export async function POST(request: NextRequest) {
         const trialEndsAt = new Date();
         trialEndsAt.setMonth(trialEndsAt.getMonth() + 3);
 
-        // Kullanıcı oluştur (emailVerified = null)
+        // Kullanıcı oluştur (emailVerified = null, phone opsiyonel)
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
-                phone,
-                phoneCode,
-                phoneCodeExp,
+                phone: phone || null,
+                phoneCode: phone ? phoneCode : null,
+                phoneCodeExp: phone ? phoneCodeExp : null,
                 phoneVerified: true, // SMS doğrulama devre dışı
                 emailVerified: null, // Email doğrulanmamış
                 plan: "premium_trial",
@@ -94,7 +96,9 @@ export async function POST(request: NextRequest) {
             // Hata olsa bile kayıt işlemi devam eder
         });
 
-        console.log(`SMS Kodu: ${phoneCode} -> +90${phone}`);
+        if (phone) {
+            console.log(`SMS Kodu: ${phoneCode} -> +90${phone}`);
+        }
 
         return NextResponse.json({
             message: "Kayıt başarılı! Email adresinize doğrulama linki gönderildi.",
