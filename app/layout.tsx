@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     default: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
     template: "%s | İSG Pratik"
   },
-  description: "İş Sağlığı ve Güvenliği (İSG) Risk Değerlendirme Sistemi. Fine-Kinney metoduyla profesyonel risk analizi yapın. Ücretsiz online risk değerlendirme aracı.",
+  description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası. Ücretsiz İSG yönetim platformu.",
   keywords: [
     "isg",
     "iş güvenliği",
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     url: "https://isgpratik.com",
     siteName: "İSG Pratik",
     title: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
-    description: "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı. Acil durum planları, iş izin formları ve NACE kod sorgulama.",
+    description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası. Ücretsiz İSG yönetim platformu.",
     images: [
       {
         url: "https://isgpratik.com/logo.png",
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "İSG Pratik - İş Güvenliği Risk Değerlendirme Sistemi",
-    description: "Fine-Kinney metoduyla profesyonel risk değerlendirmesi yapın. Ücretsiz online iş güvenliği risk analizi aracı.",
+    description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası.",
     images: ["/og-image.png"],
     creator: "@isgpratik",
   },
