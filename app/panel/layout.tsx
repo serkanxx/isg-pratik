@@ -296,8 +296,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0
                 w-72 flex flex-col fixed h-screen z-50 transition-all duration-300
-                ${isDark 
-                    ? 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white' 
+                ${isDark
+                    ? 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white'
                     : 'bg-gradient-to-b from-white via-slate-50 to-white text-slate-900 border-r border-slate-200'
                 }
             `}>
@@ -416,54 +416,49 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Ana İçerik */}
             <main className={`flex-1 md:ml-72 min-h-screen ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
                 {/* Üst Navbar - Tam Genişlik */}
-                <nav className={`shadow-xl backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${
-                    isDark 
-                        ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10' 
+                <nav className={`shadow-xl backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${isDark
+                        ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10'
                         : 'bg-gradient-to-r from-white via-indigo-50 to-white border-b border-slate-200'
-                }`}>
+                    }`}>
                     <div className="w-full px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between h-14">
                             {/* Mobil Hamburger Menü */}
                             <div className="relative md:hidden">
                                 <button
                                     onClick={handleHamburgerClick}
-                                    className={`p-2 rounded-lg relative z-10 transition-colors ${
-                                        isDark 
-                                            ? 'text-blue-100 hover:bg-white/10' 
+                                    className={`p-2 rounded-lg relative z-10 transition-colors ${isDark
+                                            ? 'text-blue-100 hover:bg-white/10'
                                             : 'text-indigo-600 hover:bg-indigo-100'
-                                    }`}
+                                        }`}
                                 >
                                     <Menu className="w-6 h-6" />
                                 </button>
-                                
+
                                 {/* Hamburger Menü Tooltip - İlk Giriş */}
                                 {showHamburgerTooltip && (
-                                    <div className={`absolute left-0 top-full mt-2 z-50 w-64 rounded-xl shadow-2xl border-2 animate-fade-in ${
-                                        isDark 
-                                            ? 'bg-slate-800 border-indigo-500' 
+                                    <div className={`absolute left-0 top-full mt-2 z-30 w-64 rounded-xl shadow-2xl border-2 animate-fade-in pointer-events-none ${isDark
+                                            ? 'bg-slate-800 border-indigo-500'
                                             : 'bg-white border-indigo-200'
-                                    }`}>
+                                        }`}>
                                         {/* Ok işareti */}
-                                        <div className={`absolute -top-2 left-6 w-4 h-4 transform rotate-45 border-l-2 border-t-2 ${
-                                            isDark 
-                                                ? 'bg-slate-800 border-indigo-500' 
+                                        <div className={`absolute -top-2 left-6 w-4 h-4 transform rotate-45 border-l-2 border-t-2 ${isDark
+                                                ? 'bg-slate-800 border-indigo-500'
                                                 : 'bg-white border-indigo-200'
-                                        }`}></div>
-                                        
+                                            }`}></div>
+
                                         {/* İçerik */}
                                         <div className="p-4">
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                                        isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'
-                                                    }`}>
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'
+                                                        }`}>
                                                         <Menu className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
                                                     </div>
                                                     <h3 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>Menüyü Keşfedin</h3>
                                                 </div>
                                                 <button
                                                     onClick={handleCloseTooltip}
-                                                    className={`transition-colors ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
+                                                    className={`transition-colors pointer-events-auto ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-400 hover:text-slate-600'}`}
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </button>
@@ -499,11 +494,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                         </div>
                                         <button
                                             onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                                            className={`p-2 rounded-xl transition-all shadow-sm flex-shrink-0 ${
-                                                isDark 
-                                                    ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30' 
+                                            className={`p-2 rounded-xl transition-all shadow-sm flex-shrink-0 ${isDark
+                                                    ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30'
                                                     : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
-                                            }`}
+                                                }`}
                                             title="Çıkış Yap"
                                         >
                                             <LogOut className="w-5 h-5" />
@@ -513,11 +507,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     <div className="w-full sm:w-auto flex justify-end">
                                         <Link
                                             href="/login"
-                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap ${
-                                                isDark
+                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap ${isDark
                                                     ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
                                                     : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                                            }`}
+                                                }`}
                                         >
                                             Giriş Yap
                                         </Link>

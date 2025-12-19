@@ -9,10 +9,13 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
 
+const ADMIN_EMAIL = 'serkanxx@gmail.com';
+
 export default function AdminPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isChecking, setIsChecking] = useState(true);
 
     const [data, setData] = useState<RiskCategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,6 +50,12 @@ export default function AdminPage() {
     const [pendingRisks, setPendingRisks] = useState<any[]>([]);
     const [loadingRisks, setLoadingRisks] = useState(false);
 
+    // İş İlanı Yorumları State
+    const [pendingCommentsCount, setPendingCommentsCount] = useState(0);
+    const [showJobComments, setShowJobComments] = useState(false);
+    const [pendingComments, setPendingComments] = useState<any[]>([]);
+    const [loadingComments, setLoadingComments] = useState(false);
+
     // Form State
     const [formData, setFormData] = useState({
         riskNo: '',
@@ -64,16 +73,36 @@ export default function AdminPage() {
     const [newTag, setNewTag] = useState(''); // Yeni eklenecek tag input'u için
 
     useEffect(() => {
-        if (status === 'authenticated') {
-            // @ts-ignore
-            if (session?.user?.role === 'ADMIN') {
+        // Session yüklenene kadar bekle
+        if (status === 'loading') {
+            setIsChecking(true);
+            return;
+        }
+
+        if (status === 'authenticated' && session?.user) {
+            // Email veya role kontrolü (panel sayfasıyla aynı mantık)
+            const userEmail = session.user.email;
+            const userRole = (session.user as any)?.role;
+            
+            const isAdmin = userEmail === ADMIN_EMAIL || userRole === 'ADMIN';
+            
+            if (isAdmin) {
+                setIsChecking(false);
                 setIsAuthenticated(true);
                 fetchData();
             } else {
-                router.push('/'); // Admin değilse ana sayfaya yönlendir
+                // Admin değilse hemen ana sayfaya yönlendir
+                setIsChecking(false);
+                router.replace('/');
+                return;
             }
         } else if (status === 'unauthenticated') {
-            router.push('/login?callbackUrl=/admin'); // Giriş yapmamışsa login sayfasına yönlendir
+            // Giriş yapmamışsa login sayfasına yönlendir
+            setIsChecking(false);
+            router.replace('/login?callbackUrl=/admin');
+            return;
+        } else {
+            setIsChecking(false);
         }
     }, [status, session, router]);
 
@@ -91,6 +120,14 @@ export default function AdminPage() {
             if (pendingRes.ok) {
                 const pendingData = await pendingRes.json();
                 setPendingRisksCount(pendingData.length);
+            }
+            // Bekleyen yorumların sayısını çek
+            const pendingCommentsRes = await fetch('/api/admin/job-comments?status=pending');
+            if (pendingCommentsRes.ok) {
+                const commentsData = await pendingCommentsRes.json();
+                if (commentsData.success) {
+                    setPendingCommentsCount(commentsData.data.length);
+                }
             }
         } catch (err) {
             console.error("Veri çekme hatası:", err);
@@ -142,6 +179,57 @@ export default function AdminPage() {
             if (res.ok) {
                 setPendingRisks(pendingRisks.filter(r => r.id !== id));
                 setPendingRisksCount(prev => prev - 1);
+            }
+        } catch (err) {
+            console.error("Reddetme hatası:", err);
+        }
+    };
+
+    const fetchPendingComments = async () => {
+        setLoadingComments(true);
+        try {
+            const res = await fetch('/api/admin/job-comments?status=pending');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setPendingComments(data.data);
+                }
+            }
+        } catch (err) {
+            console.error("Yorumlar çekilemedi:", err);
+        } finally {
+            setLoadingComments(false);
+        }
+    };
+
+    const handleApproveComment = async (id: string) => {
+        try {
+            const res = await fetch(`/api/admin/job-comments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'approved' })
+            });
+            if (res.ok) {
+                setPendingComments(pendingComments.filter(c => c.id !== id));
+                setPendingCommentsCount(prev => prev - 1);
+                alert('Yorum onaylandı!');
+            }
+        } catch (err) {
+            console.error("Onaylama hatası:", err);
+        }
+    };
+
+    const handleRejectComment = async (id: string) => {
+        if (!confirm('Bu yorumu reddetmek istediğinize emin misiniz?')) return;
+        try {
+            const res = await fetch(`/api/admin/job-comments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'rejected' })
+            });
+            if (res.ok) {
+                setPendingComments(pendingComments.filter(c => c.id !== id));
+                setPendingCommentsCount(prev => prev - 1);
             }
         } catch (err) {
             console.error("Reddetme hatası:", err);
@@ -567,8 +655,8 @@ export default function AdminPage() {
         return groups;
     };
 
-    // Yükleniyor durumu
-    if (status === 'loading' || (status === 'authenticated' && !isAuthenticated)) {
+    // Yükleniyor durumu - session veya kontrol devam ediyor
+    if (status === 'loading' || isChecking) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <div className="bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
@@ -577,6 +665,17 @@ export default function AdminPage() {
                 </div>
             </div>
         );
+    }
+
+    // Authenticated ama admin değilse veya unauthenticated ise yönlendirme yapılıyor
+    if (status === 'unauthenticated' || (status === 'authenticated' && !isAuthenticated)) {
+        // Yönlendirme yapılıyor, boş ekran göster
+        return null;
+    }
+
+    // Sadece authenticated ve isAuthenticated true ise sayfayı göster
+    if (!isAuthenticated) {
+        return null;
     }
 
     return (
@@ -604,6 +703,22 @@ export default function AdminPage() {
                             {pendingRisksCount > 0 && (
                                 <span className="ml-2 bg-white text-amber-600 px-2 py-0.5 rounded-full text-xs font-bold">
                                     {pendingRisksCount}
+                                </span>
+                            )}
+                        </button>
+                        {/* Bekleyen Yorumlar Butonu */}
+                        <button
+                            onClick={() => { setShowJobComments(true); fetchPendingComments(); }}
+                            className={`flex items-center px-4 py-2 rounded-md font-bold transition-colors ${pendingCommentsCount > 0
+                                ? 'bg-blue-500 text-white hover:bg-blue-600 animate-pulse'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            <span className="mr-2">💬</span>
+                            Yorumlar
+                            {pendingCommentsCount > 0 && (
+                                <span className="ml-2 bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                                    {pendingCommentsCount}
                                 </span>
                             )}
                         </button>
@@ -1205,6 +1320,81 @@ export default function AdminPage() {
                                                     </button>
                                                     <button
                                                         onClick={() => handleRejectRisk(risk.id)}
+                                                        className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                    >
+                                                        <X className="w-3 h-3 mr-1" /> Reddet
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Yorumlar Modal */}
+            {showJobComments && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
+                            <h2 className="text-lg font-bold text-blue-800">💬 Bekleyen İş İlanı Yorumları</h2>
+                            <button
+                                onClick={() => setShowJobComments(false)}
+                                className="p-2 hover:bg-blue-100 rounded text-blue-700"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 overflow-y-auto max-h-[60vh]">
+                            {loadingComments ? (
+                                <div className="text-center py-8">
+                                    <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
+                                    <p className="text-gray-500">Yükleniyor...</p>
+                                </div>
+                            ) : pendingComments.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-gray-500">Bekleyen yorum yok.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {pendingComments.map((comment) => (
+                                        <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+                                                            {comment.id.substring(0, 8)}...
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {new Date(comment.createdAt).toLocaleString('tr-TR')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mb-2">
+                                                        <p className="text-xs text-gray-600 mb-1">
+                                                            <strong>Kullanıcı:</strong> {comment.user.name || 'Bilinmiyor'} ({comment.user.email})
+                                                        </p>
+                                                        <p className="text-xs text-gray-600">
+                                                            <strong>Anonim:</strong> {comment.isAnonymous ? 'Evet' : 'Hayır'}
+                                                        </p>
+                                                    </div>
+                                                    <p className="font-bold text-gray-800 mb-2">{comment.content}</p>
+                                                    <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                        <strong>İlan:</strong> {comment.jobPosting.content.substring(0, 100)}...
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2 ml-4">
+                                                    <button
+                                                        onClick={() => handleApproveComment(comment.id)}
+                                                        className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                    >
+                                                        <Check className="w-3 h-3 mr-1" /> Onayla
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectComment(comment.id)}
                                                         className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
                                                     >
                                                         <X className="w-3 h-3 mr-1" /> Reddet

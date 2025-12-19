@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, apiFetchers } from '@/lib/queries';
 import {
     Building2, FileText, Shield, Plus, TrendingUp,
     AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle,
-    StickyNote, Clock, Check, Trash2, Bell, X, Calendar
+    StickyNote, Clock, Check, Trash2, Bell, X, Calendar, MessageCircle
 } from 'lucide-react';
 import { Company } from '../types';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -54,6 +55,7 @@ const ADMIN_EMAIL = 'serkanxx@gmail.com';
 export default function PanelPage() {
     const { data: session } = useSession();
     const { isDark } = useTheme();
+    const router = useRouter();
     const isAdmin = session?.user?.email === ADMIN_EMAIL || (session?.user as any)?.role === 'ADMIN';
     const [companies, setCompanies] = useState<Company[]>([]);
     const [userRisks, setUserRisks] = useState<UserRisk[]>([]);
@@ -80,6 +82,12 @@ export default function PanelPage() {
 
     // Ziyaret Programları state
     const [visitPrograms, setVisitPrograms] = useState<VisitProgram[]>([]);
+
+    // Yorum onay state'leri (admin için)
+    const [pendingCommentsCount, setPendingCommentsCount] = useState(0);
+    const [showJobComments, setShowJobComments] = useState(false);
+    const [pendingComments, setPendingComments] = useState<any[]>([]);
+    const [loadingComments, setLoadingComments] = useState(false);
 
     // Dropdown değerleri
     const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -183,11 +191,83 @@ export default function PanelPage() {
     useEffect(() => {
         const hasData = companiesData || userRisksData || reportsData;
         const isLoading = companiesLoading || risksLoading || reportsLoading;
-        
+
         if (hasData || !isLoading) {
             setLoading(false);
         }
     }, [companiesData, userRisksData, reportsData, companiesLoading, risksLoading, reportsLoading]);
+
+    // Admin için bekleyen yorumları çek
+    useEffect(() => {
+        if (isAdmin) {
+            fetchPendingCommentsCount();
+        }
+    }, [isAdmin]);
+
+    const fetchPendingCommentsCount = async () => {
+        try {
+            const res = await fetch('/api/admin/job-comments?status=pending');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setPendingCommentsCount(data.data.length);
+                }
+            }
+        } catch (err) {
+            console.error("Yorum sayısı çekilemedi:", err);
+        }
+    };
+
+    const fetchPendingComments = async () => {
+        setLoadingComments(true);
+        try {
+            const res = await fetch('/api/admin/job-comments?status=pending');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setPendingComments(data.data);
+                }
+            }
+        } catch (err) {
+            console.error("Yorumlar çekilemedi:", err);
+        } finally {
+            setLoadingComments(false);
+        }
+    };
+
+    const handleApproveComment = async (id: string) => {
+        try {
+            const res = await fetch(`/api/admin/job-comments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'approved' })
+            });
+            if (res.ok) {
+                setPendingComments(pendingComments.filter(c => c.id !== id));
+                setPendingCommentsCount(prev => prev - 1);
+                alert('Yorum onaylandı!');
+            }
+        } catch (err) {
+            console.error("Onaylama hatası:", err);
+        }
+    };
+
+    const handleRejectComment = async (id: string) => {
+        if (!confirm('Bu yorumu reddetmek istediğinize emin misiniz?')) return;
+        try {
+            const res = await fetch(`/api/admin/job-comments/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'rejected' })
+            });
+            if (res.ok) {
+                setPendingComments(pendingComments.filter(c => c.id !== id));
+                setPendingCommentsCount(prev => prev - 1);
+            }
+        } catch (err) {
+            console.error("Reddetme hatası:", err);
+        }
+    };
 
     // Not ekle
     const handleAddNote = async () => {
@@ -331,6 +411,30 @@ export default function PanelPage() {
                                     <span className="mr-1 sm:mr-2">📥</span>
                                     <span className="hidden sm:inline">Risk Önerileri</span>
                                     <span className="sm:hidden">Öneriler</span>
+                                </Link>
+                                <button
+                                    onClick={() => { setShowJobComments(true); fetchPendingComments(); }}
+                                    className={`inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg ${pendingCommentsCount > 0
+                                            ? 'bg-blue-500 hover:bg-blue-600 text-white animate-pulse'
+                                            : 'bg-blue-400/80 hover:bg-blue-500 text-white'
+                                        }`}
+                                >
+                                    <MessageCircle className="w-4 h-4 mr-1 sm:mr-2" />
+                                    <span className="hidden sm:inline">Yorum Onay</span>
+                                    <span className="sm:hidden">Yorum</span>
+                                    {pendingCommentsCount > 0 && (
+                                        <span className="ml-2 bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                                            {pendingCommentsCount}
+                                        </span>
+                                    )}
+                                </button>
+                                <Link
+                                    href="/panel/kullanici-istatistikleri"
+                                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg"
+                                >
+                                    <PieChart className="w-4 h-4 mr-1 sm:mr-2" />
+                                    <span className="hidden sm:inline">Kullanıcı İstatistikleri</span>
+                                    <span className="sm:hidden">İstatistikler</span>
                                 </Link>
                             </div>
                         )}
@@ -1065,6 +1169,80 @@ export default function PanelPage() {
                 )}
             </div>
 
+            {/* Yorumlar Modal */}
+            {showJobComments && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
+                            <h2 className="text-lg font-bold text-blue-800">💬 Bekleyen İş İlanı Yorumları</h2>
+                            <button
+                                onClick={() => setShowJobComments(false)}
+                                className="p-2 hover:bg-blue-100 rounded text-blue-700"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 overflow-y-auto max-h-[60vh]">
+                            {loadingComments ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
+                                    <p className="text-gray-500">Yükleniyor...</p>
+                                </div>
+                            ) : pendingComments.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-gray-500">Bekleyen yorum yok.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {pendingComments.map((comment) => (
+                                        <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+                                                            {comment.id.substring(0, 8)}...
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {new Date(comment.createdAt).toLocaleString('tr-TR')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mb-2">
+                                                        <p className="text-xs text-gray-600 mb-1">
+                                                            <strong>Kullanıcı:</strong> {comment.user.name || 'Bilinmiyor'} ({comment.user.email})
+                                                        </p>
+                                                        <p className="text-xs text-gray-600">
+                                                            <strong>Anonim:</strong> {comment.isAnonymous ? 'Evet' : 'Hayır'}
+                                                        </p>
+                                                    </div>
+                                                    <p className="font-bold text-gray-800 mb-2">{comment.content}</p>
+                                                    <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                        <strong>İlan:</strong> {comment.jobPosting.content.substring(0, 100)}...
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2 ml-4">
+                                                    <button
+                                                        onClick={() => handleApproveComment(comment.id)}
+                                                        className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                    >
+                                                        <Check className="w-3 h-3 mr-1" /> Onayla
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectComment(comment.id)}
+                                                        className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                    >
+                                                        <X className="w-3 h-3 mr-1" /> Reddet
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div >
     );

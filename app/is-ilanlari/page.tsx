@@ -11,7 +11,8 @@ import {
   Image as ImageIcon, MessageSquare, Filter, X, ChevronLeft, ChevronRight,
   Trash2, Menu, Moon, Sun, Home, LayoutDashboard, LogOut,
   Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
-  ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin
+  ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin,
+  Send, MessageCircle, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
 
@@ -115,6 +116,14 @@ interface JobPosting {
   channelUsername: string;
   viewCount: number;
   createdAt: string;
+}
+
+interface JobComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  userName: string | null;
+  userEmail: string | null;
 }
 
 // Vurgulanacak terimler (kalın yazılacak)
@@ -328,8 +337,32 @@ export default function IsIlanlariPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Yorum state'leri
+  const [comments, setComments] = useState<Record<string, JobComment[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
+  const [showCommentModal, setShowCommentModal] = useState<string | null>(null);
+  const [commentContent, setCommentContent] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  
+  // Notification state
+  const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+    show: false,
+    message: '',
+    type: 'success'
+  });
 
   const isAdmin = session?.user?.email === ADMIN_EMAIL || (session?.user as any)?.role === 'ADMIN';
+
+  // Notification göster
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: 'success' });
+    }, 5000);
+  };
 
   // İş ilanlarını çek - filtreler değiştiğinde
   useEffect(() => {
@@ -377,6 +410,95 @@ export default function IsIlanlariPage() {
     setRefreshing(true);
     await fetchJobPostings();
     setRefreshing(false);
+  };
+
+  const fetchComments = async (jobPostingId: string) => {
+    if (loadingComments[jobPostingId]) return;
+    
+    try {
+      setLoadingComments(prev => ({ ...prev, [jobPostingId]: true }));
+      const response = await fetch(`/api/job-postings/${jobPostingId}/comments`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setComments(prev => ({ ...prev, [jobPostingId]: data.data || [] }));
+      }
+    } catch (error) {
+      console.error('Yorumlar yüklenemedi:', error);
+    } finally {
+      setLoadingComments(prev => ({ ...prev, [jobPostingId]: false }));
+    }
+  };
+
+  const handleToggleComments = (jobPostingId: string) => {
+    setExpandedComments(prev => {
+      const isExpanded = !prev[jobPostingId];
+      if (isExpanded && !comments[jobPostingId]) {
+        fetchComments(jobPostingId);
+      }
+      return { ...prev, [jobPostingId]: isExpanded };
+    });
+  };
+
+  const handleOpenCommentModal = (jobPostingId: string) => {
+    if (!session) {
+      alert('Yorum yapmak için giriş yapmalısınız');
+      return;
+    }
+    setShowCommentModal(jobPostingId);
+    setCommentContent('');
+    setIsAnonymous(false);
+  };
+
+  const handleSubmitComment = async (jobPostingId: string) => {
+    if (!commentContent.trim()) {
+      showNotification('Lütfen yorum içeriği girin', 'error');
+      return;
+    }
+
+    try {
+      setSubmittingComment(true);
+      const response = await fetch(`/api/job-postings/${jobPostingId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: commentContent.trim(),
+          isAnonymous
+        })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // JSON parse hatası
+        showNotification('Sunucudan geçersiz yanıt alındı', 'error');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorMessage = data?.error || data?.message || 'Yorum eklenirken bir hata oluştu';
+        showNotification(errorMessage, 'error');
+        return;
+      }
+
+      if (data.success) {
+        showNotification(data.message || 'Yorumunuz admin onayına sunuldu. Onaylandıktan sonra görünecektir.', 'success');
+        setShowCommentModal(null);
+        setCommentContent('');
+        setIsAnonymous(false);
+      } else {
+        showNotification(data.error || 'Yorum eklenirken bir hata oluştu', 'error');
+      }
+    } catch (error: any) {
+      console.error('Yorum eklenemedi:', error);
+      const errorMessage = error?.message || 'Yorum eklenirken bir hata oluştu. Lütfen tekrar deneyin.';
+      showNotification(errorMessage, 'error');
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -434,6 +556,24 @@ export default function IsIlanlariPage() {
 
   return (
     <div className={`min-h-screen flex ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
+      {/* Notification */}
+      {notification.show && (
+        <div 
+          className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-fade-in ${
+            notification.type === 'error' 
+              ? 'bg-red-600 text-white' 
+              : 'bg-green-600 text-white'
+          }`}
+        >
+          {notification.type === 'error' ? (
+            <AlertCircle className="w-5 h-5 mr-2" />
+          ) : (
+            <CheckCircle className="w-5 h-5 mr-2" />
+          )}
+          <span className="font-bold text-sm">{notification.message}</span>
+        </div>
+      )}
+
       {/* Mobil Overlay */}
       {isMobileSidebarOpen && (
         <div
@@ -887,15 +1027,104 @@ export default function IsIlanlariPage() {
                         </p>
                       </div>
 
-                      <div className={`mt-4 pt-4 border-t flex items-center justify-between ${
+                      <div className={`mt-4 pt-4 border-t ${
                         isDark ? 'border-slate-700' : 'border-gray-100'
                       }`}>
-                        <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                          {formatDate(posting.postedAt)}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                            {formatDate(posting.postedAt)}
+                          </div>
+                          <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                            {posting.viewCount} görüntülenme
+                          </div>
                         </div>
-                        <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                          {posting.viewCount} görüntülenme
+                        
+                        {/* Yorum Butonu */}
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => handleToggleComments(posting.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                              isDark
+                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                            }`}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Yorumlar</span>
+                            {comments[posting.id] && comments[posting.id].length > 0 && (
+                              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                                isDark ? 'bg-indigo-500' : 'bg-indigo-500'
+                              }`}>
+                                {comments[posting.id].length}
+                              </span>
+                            )}
+                          </button>
+                          {session && (
+                            <button
+                              onClick={() => handleOpenCommentModal(posting.id)}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                                isDark
+                                  ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+                                  : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
+                              }`}
+                            >
+                              <Send className="w-4 h-4" />
+                              <span>Yorum Yap</span>
+                            </button>
+                          )}
                         </div>
+
+                        {/* Yorumlar Bölümü */}
+                        {expandedComments[posting.id] && (
+                          <div className={`mt-4 pt-4 border-t ${
+                            isDark ? 'border-slate-700' : 'border-gray-200'
+                          }`}>
+                            {loadingComments[posting.id] ? (
+                              <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                              </div>
+                            ) : comments[posting.id] && comments[posting.id].length > 0 ? (
+                              <div className="space-y-3">
+                                {comments[posting.id].map((comment) => (
+                                  <div
+                                    key={comment.id}
+                                    className={`p-3 rounded-lg ${
+                                      isDark
+                                        ? 'bg-slate-700/50 border border-slate-600'
+                                        : 'bg-gray-50 border border-gray-200'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`font-semibold text-sm ${
+                                          isDark ? 'text-slate-200' : 'text-gray-800'
+                                        }`}>
+                                          {comment.userName || 'Anonim'}
+                                        </span>
+                                        <span className={`text-xs ${
+                                          isDark ? 'text-slate-400' : 'text-gray-500'
+                                        }`}>
+                                          {formatRelativeTime(comment.createdAt)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p className={`text-sm ${
+                                      isDark ? 'text-slate-300' : 'text-gray-700'
+                                    }`}>
+                                      {comment.content}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className={`text-center py-4 text-sm ${
+                                isDark ? 'text-slate-400' : 'text-gray-500'
+                              }`}>
+                                Henüz yorum yok
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -938,6 +1167,118 @@ export default function IsIlanlariPage() {
           )}
         </div>
       </main>
+
+      {/* Yorum Yapma Modal */}
+      {showCommentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-lg shadow-xl w-full max-w-lg ${
+            isDark ? 'bg-slate-800' : 'bg-white'
+          }`}>
+            <div className={`p-4 border-b flex justify-between items-center ${
+              isDark ? 'border-slate-700' : 'border-gray-200'
+            }`}>
+              <h3 className={`text-lg font-bold ${
+                isDark ? 'text-white' : 'text-gray-800'
+              }`}>
+                Yorum Yap
+              </h3>
+              <button
+                onClick={() => setShowCommentModal(null)}
+                className={`p-1 rounded-lg transition-colors ${
+                  isDark
+                    ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${
+                  isDark ? 'text-slate-300' : 'text-gray-700'
+                }`}>
+                  Yorumunuz
+                </label>
+                <textarea
+                  value={commentContent}
+                  onChange={(e) => setCommentContent(e.target.value)}
+                  rows={4}
+                  className={`w-full px-3 py-2 rounded-lg border ${
+                    isDark
+                      ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                  } focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                  placeholder="Yorumunuzu buraya yazın..."
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isAnonymous"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                />
+                <label
+                  htmlFor="isAnonymous"
+                  className={`text-sm ${
+                    isDark ? 'text-slate-300' : 'text-gray-700'
+                  }`}
+                >
+                  Adımı gizle (Anonim olarak göster)
+                </label>
+              </div>
+
+              <div className={`p-3 rounded-lg text-sm ${
+                isDark
+                  ? 'bg-blue-900/30 border border-blue-800 text-blue-200'
+                  : 'bg-blue-50 border border-blue-200 text-blue-800'
+              }`}>
+                <p>
+                  Yorumunuz admin onayından sonra yayınlanacaktır.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => setShowCommentModal(null)}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    isDark
+                      ? 'text-slate-300 hover:bg-slate-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={() => handleSubmitComment(showCommentModal)}
+                  disabled={submittingComment || !commentContent.trim()}
+                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                    submittingComment || !commentContent.trim()
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                >
+                  {submittingComment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Gönderiliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Gönder</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

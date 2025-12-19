@@ -76,6 +76,7 @@ model User {
   headerInfo    HeaderInfo?
   notes         Note[]
   visitPrograms VisitProgram[]
+  jobComments   JobComment[]
 }
 
 // Kullanıcı risk tablosu
@@ -243,7 +244,29 @@ model JobPosting {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  comments        JobComment[]
+
   @@index([channelUsername, postedAt])
   @@index([isActive, postedAt])
   @@map("job_postings")
+}
+
+// İş İlanı Yorumları
+model JobComment {
+  id              String   @id @default(cuid())
+  jobPostingId    String
+  jobPosting      JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content         String   @db.Text // Yorum içeriği
+  isAnonymous     Boolean  @default(false) // Kullanıcı adını gizlemek istiyor mu?
+  status          String   @default("pending") // pending, approved, rejected
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  approvedAt      DateTime? // Admin onay tarihi
+  approvedBy      String?  // Admin kullanıcı ID'si
+
+  @@index([jobPostingId, status])
+  @@index([status, createdAt])
+  @@map("job_comments")
 }
