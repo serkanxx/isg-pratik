@@ -15,7 +15,8 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     // Admin kontrolü
-    if (!session?.user?.email || session.user.email !== ADMIN_EMAIL) {
+    const userEmail = session?.user?.email;
+    if (!userEmail || userEmail !== ADMIN_EMAIL) {
       const userRole = (session?.user as any)?.role;
       if (userRole !== 'ADMIN') {
         return NextResponse.json(
@@ -26,8 +27,15 @@ export async function PUT(
     }
 
     // Admin kullanıcıyı bul
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: 'Kullanıcı email bulunamadı' },
+        { status: 401 }
+      );
+    }
+
     const adminUser = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: userEmail }
     });
 
     if (!adminUser) {
