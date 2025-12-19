@@ -60,6 +60,7 @@ export default function KullaniciIstatistikleriPage() {
     const [summary, setSummary] = useState<SummaryData | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPlan, setSelectedPlan] = useState<string>('all');
+    const [error, setError] = useState<string | null>(null);
 
     const ADMIN_EMAIL = 'serkanxx@gmail.com';
     const isAdmin = session?.user?.email === ADMIN_EMAIL || (session?.user as any)?.role === 'ADMIN';
@@ -75,16 +76,23 @@ export default function KullaniciIstatistikleriPage() {
     const fetchStatistics = async () => {
         try {
             setLoading(true);
+            setError(null);
             const res = await fetch('/api/admin/user-statistics');
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success) {
-                    setUsers(data.data.users);
-                    setSummary(data.data.summary);
-                }
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || 'İstatistikler yüklenemedi');
             }
-        } catch (error) {
+            
+            if (data.success && data.data) {
+                setUsers(data.data.users || []);
+                setSummary(data.data.summary || null);
+            } else {
+                throw new Error('Geçersiz veri formatı');
+            }
+        } catch (error: any) {
             console.error('İstatistikler yüklenemedi:', error);
+            setError(error.message || 'İstatistikler yüklenirken bir hata oluştu');
         } finally {
             setLoading(false);
         }
@@ -180,6 +188,20 @@ export default function KullaniciIstatistikleriPage() {
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+                </div>
+            ) : error ? (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-6">
+                    <div className="flex items-center gap-3 mb-2">
+                        <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                        <h3 className="text-lg font-bold text-red-800 dark:text-red-300">Hata</h3>
+                    </div>
+                    <p className="text-red-700 dark:text-red-400 mb-4">{error}</p>
+                    <button
+                        onClick={fetchStatistics}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                    >
+                        Tekrar Dene
+                    </button>
                 </div>
             ) : (
                 <>
@@ -295,7 +317,25 @@ export default function KullaniciIstatistikleriPage() {
                         {filteredUsers.length === 0 ? (
                             <div className="p-12 text-center">
                                 <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                <p className="text-slate-500 dark:text-slate-400">Kullanıcı bulunamadı</p>
+                                {users.length === 0 ? (
+                                    <>
+                                        <p className="text-slate-500 dark:text-slate-400 mb-2">Henüz kayıtlı kullanıcı bulunmuyor</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500">Veritabanında kullanıcı kaydı yok</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-slate-500 dark:text-slate-400 mb-2">Arama kriterlerinize uygun kullanıcı bulunamadı</p>
+                                        <button
+                                            onClick={() => {
+                                                setSearchTerm('');
+                                                setSelectedPlan('all');
+                                            }}
+                                            className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                                        >
+                                            Filtreleri Temizle
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <div className="divide-y divide-slate-200 dark:divide-slate-700">

@@ -9,9 +9,21 @@ const ADMIN_EMAIL = 'serkanxx@gmail.com';
 export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email || (session.user.email !== ADMIN_EMAIL && (session.user as any)?.role !== 'ADMIN')) {
-            return NextResponse.json({ error: 'Yetkisiz erişim' }, { status: 401 });
+        
+        if (!session?.user?.email) {
+            console.error('User statistics API: No session or email');
+            return NextResponse.json({ error: 'Oturum bulunamadı' }, { status: 401 });
         }
+
+        const userEmail = session.user.email;
+        const userRole = (session.user as any)?.role;
+
+        if (userEmail !== ADMIN_EMAIL && userRole !== 'ADMIN') {
+            console.error('User statistics API: Unauthorized access attempt', { email: userEmail, role: userRole });
+            return NextResponse.json({ error: 'Yetkisiz erişim - Sadece admin erişebilir' }, { status: 403 });
+        }
+
+        console.log('User statistics API: Admin access granted', { email: userEmail, role: userRole });
 
         // Tüm kullanıcıları getir (admin hariç)
         const users = await prisma.user.findMany({
@@ -36,6 +48,8 @@ export async function GET(request: NextRequest) {
                 createdAt: 'desc'
             }
         });
+
+        console.log(`User statistics API: Found ${users.length} users`);
 
         // Her kullanıcı için istatistikleri topla
         const userStatistics = await Promise.all(
@@ -159,6 +173,10 @@ export async function GET(request: NextRequest) {
         });
     } catch (error: any) {
         console.error('Kullanıcı istatistikleri hatası:', error);
-        return NextResponse.json({ error: error.message || 'Sunucu hatası' }, { status: 500 });
+        console.error('Error stack:', error.stack);
+        return NextResponse.json({ 
+            error: error.message || 'Sunucu hatası',
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        }, { status: 500 });
     }
 }
