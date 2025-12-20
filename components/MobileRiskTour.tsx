@@ -51,6 +51,7 @@ export default function MobileRiskTour({ onComplete, isSidebarOpen = false, onSi
     const [isVisible, setIsVisible] = useState(false);
     const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
     const [isMobile, setIsMobile] = useState(false);
+    const [pendingSidebarOpen, setPendingSidebarOpen] = useState(false);
 
     // Mobil kontrolü
     useEffect(() => {
@@ -76,18 +77,19 @@ export default function MobileRiskTour({ onComplete, isSidebarOpen = false, onSi
         }
     }, [isMobile]);
 
-    // Sidebar açıldığında bir sonraki adıma geç
+    // Sidebar açıldığında bir sonraki adıma geç (ilk adımdan ikinci adıma)
     useEffect(() => {
         if (!isVisible || !isMobile) return;
         
-        const step = MOBILE_TOUR_STEPS[currentStep];
-        if (step?.waitForAction === 'sidebar-open' && isSidebarOpen && currentStep === 0) {
-            // İlk adımda sidebar açıldıysa bir sonraki adıma geç
-            setTimeout(() => {
+        // İlk adımdan "İleri" butonuna tıklandığında sidebar açıldıysa bir sonraki adıma geç
+        if (pendingSidebarOpen && isSidebarOpen && currentStep === 0) {
+            const timer = setTimeout(() => {
                 setCurrentStep(1);
+                setPendingSidebarOpen(false);
             }, 500);
+            return () => clearTimeout(timer);
         }
-    }, [isSidebarOpen, currentStep, isVisible, isMobile]);
+    }, [isSidebarOpen, currentStep, isVisible, isMobile, pendingSidebarOpen]);
 
     const updateTooltipPosition = useCallback(() => {
         if (!isMobile) return;
@@ -168,6 +170,15 @@ export default function MobileRiskTour({ onComplete, isSidebarOpen = false, onSi
     }, [currentStep, updateTooltipPosition, isVisible, isMobile]);
 
     const handleNext = () => {
+        // İlk adımdaysa ve sidebar açık değilse, önce sidebar'ı aç
+        if (currentStep === 0 && !isSidebarOpen && onSidebarOpen) {
+            setPendingSidebarOpen(true);
+            onSidebarOpen();
+            // Sidebar açıldıktan sonra useEffect ile bir sonraki adıma geçilecek
+            return;
+        }
+        
+        // Diğer durumlarda normal şekilde bir sonraki adıma geç
         if (currentStep < MOBILE_TOUR_STEPS.length - 1) {
             setCurrentStep(prev => prev + 1);
         } else {
