@@ -2549,19 +2549,20 @@ function RiskAssessmentContent() {
           ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
           fixed md:relative
-          top-16 md:top-0
+          top-14 md:top-0 sm:top-16
           left-0
-          h-[calc(100vh-64px)] md:h-auto md:min-h-[calc(100vh-64px)]
-          w-72 md:w-72
+          h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] md:h-auto md:min-h-[calc(100vh-64px)]
+          w-[280px] sm:w-72 md:w-72
           ${isDark ? 'bg-slate-800 shadow-xl md:shadow-none' : 'bg-indigo-50/30 shadow-xl md:shadow-none'} flex flex-col 
           ${isDark ? 'border-r border-slate-700' : 'border-r border-slate-200'} overflow-y-auto md:overflow-visible
           transition-transform duration-300 ease-in-out
           z-50 md:z-auto
+          -webkit-overflow-scrolling-touch
         `}>
 
           {/* SEKTÖR SEÇ BÖLÜMÜ */}
-          <div className={`p-5 ${isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}`}>
-            <h2 className={`text-xs font-bold uppercase flex items-center mb-3 tracking-wider ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+          <div className={`p-3 md:p-5 ${isDark ? 'border-b border-slate-700' : 'border-b border-slate-200'}`}>
+            <h2 className={`text-xs font-bold uppercase flex items-center mb-2 md:mb-3 tracking-wider ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
               <Zap className="w-4 h-4 mr-2" />
               Yapay Zeka Risk Analiz (Beta)
             </h2>
@@ -2569,7 +2570,7 @@ function RiskAssessmentContent() {
               <input
                 type="text"
                 placeholder="Sektör yazın (örn: İnşaat)"
-                className={`w-full pl-4 pr-16 py-3 text-sm border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium transition-all ${isDark ? 'bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'bg-slate-100 text-slate-700 placeholder:text-slate-400'}`}
+                className={`w-full pl-4 pr-16 py-3 text-base md:text-sm border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium transition-all min-h-[44px] ${isDark ? 'bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'bg-slate-100 text-slate-700 placeholder:text-slate-400'}`}
                 value={sectorSearch}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -2632,7 +2633,7 @@ function RiskAssessmentContent() {
               <button
                 onClick={handleSectorAnalysis}
                 disabled={sectorLoading || !sectorSearch.trim()}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-sm shadow-indigo-200"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-sm shadow-indigo-200 min-h-[36px]"
               >
                 {sectorLoading ? '...' : 'Ekle'}
               </button>
@@ -2724,17 +2725,17 @@ function RiskAssessmentContent() {
 
 
           {/* RİSK SINIFLARI BÖLÜMÜ */}
-          <div className="px-5 py-3">
-            <h2 className={`text-xs font-bold uppercase flex items-center mb-3 tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+          <div className="px-3 md:px-5 py-2 md:py-3">
+            <h2 className={`text-xs font-bold uppercase flex items-center mb-2 md:mb-3 tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
               <BookOpen className="w-4 h-4 mr-2" />
               Risk Kütüphanesi
             </h2>
             <div className="relative group">
-              <Search className={`absolute left-3 top-2.5 h-4 w-4 transition-colors ${isDark ? 'text-slate-400 group-focus-within:text-indigo-400' : 'text-slate-400 group-focus-within:text-indigo-500'}`} />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${isDark ? 'text-slate-400 group-focus-within:text-indigo-400' : 'text-slate-400 group-focus-within:text-indigo-500'}`} />
               <input
                 type="text"
                 placeholder="Risk ara..."
-                className={`w-full pl-10 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${isDark ? 'border-slate-600 bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'border-slate-200 bg-white'}`}
+                className={`w-full pl-10 pr-3 py-3 md:py-2 text-base md:text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all min-h-[44px] ${isDark ? 'border-slate-600 bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'border-slate-200 bg-white'}`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -2799,8 +2800,8 @@ function RiskAssessmentContent() {
           </ul>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-8">
+        <main className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-8">
+          <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 lg:space-y-8">
 
             {/* --- 1. FİRMA VE RAPOR BİLGİLERİ --- */}
             <div className="bg-white shadow-sm shadow-slate-200/50 rounded-xl border border-slate-100 overflow-hidden">
@@ -2850,7 +2851,7 @@ function RiskAssessmentContent() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 p-4 md:p-6">
                   {/* Sol: Firma Seçimi */}
                   <div className="space-y-4">
                     <div>
@@ -2858,7 +2859,7 @@ function RiskAssessmentContent() {
                       <select
                         value={selectedCompanyId}
                         onChange={(e) => handleCompanySelect(e.target.value)}
-                        className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
+                        className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white min-h-[44px]"
                       >
                         <option value="">-- Firma Seçin --</option>
                         {companies.map(c => (
@@ -2934,7 +2935,7 @@ function RiskAssessmentContent() {
                       <div className="grid grid-cols-3 gap-2">
                         {/* Gün Dropdown */}
                         <select
-                          className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
+                          className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white min-h-[44px]"
                           value={headerInfo.date ? headerInfo.date.split('-')[2] || '' : ''}
                           onChange={(e) => {
                             const day = e.target.value;
@@ -2954,7 +2955,7 @@ function RiskAssessmentContent() {
                         </select>
                         {/* Ay Dropdown */}
                         <select
-                          className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
+                          className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white min-h-[44px]"
                           value={headerInfo.date ? headerInfo.date.split('-')[1] || '' : ''}
                           onChange={(e) => {
                             const month = e.target.value;
@@ -2974,7 +2975,7 @@ function RiskAssessmentContent() {
                         </select>
                         {/* Yıl Dropdown */}
                         <select
-                          className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white"
+                          className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all focus:bg-white min-h-[44px]"
                           value={headerInfo.date ? headerInfo.date.split('-')[0] || '' : ''}
                           onChange={(e) => {
                             const year = e.target.value;
@@ -3047,30 +3048,31 @@ function RiskAssessmentContent() {
 
             {/* --- 2. KATEGORİ DETAYLARI --- */}
             {selectedCategory && (
-              <div className="bg-white border border-indigo-100 rounded-xl p-6 shadow-lg shadow-indigo-100/50 animate-in fade-in slide-in-from-top-2 relative overflow-hidden">
+              <div className="bg-white border border-indigo-100 rounded-xl p-4 md:p-6 shadow-lg shadow-indigo-100/50 animate-in fade-in slide-in-from-top-2 relative overflow-hidden mb-6 md:mb-8">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-10 -mt-10 z-0 opacity-50"></div>
-                <div className="relative z-10 flex justify-between items-center mb-6 border-b border-indigo-50 pb-4">
-                  <div className="flex items-center space-x-4">
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 border-b border-indigo-50 pb-3 md:pb-4 gap-3">
+                  <div className="flex items-center space-x-3 md:space-x-4 flex-1">
                     <div className="bg-indigo-100 p-2 rounded-lg">
-                      <BookOpen className="w-6 h-6 text-indigo-600" />
+                      <BookOpen className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        {selectedCategory.category}
-                        <span className="text-sm bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 font-mono">{selectedCategory.code}</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg md:text-xl font-bold text-slate-800 flex flex-wrap items-center gap-2">
+                        <span className="break-words">{selectedCategory.category}</span>
+                        <span className="text-xs md:text-sm bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 font-mono whitespace-nowrap">{selectedCategory.code}</span>
                       </h3>
-                      <p className="text-sm text-slate-500">Kütüphaneden seçim yapın veya tümünü bir kerede ekleyin.</p>
+                      <p className="text-xs md:text-sm text-slate-500 mt-1 hidden sm:block">Kütüphaneden seçim yapın veya tümünü bir kerede ekleyin.</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
                     <button
                       onClick={(e: any) => handleAddAllFromCategory(e, selectedCategory)}
-                      className="flex items-center bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm shadow-emerald-200 transition-all font-bold group"
+                      className="flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 md:px-4 py-2.5 md:py-2 rounded-lg shadow-sm shadow-emerald-200 transition-all font-bold group min-h-[44px] flex-1 sm:flex-initial"
                     >
                       <PlusCircle className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
-                      Tümünü Ekle
+                      <span className="hidden sm:inline">Tümünü Ekle</span>
+                      <span className="sm:hidden">Ekle</span>
                     </button>
-                    <button onClick={() => setSelectedCategory(null)} className="p-2 bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
+                    <button onClick={() => setSelectedCategory(null)} className="p-2.5 md:p-2 bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"><X className="w-5 h-5" /></button>
                   </div>
                 </div>
 
@@ -3079,9 +3081,9 @@ function RiskAssessmentContent() {
                     <p className="text-slate-400 italic">Bu kategori için henüz hazır veri girişi yapılmamış.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {selectedCategory.items.map((item: any, idx: any) => (
-                      <div key={idx} onClick={() => handleSelectPreset(item, selectedCategory.code)} className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100/50 cursor-pointer transition-all group relative">
+                      <div key={idx} onClick={() => handleSelectPreset(item, selectedCategory.code)} className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100/50 cursor-pointer transition-all group relative min-h-[120px]">
                         <button
                           onClick={(e: any) => handleQuickAdd(e, item, selectedCategory.code)}
                           className="absolute top-3 right-3 p-1.5 bg-slate-50 border border-slate-200 rounded-full text-emerald-600 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white shadow-sm transition-all z-10 opacity-0 group-hover:opacity-100"
@@ -3110,35 +3112,35 @@ function RiskAssessmentContent() {
             )}
 
             {/* --- 3. DÜZENLEME FORMU --- */}
-            <div id="risk-form" className="bg-white shadow-lg shadow-slate-200/50 rounded-xl border border-slate-200 overflow-hidden mb-8 transition-all duration-300">
+            <div id="risk-form" className="bg-white shadow-lg shadow-slate-200/50 rounded-xl border border-slate-200 overflow-hidden mb-6 md:mb-8 transition-all duration-300">
               <div
-                className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-6 py-4 flex items-center justify-between cursor-pointer hover:from-slate-800 hover:via-blue-800 hover:to-slate-800 transition-colors"
+                className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between cursor-pointer hover:from-slate-800 hover:via-blue-800 hover:to-slate-800 transition-colors min-h-[60px]"
                 onClick={() => setIsFormCollapsed(!isFormCollapsed)}
               >
                 <div className="flex items-center">
-                  <div className="bg-white/10 p-1.5 rounded-lg mr-3">
-                    <Plus className="w-5 h-5 text-blue-200" />
+                  <div className="bg-white/10 p-1.5 rounded-lg mr-2 md:mr-3">
+                    <Plus className="w-4 h-4 md:w-5 md:h-5 text-blue-200" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white text-lg">2. Risk Giriş Paneli</h3>
-                    <p className="text-xs text-blue-200">Manuel risk ekleme veya düzenleme</p>
+                    <h3 className="font-bold text-white text-base md:text-lg">2. Risk Giriş Paneli</h3>
+                    <p className="text-xs text-blue-200 hidden sm:block">Manuel risk ekleme veya düzenleme</p>
                   </div>
                 </div>
-                <div className="bg-white/10 p-1 rounded-full border border-white/20 text-blue-200">
-                  {isFormCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                <div className="bg-white/10 p-1 rounded-full border border-white/20 text-blue-200 min-w-[36px] min-h-[36px] flex items-center justify-center">
+                  {isFormCollapsed ? <ChevronDown className="w-4 h-4 md:w-5 md:h-5" /> : <ChevronUp className="w-4 h-4 md:w-5 md:h-5" />}
                 </div>
               </div>
 
               {/* Risklerim - Hızlı Ekleme Bölümü */}
               {session && (
-                <div className={`px-6 py-4 border-b ${isDark ? 'border-slate-700 bg-amber-900/20' : 'border-slate-200 bg-amber-50/50'}`}>
-                  <div className="flex items-center gap-4">
+                <div className={`px-4 md:px-6 py-3 md:py-4 border-b ${isDark ? 'border-slate-700 bg-amber-900/20' : 'border-slate-200 bg-amber-50/50'}`}>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4">
                     <div className="flex items-center gap-2">
                       <Shield className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                       <span className={`font-bold text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Risklerim</span>
                     </div>
                     <select
-                      className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent ${isDark 
+                      className={`flex-1 border rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[44px] ${isDark 
                         ? 'border-amber-700 bg-slate-700 text-slate-100' 
                         : 'border-amber-200 bg-white'
                       }`}
@@ -3172,10 +3174,11 @@ function RiskAssessmentContent() {
                           showNotification("Lütfen bir risk seçin.", "error");
                         }
                       }}
-                      className="px-4 py-2 bg-amber-500 text-white font-bold text-sm rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2 shadow-sm"
+                      className="px-4 py-3 md:py-2 bg-amber-500 text-white font-bold text-sm rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 shadow-sm min-h-[44px]"
                     >
                       <Plus className="w-4 h-4" />
-                      Tabloya Ekle
+                      <span className="hidden sm:inline">Tabloya Ekle</span>
+                      <span className="sm:hidden">Ekle</span>
                     </button>
                     <Link
                       href="/panel/risk-maddelerim"
@@ -3196,21 +3199,21 @@ function RiskAssessmentContent() {
               )}
 
               <div className={`transition-all duration-300 ease-in-out bg-white ${isFormCollapsed ? 'max-h-0 opacity-0' : 'max-h-[1000px] opacity-100'}`}>
-                <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
                   {/* Sol Kısım */}
-                  <div className="lg:col-span-7 space-y-5">
-                    <div className="grid grid-cols-3 gap-4">
+                  <div className="lg:col-span-7 space-y-4 md:space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                       <div>
                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Risk No</label>
-                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.riskNo || ''} onChange={(e: any) => setForm({ ...form, riskNo: e.target.value })} placeholder="Otomatik" />
+                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 md:p-2.5 text-base md:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all min-h-[44px]" value={form.riskNo || ''} onChange={(e: any) => setForm({ ...form, riskNo: e.target.value })} placeholder="Otomatik" />
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Bölüm</label>
-                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.sub_category} onChange={(e: any) => setForm({ ...form, sub_category: e.target.value })} />
+                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 md:p-2.5 text-base md:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all min-h-[44px]" value={form.sub_category} onChange={(e: any) => setForm({ ...form, sub_category: e.target.value })} />
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Ortam</label>
-                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.source} onChange={(e: any) => setForm({ ...form, source: e.target.value })} />
+                        <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 md:p-2.5 text-base md:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all min-h-[44px]" value={form.source} onChange={(e: any) => setForm({ ...form, source: e.target.value })} />
                       </div>
                     </div>
 
@@ -3253,40 +3256,40 @@ function RiskAssessmentContent() {
 
                     <div>
                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Tehlike</label>
-                      <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.hazard} onChange={(e: any) => setForm({ ...form, hazard: e.target.value })} placeholder="Tehlike kaynağını tanımlayın..." />
+                      <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all min-h-[44px]" value={form.hazard} onChange={(e: any) => setForm({ ...form, hazard: e.target.value })} placeholder="Tehlike kaynağını tanımlayın..." />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       <div>
                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Risk</label>
-                        <textarea rows={3} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm resize-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.risk} onChange={(e: any) => setForm({ ...form, risk: e.target.value })} placeholder="Olası riskleri açıklayın..." />
+                        <textarea rows={3} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm resize-none focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.risk} onChange={(e: any) => setForm({ ...form, risk: e.target.value })} placeholder="Olası riskleri açıklayın..." />
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Etkilenenler</label>
-                        <textarea rows={3} className="w-full border border-slate-200 bg-slate-100 text-slate-500 rounded-lg p-3 text-sm resize-none cursor-not-allowed font-medium" value={form.affected} readOnly />
+                        <textarea rows={3} className="w-full border border-slate-200 bg-slate-100 text-slate-500 rounded-lg p-3 text-base md:text-sm resize-none cursor-not-allowed font-medium" value={form.affected} readOnly />
                       </div>
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Sorumlu Kişi / Bölüm</label>
-                      <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.responsible} onChange={(e: any) => setForm({ ...form, responsible: e.target.value })} placeholder="Örn: İdari İşler, İşveren Vekili" />
+                      <input type="text" className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all min-h-[44px]" value={form.responsible} onChange={(e: any) => setForm({ ...form, responsible: e.target.value })} placeholder="Örn: İdari İşler, İşveren Vekili" />
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Alınacak Önlemler</label>
-                      <textarea rows={4} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.measures} onChange={(e: any) => setForm({ ...form, measures: e.target.value })} placeholder="Mevcut ve alınması gereken önlemleri sıralayın..." />
+                      <textarea rows={4} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-3 text-base md:text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all" value={form.measures} onChange={(e: any) => setForm({ ...form, measures: e.target.value })} placeholder="Mevcut ve alınması gereken önlemleri sıralayın..." />
                     </div>
                   </div>
 
                   {/* Sağ Kısım: Puanlama */}
-                  <div className="lg:col-span-5 grid grid-cols-2 gap-4 content-start">
+                  <div className="lg:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
                     {/* 1. Aşama */}
-                    <div className="bg-red-50/50 p-5 rounded-xl border border-red-100 shadow-sm">
-                      <h4 className="text-sm font-black text-red-900 mb-4 text-center border-b border-red-200 pb-2 uppercase tracking-wide">1. Mevcut Durum</h4>
-                      <div className="space-y-6">
+                    <div className="bg-red-50/50 p-4 md:p-5 rounded-xl border border-red-100 shadow-sm">
+                      <h4 className="text-sm font-black text-red-900 mb-3 md:mb-4 text-center border-b border-red-200 pb-2 uppercase tracking-wide">1. Mevcut Durum</h4>
+                      <div className="space-y-4 md:space-y-6">
                         <div>
                           <div className="flex justify-between items-end mb-2">
                             <span className="text-xs font-bold text-red-800 uppercase">Olasılık</span>
                             <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-red-100 text-red-600">{form.probability}</span>
                           </div>
-                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability} onChange={(e: any) => setForm({ ...form, probability: e.target.value as any })} className="w-full h-1.5 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600" />
+                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability} onChange={(e: any) => setForm({ ...form, probability: e.target.value as any })} className="w-full h-2 md:h-1.5 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600" />
                           <div className="flex justify-between text-[9px] text-red-300 mt-1"><span>Düşük</span><span>Yüksek</span></div>
                         </div>
                         <div>
@@ -3314,15 +3317,15 @@ function RiskAssessmentContent() {
                     </div>
 
                     {/* 2. Aşama */}
-                    <div className="bg-emerald-50/50 p-5 rounded-xl border border-emerald-100 shadow-sm">
-                      <h4 className="text-sm font-black text-emerald-900 mb-4 text-center border-b border-emerald-200 pb-2 uppercase tracking-wide">2. Önlem Sonrası</h4>
-                      <div className="space-y-6">
+                    <div className="bg-emerald-50/50 p-4 md:p-5 rounded-xl border border-emerald-100 shadow-sm">
+                      <h4 className="text-sm font-black text-emerald-900 mb-3 md:mb-4 text-center border-b border-emerald-200 pb-2 uppercase tracking-wide">2. Önlem Sonrası</h4>
+                      <div className="space-y-4 md:space-y-6">
                         <div>
                           <div className="flex justify-between items-end mb-2">
                             <span className="text-xs font-bold text-emerald-800 uppercase">Olasılık</span>
                             <span className="font-mono text-sm font-bold bg-white px-2 py-0.5 rounded border border-emerald-100 text-emerald-600">{form.probability2}</span>
                           </div>
-                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability2} onChange={(e: any) => setForm({ ...form, probability2: e.target.value as any })} className="w-full h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                          <input type="range" min={0.2} max={10} step={0.1} value={form.probability2} onChange={(e: any) => setForm({ ...form, probability2: e.target.value as any })} className="w-full h-2 md:h-1.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
                         </div>
                         <div>
                           <div className="flex justify-between items-end mb-2">
@@ -3348,8 +3351,8 @@ function RiskAssessmentContent() {
                       </div>
                     </div>
 
-                    <div className="col-span-2 mt-2">
-                      <button onClick={handleAddRisk} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    <div className="col-span-1 md:col-span-2 mt-2">
+                      <button onClick={handleAddRisk} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 md:py-3 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] min-h-[44px] text-base md:text-sm">
                         <Save className="w-5 h-5 mr-2" />
                         Listeye Ekle
                       </button>
@@ -3361,39 +3364,41 @@ function RiskAssessmentContent() {
 
 
             {/* --- ACTION BAR --- */}
-            <div className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 p-4 rounded-t-xl md:rounded-xl shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 p-3 md:p-4 rounded-t-xl md:rounded-xl shadow-sm gap-3 md:gap-4">
               <div className="flex items-center" ref={tableTopRef}>
-                <div className="bg-white/10 p-2 rounded-lg mr-3">
-                  <FileText className="w-6 h-6 text-blue-200" />
+                <div className="bg-white/10 p-2 rounded-lg mr-2 md:mr-3">
+                  <FileText className="w-5 h-5 md:w-6 md:h-6 text-blue-200" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">3. Risk Analiz Tablosu</h2>
-                  <p className="text-xs text-blue-200">Hazırlanan raporun önizlemesi</p>
+                  <h2 className="text-base md:text-lg font-bold text-white">3. Risk Analiz Tablosu</h2>
+                  <p className="text-xs text-blue-200 hidden sm:block">Hazırlanan raporun önizlemesi</p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto justify-center md:justify-end">
                 <button
                   onClick={handleDeleteAll}
-                  className="inline-flex items-center px-4 py-2 border border-red-400/50 shadow-sm text-sm font-medium rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 transition-colors"
+                  className="inline-flex items-center px-3 md:px-4 py-2 border border-red-400/50 shadow-sm text-xs md:text-sm font-medium rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 transition-colors min-h-[44px]"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Tümünü Sil
+                  <Trash2 className="h-4 w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Tümünü Sil</span>
+                  <span className="sm:hidden">Sil</span>
                 </button>
-                <label className="inline-flex items-center cursor-pointer px-4 py-2 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 select-none transition-colors">
+                <label className="inline-flex items-center cursor-pointer px-3 md:px-4 py-2 border border-white/20 rounded-lg bg-white/10 hover:bg-white/20 select-none transition-colors min-h-[44px]">
                   <input
                     type="checkbox"
                     checked={includeProcedure}
                     onChange={(e) => setIncludeProcedure(e.target.checked)}
                     className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
                   />
-                  <span className="ml-2 text-sm font-bold text-white">Prosedür Ekle</span>
+                  <span className="ml-2 text-xs md:text-sm font-bold text-white">Prosedür Ekle</span>
                 </label>
                 <button
                   onClick={generatePDF}
-                  className="inline-flex items-center px-5 py-2 border border-emerald-400/50 shadow-lg shadow-emerald-500/20 text-sm font-bold rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 transition-all hover:scale-105"
+                  className="inline-flex items-center px-4 md:px-5 py-2 border border-emerald-400/50 shadow-lg shadow-emerald-500/20 text-xs md:text-sm font-bold rounded-lg text-white bg-emerald-500 hover:bg-emerald-600 transition-all hover:scale-105 min-h-[44px]"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF İndir
+                  <Download className="h-4 w-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">PDF İndir</span>
+                  <span className="sm:hidden">PDF</span>
                 </button>
               </div>
             </div>
@@ -3403,7 +3408,7 @@ function RiskAssessmentContent() {
             <div className="bg-white border md:rounded-b-xl border-slate-300 shadow-2xl overflow-hidden mb-10">
 
               {/* 1. BAŞLIK TABLOSU (HEADER - FINAL DÜZEN) */}
-              <div className="border-b border-slate-400 bg-white">
+              <div className="border-b border-slate-400 bg-white hidden md:block">
                 <div className="flex border-b border-gray-400 text-[9px]">
 
                   {/* SOL BLOK: DEĞERLENDİRME & YÖNTEM */}
@@ -3503,76 +3508,76 @@ function RiskAssessmentContent() {
               </div>
 
               {/* 2. RİSK TABLOSU (TEK PARÇA) */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
                 <table className="min-w-full divide-y divide-gray-200 text-xs border-collapse">
                   <thead className="bg-slate-50 text-slate-700 font-bold border-b-2 border-slate-200">
                     <tr>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-8 text-center text-[10px] uppercase tracking-wider">No</th>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-24 text-left text-[10px] uppercase tracking-wider">Bölüm / Ortam</th>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-20 text-center text-[10px] uppercase tracking-wider">Foto</th>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 text-left text-[10px] uppercase tracking-wider">Tehlike</th>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 text-left text-[10px] uppercase tracking-wider">Risk</th>
-                      <th rowSpan={2} className="px-1 py-3 border border-slate-200 w-6 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 text-slate-500 tracking-widest">Etkilenen</th>
-                      <th colSpan={5} className="px-2 py-1.5 border border-red-200 text-center bg-red-50 text-red-700 text-[10px] uppercase tracking-wider">1. Aşama (Mevcut Durum)</th>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 text-left w-48 bg-yellow-50/50 text-yellow-800 text-[10px] uppercase tracking-wider">Kontrol Tedbirleri (Önlemler)</th>
-                      <th colSpan={5} className="px-2 py-1.5 border border-emerald-200 text-center bg-emerald-50 text-emerald-700 text-[10px] uppercase tracking-wider">2. Aşama (Tedbir Sonrası)</th>
-                      <th rowSpan={2} className="px-1 py-3 border border-slate-200 w-6 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 text-slate-500 tracking-widest">Sorumlu</th>
-                      <th rowSpan={2} className="px-2 py-3 border border-slate-200 w-8"></th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 w-8 text-center text-[9px] md:text-[10px] uppercase tracking-wider sticky left-0 bg-slate-50 z-10">No</th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 w-20 md:w-24 text-left text-[9px] md:text-[10px] uppercase tracking-wider sticky left-8 md:left-10 bg-slate-50 z-10">Bölüm/Ortam</th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 w-16 md:w-20 text-center text-[9px] md:text-[10px] uppercase tracking-wider">Foto</th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 min-w-[120px] md:min-w-[150px] text-left text-[9px] md:text-[10px] uppercase tracking-wider">Tehlike</th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 min-w-[120px] md:min-w-[150px] text-left text-[9px] md:text-[10px] uppercase tracking-wider">Risk</th>
+                      <th rowSpan={2} className="px-0.5 md:px-1 py-2 md:py-3 border border-slate-200 w-5 md:w-6 align-middle text-center uppercase font-bold text-[8px] md:text-[9px] [writing-mode:vertical-rl] rotate-180 text-slate-500 tracking-widest">Etkilenen</th>
+                      <th colSpan={5} className="px-1 md:px-2 py-1 md:py-1.5 border border-red-200 text-center bg-red-50 text-red-700 text-[9px] md:text-[10px] uppercase tracking-wider whitespace-nowrap">1. Aşama</th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 text-left min-w-[150px] md:w-48 bg-yellow-50/50 text-yellow-800 text-[9px] md:text-[10px] uppercase tracking-wider">Önlemler</th>
+                      <th colSpan={5} className="px-1 md:px-2 py-1 md:py-1.5 border border-emerald-200 text-center bg-emerald-50 text-emerald-700 text-[9px] md:text-[10px] uppercase tracking-wider whitespace-nowrap">2. Aşama</th>
+                      <th rowSpan={2} className="px-0.5 md:px-1 py-2 md:py-3 border border-slate-200 w-5 md:w-6 align-middle text-center uppercase font-bold text-[8px] md:text-[9px] [writing-mode:vertical-rl] rotate-180 text-slate-500 tracking-widest">Sorumlu</th>
+                      <th rowSpan={2} className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 w-8 sticky right-0 bg-slate-50 z-10"></th>
                     </tr>
                     <tr>
-                      <th className="px-1 py-1 border border-red-200 w-12 text-center bg-red-100/50 text-red-800 text-[9px]">O</th>
-                      <th className="px-1 py-1 border border-red-200 w-12 text-center bg-red-100/50 text-red-800 text-[9px]">F</th>
-                      <th className="px-1 py-1 border border-red-200 w-14 text-center bg-red-100/50 text-red-800 text-[9px]">Ş</th>
-                      <th className="px-1 py-1 border border-red-200 w-10 text-center bg-red-100 text-red-900 font-bold text-[9px]">Skor</th>
-                      <th className="px-1 py-1 border border-red-200 w-16 text-center bg-red-100 text-red-900 font-bold text-[9px]">Sınıf</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-red-200 w-10 md:w-12 text-center bg-red-100/50 text-red-800 text-[8px] md:text-[9px]">O</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-red-200 w-10 md:w-12 text-center bg-red-100/50 text-red-800 text-[8px] md:text-[9px]">F</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-red-200 w-10 md:w-14 text-center bg-red-100/50 text-red-800 text-[8px] md:text-[9px]">Ş</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-red-200 w-8 md:w-10 text-center bg-red-100 text-red-900 font-bold text-[8px] md:text-[9px]">Skor</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-red-200 w-12 md:w-16 text-center bg-red-100 text-red-900 font-bold text-[8px] md:text-[9px]">Sınıf</th>
 
-                      <th className="px-1 py-1 border border-emerald-200 w-12 text-center bg-emerald-100/50 text-emerald-800 text-[9px]">O</th>
-                      <th className="px-1 py-1 border border-emerald-200 w-12 text-center bg-emerald-100/50 text-emerald-800 text-[9px]">F</th>
-                      <th className="px-1 py-1 border border-emerald-200 w-14 text-center bg-emerald-100/50 text-emerald-800 text-[9px]">Ş</th>
-                      <th className="px-1 py-1 border border-emerald-200 w-10 text-center bg-emerald-100 text-emerald-900 font-bold text-[9px]">Skor</th>
-                      <th className="px-1 py-1 border border-emerald-200 w-16 text-center bg-emerald-100 text-emerald-900 font-bold text-[9px]">Sınıf</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-emerald-200 w-10 md:w-12 text-center bg-emerald-100/50 text-emerald-800 text-[8px] md:text-[9px]">O</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-emerald-200 w-10 md:w-12 text-center bg-emerald-100/50 text-emerald-800 text-[8px] md:text-[9px]">F</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-emerald-200 w-10 md:w-14 text-center bg-emerald-100/50 text-emerald-800 text-[8px] md:text-[9px]">Ş</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-emerald-200 w-8 md:w-10 text-center bg-emerald-100 text-emerald-900 font-bold text-[8px] md:text-[9px]">Skor</th>
+                      <th className="px-0.5 md:px-1 py-0.5 md:py-1 border border-emerald-200 w-12 md:w-16 text-center bg-emerald-100 text-emerald-900 font-bold text-[8px] md:text-[9px]">Sınıf</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white">
                     {filteredRisks.map((r, idx) => (
                       <tr key={`${r.id}-${idx}`} className="hover:bg-indigo-50/10 transition-colors">
-                        <td className="px-2 py-3 border border-slate-200 font-mono font-bold text-slate-600 text-center text-xs">{r.riskNo}</td>
-                        <td className="px-2 py-3 border border-slate-200 align-top">
-                          <div className="font-bold text-slate-800 text-xs mb-0.5">{r.sub_category}</div>
-                          <div className="text-slate-500 text-[9px] uppercase tracking-wide">{r.source}</div>
+                        <td className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 font-mono font-bold text-slate-600 text-center text-xs sticky left-0 bg-white z-10">{r.riskNo}</td>
+                        <td className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 align-top sticky left-8 md:left-10 bg-white z-10">
+                          <div className="font-bold text-slate-800 text-[10px] md:text-xs mb-0.5 line-clamp-1">{r.sub_category}</div>
+                          <div className="text-slate-500 text-[8px] md:text-[9px] uppercase tracking-wide line-clamp-1">{r.source}</div>
                         </td>
 
                         {/* FOTOĞRAF */}
-                        <td className="px-1 py-1 border border-slate-200 align-top text-center">
+                        <td className="px-0.5 md:px-1 py-1 border border-slate-200 align-top text-center">
                           <div className="flex justify-center items-center h-full w-full">
                             {r.image ? (
                               <div className="relative group">
-                                <img src={r.image} alt="Risk" className="w-12 h-12 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto" />
+                                <img src={r.image} alt="Risk" className="w-10 h-10 md:w-12 md:h-12 object-cover rounded-lg border border-slate-200 shadow-sm mx-auto" />
                                 <div className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center rounded-lg transition-opacity">
-                                  <button onClick={() => triggerTableImageUpload(r.id)} className="text-[10px] text-white hover:text-blue-300 mb-1 flex items-center font-bold"><RefreshCw className="w-3 h-3 mr-1" /> Değiş</button>
-                                  <button onClick={() => deleteImageFromRow(r.id)} className="text-[10px] text-white hover:text-red-300 flex items-center font-bold"><Trash2 className="w-3 h-3 mr-1" /> Sil</button>
+                                  <button onClick={() => triggerTableImageUpload(r.id)} className="text-[9px] md:text-[10px] text-white hover:text-blue-300 mb-1 flex items-center font-bold min-h-[32px] px-2"><RefreshCw className="w-3 h-3 mr-1" /> Değiş</button>
+                                  <button onClick={() => deleteImageFromRow(r.id)} className="text-[9px] md:text-[10px] text-white hover:text-red-300 flex items-center font-bold min-h-[32px] px-2"><Trash2 className="w-3 h-3 mr-1" /> Sil</button>
                                 </div>
                               </div>
                             ) : (
-                              <button onClick={() => triggerTableImageUpload(r.id)} className="w-12 h-12 bg-slate-50 rounded-lg border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-blue-500 transition-colors mx-auto group">
-                                <Upload className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-bold">Resim</span>
+                              <button onClick={() => triggerTableImageUpload(r.id)} className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-lg border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-blue-500 transition-colors mx-auto group min-h-[40px]">
+                                <Upload className="w-3 h-3 md:w-4 md:h-4 mb-0.5 md:mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-[7px] md:text-[8px] font-bold">Resim</span>
                               </button>
                             )}
                           </div>
                         </td>
 
-                        <td className="px-2 py-3 border border-slate-200 align-top font-medium text-slate-700 text-xs">{r.hazard}</td>
-                        <td className="px-2 py-3 border border-slate-200 align-top text-red-700 font-medium text-xs">{r.risk}</td>
+                        <td className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 align-top font-medium text-slate-700 text-[10px] md:text-xs min-w-[120px] md:min-w-[150px]">{r.hazard}</td>
+                        <td className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 align-top text-red-700 font-medium text-[10px] md:text-xs min-w-[120px] md:min-w-[150px]">{r.risk}</td>
 
-                        <td className="px-1 py-2 border border-slate-200 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-slate-500 bg-slate-50">
+                        <td className="px-0.5 md:px-1 py-2 border border-slate-200 align-middle text-center uppercase font-bold text-[8px] md:text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-slate-500 bg-slate-50">
                           {r.affected}
                         </td>
 
                         {/* 1. AŞAMA SKORLAMA */}
-                        <td className="px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
+                        <td className="px-0.5 md:px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
                           <select
-                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-red-800"
+                            className="w-full h-full text-center bg-transparent outline-none text-[10px] md:text-xs font-mono font-bold cursor-pointer text-red-800 min-h-[32px] py-1"
                             value={r.probability}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'probability', e.target.value);
@@ -3582,9 +3587,9 @@ function RiskAssessmentContent() {
                             {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
+                        <td className="px-0.5 md:px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
                           <select
-                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-red-800"
+                            className="w-full h-full text-center bg-transparent outline-none text-[10px] md:text-xs font-mono font-bold cursor-pointer text-red-800 min-h-[32px] py-1"
                             value={r.frequency}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'frequency', e.target.value);
@@ -3594,9 +3599,9 @@ function RiskAssessmentContent() {
                             {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
+                        <td className="px-0.5 md:px-1 py-1 border border-red-100 text-center p-0 bg-red-50/30">
                           <select
-                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-red-800"
+                            className="w-full h-full text-center bg-transparent outline-none text-[10px] md:text-xs font-mono font-bold cursor-pointer text-red-800 min-h-[32px] py-1"
                             value={r.severity}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'severity', e.target.value);
@@ -3606,17 +3611,17 @@ function RiskAssessmentContent() {
                             {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-1 border border-red-100 text-center font-bold bg-red-100 text-red-900 text-xs">{Math.round(r.score)}</td>
-                        <td className="px-1 py-1 border border-red-100 text-center p-1 bg-red-50/50">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold block shadow-sm ${r.color} text-white`}>{r.level?.split(' ')[0]}</span>
+                        <td className="px-0.5 md:px-1 py-1 border border-red-100 text-center font-bold bg-red-100 text-red-900 text-[10px] md:text-xs">{Math.round(r.score)}</td>
+                        <td className="px-0.5 md:px-1 py-1 border border-red-100 text-center p-0.5 md:p-1 bg-red-50/50">
+                          <span className={`px-1 md:px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold block shadow-sm ${r.color} text-white`}>{r.level?.split(' ')[0]}</span>
                         </td>
 
-                        <td className="px-2 py-3 border border-slate-200 align-top text-slate-700 bg-yellow-50/30 text-xs font-medium">{r.measures}</td>
+                        <td className="px-1 md:px-2 py-2 md:py-3 border border-slate-200 align-top text-slate-700 bg-yellow-50/30 text-[10px] md:text-xs font-medium min-w-[150px] md:min-w-[200px]">{r.measures}</td>
 
                         {/* 2. AŞAMA SKORLAMA (HEDEF) */}
-                        <td className="px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
+                        <td className="px-0.5 md:px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
                           <select
-                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-emerald-800"
+                            className="w-full h-full text-center bg-transparent outline-none text-[10px] md:text-xs font-mono font-bold cursor-pointer text-emerald-800 min-h-[32px] py-1"
                             value={r.probability2}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'probability2', e.target.value);
@@ -3626,9 +3631,9 @@ function RiskAssessmentContent() {
                             {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
+                        <td className="px-0.5 md:px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
                           <select
-                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-emerald-800"
+                            className="w-full h-full text-center bg-transparent outline-none text-[10px] md:text-xs font-mono font-bold cursor-pointer text-emerald-800 min-h-[32px] py-1"
                             value={r.frequency2}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'frequency2', e.target.value);
@@ -3638,9 +3643,9 @@ function RiskAssessmentContent() {
                             {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
+                        <td className="px-0.5 md:px-1 py-1 border border-emerald-100 text-center p-0 bg-emerald-50/30">
                           <select
-                            className="w-full h-full text-center bg-transparent outline-none text-xs font-mono font-bold cursor-pointer text-emerald-800"
+                            className="w-full h-full text-center bg-transparent outline-none text-[10px] md:text-xs font-mono font-bold cursor-pointer text-emerald-800 min-h-[32px] py-1"
                             value={r.severity2}
                             onChange={(e) => {
                               updateRiskValue(r.id, 'severity2', e.target.value);
@@ -3650,21 +3655,21 @@ function RiskAssessmentContent() {
                             {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-1 border border-emerald-100 text-center font-bold bg-emerald-100 text-emerald-900 text-xs">{Math.round(r.score2)}</td>
-                        <td className="px-1 py-1 border border-emerald-100 text-center p-1 bg-emerald-50/50">
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold block shadow-sm ${r.color2} text-white`}>{r.level2?.split(' ')[0]}</span>
+                        <td className="px-0.5 md:px-1 py-1 border border-emerald-100 text-center font-bold bg-emerald-100 text-emerald-900 text-[10px] md:text-xs">{Math.round(r.score2)}</td>
+                        <td className="px-0.5 md:px-1 py-1 border border-emerald-100 text-center p-0.5 md:p-1 bg-emerald-50/50">
+                          <span className={`px-1 md:px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold block shadow-sm ${r.color2} text-white`}>{r.level2?.split(' ')[0]}</span>
                         </td>
 
-                        <td className="px-1 py-2 border border-slate-200 align-middle text-center uppercase font-bold text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-slate-500 bg-slate-50">
+                        <td className="px-0.5 md:px-1 py-2 border border-slate-200 align-middle text-center uppercase font-bold text-[8px] md:text-[9px] [writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-slate-500 bg-slate-50">
                           {r.responsible}
                         </td>
-                        <td className="px-1 py-1 border border-slate-200 text-center w-8">
+                        <td className="px-1 py-1 border border-slate-200 text-center w-8 sticky right-0 bg-white z-10">
                           <button
                             onClick={() => deleteRisk(r.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors mx-auto block"
+                            className="p-1.5 md:p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors mx-auto block min-h-[32px] min-w-[32px] flex items-center justify-center"
                             title="Bu satırı sil"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
                           </button>
                         </td>
                       </tr>
