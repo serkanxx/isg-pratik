@@ -170,3 +170,101 @@ export async function sendNewUserNotificationEmail(userName: string, userEmail: 
         return { success: false, error };
     }
 }
+
+// Arşiv dosyası hata bildirimi emaili gönder
+export async function sendArchiveErrorReportEmail({
+    fileName,
+    fileLink,
+    userEmail,
+    userName,
+    errorDescription
+}: {
+    fileName: string;
+    fileLink: string;
+    userEmail: string;
+    userName: string;
+    errorDescription: string;
+}) {
+    const reportDate = new Date().toLocaleDateString('tr-TR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: 'İSG Pratik <noreply@isgpratik.com>',
+            to: 'serkanxx@gmail.com',
+            subject: `⚠️ Arşiv Dosyası Hata Bildirimi - ${fileName}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background: linear-gradient(135deg, #EF4444, #DC2626); padding: 20px; border-radius: 12px 12px 0 0;">
+                        <h1 style="color: white; margin: 0; font-size: 24px;">⚠️ Arşiv Dosyası Hata Bildirimi</h1>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+                        <p style="color: #1e293b; font-size: 16px; margin-bottom: 20px;">
+                            Bir kullanıcı arşiv dosyalarından birinde hata bildirdi.
+                        </p>
+                        
+                        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; width: 140px; background: #f8fafc;">Dosya Adı:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${fileName}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; background: #f8fafc;">Dosya Linki:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+                                    <a href="${fileLink}" target="_blank" style="color: #4F46E5; text-decoration: none; word-break: break-all;">${fileLink}</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; background: #f8fafc;">Kullanıcı:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${userName}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #4F46E5; background: #f8fafc;">E-Posta:</td>
+                                <td style="padding: 12px 15px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+                                    <a href="mailto:${userEmail}" style="color: #4F46E5; text-decoration: none;">${userEmail}</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 15px; font-weight: bold; color: #4F46E5; background: #f8fafc;">Bildirim Tarihi:</td>
+                                <td style="padding: 12px 15px; color: #1e293b;">${reportDate}</td>
+                            </tr>
+                        </table>
+                        
+                        <div style="background: #fef2f2; border-left: 4px solid #EF4444; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                            <h3 style="color: #991B1B; margin: 0 0 10px 0; font-size: 16px;">Hata Açıklaması:</h3>
+                            <p style="color: #7F1D1D; margin: 0; white-space: pre-wrap;">${errorDescription}</p>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="${fileLink}" target="_blank" 
+                               style="display: inline-block; background: #4F46E5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                                Dosyayı İncele
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">
+                        Bu email İSG Pratik arşiv hata bildirim sistemi tarafından gönderilmiştir.
+                    </p>
+                </div>
+            `,
+        });
+
+        if (error) {
+            console.error('Arşiv hata bildirimi email gönderme hatası:', error);
+            return { success: false, error };
+        }
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Arşiv hata bildirimi email gönderme hatası:', error);
+        return { success: false, error };
+    }
+}
+

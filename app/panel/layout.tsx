@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase
+    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase, FolderOpen
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -89,6 +89,13 @@ const menuItems = [
         icon: Briefcase,
         active: true,
         dataTour: 'is-ilanlari'
+    },
+    {
+        name: 'İSG Arşiv Dosyaları',
+        href: '/panel/arsiv',
+        icon: FolderOpen,
+        active: true,
+        dataTour: 'arsiv'
     },
     {
         name: 'Saha Gözlem Formları',

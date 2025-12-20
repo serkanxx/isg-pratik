@@ -25,3 +25,6 @@ echo Bekleyen mesajları kontrol etmek için webhook-durum-kontrol.bat dosyasın
 echo ========================================
 pause
 
+
+
+
