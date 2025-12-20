@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useSearchParams } from 'next/navigation';
 import { SECTOR_SUGGESTIONS } from '../data/constants';
 import { useTheme } from '@/app/context/ThemeContext';
+import MobileRiskTour from '@/components/MobileRiskTour';
 
 // --- 1. RİSK KÜTÜPHANESİ ---
 // --- 1. RİSK KÜTÜPHANESİ ---
@@ -2420,6 +2421,13 @@ function RiskAssessmentContent() {
   return (
     <div className={`min-h-screen text-gray-800 font-sans flex flex-col relative ${isDark ? 'dark-content bg-slate-900' : 'bg-gray-100'}`}>
 
+      {/* Mobil Tour */}
+      <MobileRiskTour 
+        onComplete={() => {}}
+        isSidebarOpen={isMobileSidebarOpen}
+        onSidebarOpen={() => setIsMobileSidebarOpen(true)}
+      />
+
       {notification.show && (
         <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-bounce-in ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
           {notification.type === 'error' ? <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> : <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />}
@@ -2442,6 +2450,7 @@ function RiskAssessmentContent() {
                 onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
                 className="md:hidden mr-2 sm:mr-3 p-2 rounded-xl text-blue-100 hover:bg-white/10 transition-colors"
                 aria-label="Menüyü Aç"
+                data-mobile-tour="hamburger-menu"
               >
                 {isMobileSidebarOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
               </button>
@@ -2572,6 +2581,7 @@ function RiskAssessmentContent() {
                 placeholder="Sektör yazın (örn: İnşaat)"
                 className={`w-full pl-4 pr-16 py-3 text-base md:text-sm border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium transition-all min-h-[44px] ${isDark ? 'bg-slate-700 text-slate-100 placeholder:text-slate-400' : 'bg-slate-100 text-slate-700 placeholder:text-slate-400'}`}
                 value={sectorSearch}
+                data-mobile-tour="ai-search"
                 onChange={(e) => {
                   const value = e.target.value;
                   setSectorSearch(value);
@@ -2749,7 +2759,9 @@ function RiskAssessmentContent() {
                   : selectedCategory?.category === cat.category
                     ? isDark ? 'bg-indigo-900/30 border-indigo-700' : 'bg-indigo-50 border-indigo-100'
                     : isDark ? 'border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'border-transparent hover:bg-slate-50 hover:border-slate-200'
-                  }`}>
+                  }`}
+                  {...(index === 0 ? { 'data-mobile-tour': 'risk-library-first' } : {})}
+                >
                   <button
                     onClick={() => setSelectedCategory(cat)}
                     className="flex-1 text-left flex items-center"
@@ -3086,7 +3098,7 @@ function RiskAssessmentContent() {
                       <div key={idx} onClick={() => handleSelectPreset(item, selectedCategory.code)} className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100/50 cursor-pointer transition-all group relative min-h-[120px]">
                         <button
                           onClick={(e: any) => handleQuickAdd(e, item, selectedCategory.code)}
-                          className="absolute top-3 right-3 p-1.5 bg-slate-50 border border-slate-200 rounded-full text-emerald-600 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white shadow-sm transition-all z-10 opacity-0 group-hover:opacity-100"
+                          className="absolute top-3 right-3 p-1.5 md:p-1.5 p-2 bg-slate-50 border border-slate-200 rounded-full text-emerald-600 hover:bg-emerald-600 hover:border-emerald-600 hover:text-white shadow-sm transition-all z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 min-w-[36px] min-h-[36px] flex items-center justify-center"
                           title="Direkt Ekle"
                         >
                           <Plus className="w-4 h-4" />
@@ -3095,11 +3107,11 @@ function RiskAssessmentContent() {
                         <div className="flex justify-between pr-8 mb-2">
                           <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">{item.source}</span>
                         </div>
-                        <p className="text-sm font-bold text-slate-800 line-clamp-2 mb-1 group-hover:text-indigo-700 transition-colors">
+                        <p className="text-sm font-bold text-slate-800 line-clamp-3 md:line-clamp-2 mb-1 group-hover:text-indigo-700 transition-colors">
                           <span className="text-slate-400 mr-2 font-mono text-xs font-normal">{selectedCategory.code}.{(idx + 1).toString().padStart(2, '0')}</span>
                           {item.hazard}
                         </p>
-                        <p className="text-xs text-slate-500 line-clamp-2 border-l-2 border-slate-200 pl-2 ml-1">{item.risk}</p>
+                        <p className="text-xs text-slate-500 line-clamp-3 md:line-clamp-2 border-l-2 border-slate-200 pl-2 ml-1">{item.risk}</p>
                         <div className="mt-3 pt-2 border-t border-slate-50 flex justify-between items-center text-xs">
                           <span className="text-slate-400 font-mono">Skor</span>
                           <span className="text-xs font-bold text-white bg-slate-400 px-2 py-0.5 rounded-full">{item.p * item.f * item.s}</span>
