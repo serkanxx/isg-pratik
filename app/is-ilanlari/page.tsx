@@ -12,7 +12,7 @@ import {
   Trash2, Menu, Moon, Sun, Home, LayoutDashboard, LogOut,
   Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
   ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin,
-  Send, MessageCircle, AlertCircle, CheckCircle
+  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen
 } from 'lucide-react';
 import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
 
@@ -92,18 +92,11 @@ const menuItems = [
     dataTour: 'is-ilanlari'
   },
   {
-    name: 'Saha Gözlem Formları',
-    href: '#',
-    icon: Eye,
-    active: false,
-    badge: 'YAKINDA'
-  },
-  {
-    name: 'DÖF Yönetimi',
-    href: '#',
-    icon: FileCheck,
-    active: false,
-    badge: 'YAKINDA'
+    name: 'İSG Arşiv Dosyaları',
+    href: '/panel/arsiv',
+    icon: FolderOpen,
+    active: true,
+    dataTour: 'arsiv'
   },
 ];
 
@@ -151,13 +144,13 @@ const HIGHLIGHT_TERMS = [
 const parseContent = (content: string) => {
   // Telefon numarası regex (Türk formatı: 05XX XXX XX XX, 0XXX XXX XX XX, +90 5XX XXX XX XX, (0XXX) XXX XX XX)
   const phoneRegex = /(\+?90\s?)?(\(?0?[5][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2})|(\(?0?[1-9][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2})/g;
-  
+
   // Email regex
   const emailRegex = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
-  
+
   // İl isimlerini bul
   const foundIls = findIlsInText(content);
-  
+
   // Özel terimleri bul (case-insensitive)
   const foundTerms: Array<{ index: number; length: number; value: string }> = [];
   for (const term of HIGHLIGHT_TERMS) {
@@ -171,7 +164,7 @@ const parseContent = (content: string) => {
       });
     }
   }
-  
+
   // İl isimlerini bul
   const foundIlMatches: Array<{ index: number; length: number; value: string }> = [];
   for (const il of foundIls) {
@@ -240,7 +233,7 @@ const parseContent = (content: string) => {
   const filteredMatches: typeof matches = [];
   for (let i = 0; i < matches.length; i++) {
     const current = matches[i];
-    const overlaps = filteredMatches.some(m => 
+    const overlaps = filteredMatches.some(m =>
       (current.index >= m.index && current.index < m.index + m.length) ||
       (m.index >= current.index && m.index < current.index + current.length)
     );
@@ -250,7 +243,7 @@ const parseContent = (content: string) => {
       // Öncelik kontrolü
       const priority: Record<string, number> = { email: 4, phone: 3, highlight: 2, city: 1 };
       const currentPriority = priority[current.type] || 0;
-      const overlappingIndex = filteredMatches.findIndex(m => 
+      const overlappingIndex = filteredMatches.findIndex(m =>
         (current.index >= m.index && current.index < m.index + m.length) ||
         (m.index >= current.index && m.index < current.index + current.length)
       );
@@ -337,7 +330,7 @@ export default function IsIlanlariPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  
+
   // Yorum state'leri
   const [comments, setComments] = useState<Record<string, JobComment[]>>({});
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
@@ -346,7 +339,7 @@ export default function IsIlanlariPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
-  
+
   // Notification state
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
     show: false,
@@ -414,7 +407,7 @@ export default function IsIlanlariPage() {
 
   const fetchComments = async (jobPostingId: string) => {
     if (loadingComments[jobPostingId]) return;
-    
+
     try {
       setLoadingComments(prev => ({ ...prev, [jobPostingId]: true }));
       const response = await fetch(`/api/job-postings/${jobPostingId}/comments`);
@@ -503,7 +496,7 @@ export default function IsIlanlariPage() {
 
   const handleDelete = async (id: string) => {
     if (!isAdmin) return;
-    
+
     if (!confirm('Bu iş ilanını silmek istediğinizden emin misiniz?')) {
       return;
     }
@@ -558,12 +551,11 @@ export default function IsIlanlariPage() {
     <div className={`min-h-screen flex ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
       {/* Notification */}
       {notification.show && (
-        <div 
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-fade-in ${
-            notification.type === 'error' 
-              ? 'bg-red-600 text-white' 
-              : 'bg-green-600 text-white'
-          }`}
+        <div
+          className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-fade-in ${notification.type === 'error'
+            ? 'bg-red-600 text-white'
+            : 'bg-green-600 text-white'
+            }`}
         >
           {notification.type === 'error' ? (
             <AlertCircle className="w-5 h-5 mr-2" />
@@ -587,15 +579,19 @@ export default function IsIlanlariPage() {
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
         w-72 flex flex-col fixed h-screen z-50 transition-all duration-300
-        ${isDark 
-          ? 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white' 
+        ${isDark
+          ? 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white'
           : 'bg-gradient-to-b from-white via-slate-50 to-white text-slate-900 border-r border-slate-200'
         }
       `}>
         {/* Logo */}
         <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center group">
+            <Link
+              href="/"
+              className="flex items-center group"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            >
               <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
               <div className="ml-3">
                 <span className={`text-xl font-bold bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-white to-blue-200' : 'bg-gradient-to-r from-indigo-600 to-purple-600'}`}>
@@ -618,7 +614,11 @@ export default function IsIlanlariPage() {
         {/* Kullanıcı Bilgisi */}
         {session && (
           <div className={`px-6 py-4 border-b ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'} transition-colors cursor-pointer`}>
-            <Link href="/panel" className="flex items-center gap-3">
+            <Link
+              href="/panel"
+              className="flex items-center gap-3"
+              onClick={() => setIsMobileSidebarOpen(false)}
+            >
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                 {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U'}
               </div>
@@ -648,6 +648,7 @@ export default function IsIlanlariPage() {
                   <Link
                     href={item.active ? item.href : '#'}
                     data-tour={item.dataTour}
+                    onClick={() => setIsMobileSidebarOpen(false)}
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
                       ${isActive
@@ -668,12 +669,7 @@ export default function IsIlanlariPage() {
                   >
                     {Icon && <Icon className="w-5 h-5" />}
                     <span className="flex-1">{item.name}</span>
-                    {item.badge && (
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${isDark ? 'bg-white/10 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>
-                        {item.badge}
-                      </span>
-                    )}
-                    {item.active && !item.badge && (
+                    {item.active && (
                       <ChevronRightIcon className="w-4 h-4 opacity-50" />
                     )}
                   </Link>
@@ -683,9 +679,9 @@ export default function IsIlanlariPage() {
           </ul>
         </nav>
 
-        {/* Alt Menü - Dark Mode Toggle + Destek */}
+        {/* Alt Menü - Dark Mode Toggle + Destek (Desktop only) */}
         <div className={`p-4 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
-          <div className="flex items-center justify-center gap-2">
+          <div className="hidden md:flex items-center justify-center gap-2">
             <button
               onClick={toggleTheme}
               data-tour="dark-mode"
@@ -698,6 +694,7 @@ export default function IsIlanlariPage() {
               href="/destek"
               className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
               title="Destek"
+              onClick={() => setIsMobileSidebarOpen(false)}
             >
               <HeadphonesIcon className="w-5 h-5" />
             </Link>
@@ -708,22 +705,20 @@ export default function IsIlanlariPage() {
       {/* Ana İçerik */}
       <main className={`flex-1 md:ml-72 min-h-screen ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
         {/* Üst Navbar - Panel ile aynı */}
-        <nav className={`shadow-xl backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${
-          isDark 
-            ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10' 
-            : 'bg-gradient-to-r from-white via-indigo-50 to-white border-b border-slate-200'
-        }`}>
+        <nav className={`shadow-xl backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${isDark
+          ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10'
+          : 'bg-gradient-to-r from-white via-indigo-50 to-white border-b border-slate-200'
+          }`}>
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14">
               {/* Mobil Hamburger Menü */}
-              <div className="md:hidden">
+              <div className="relative md:hidden">
                 <button
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className={`p-2 rounded-lg relative z-10 transition-colors ${
-                    isDark 
-                      ? 'text-blue-100 hover:bg-white/10' 
-                      : 'text-indigo-600 hover:bg-indigo-100'
-                  }`}
+                  className={`p-2 rounded-lg relative z-10 transition-colors ${isDark
+                    ? 'text-blue-100 hover:bg-white/10'
+                    : 'text-indigo-600 hover:bg-indigo-100'
+                    }`}
                 >
                   <Menu className="w-6 h-6" />
                 </button>
@@ -734,16 +729,36 @@ export default function IsIlanlariPage() {
               </div>
 
               {/* Sağ taraf - Kullanıcı bilgisi - Layout shift önleme için min-width */}
-              <div className="flex items-center gap-3 min-w-[200px] sm:min-w-[280px] justify-end">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[280px] justify-end">
                 {session ? (
                   <>
+                    {/* Mobile Panel Button */}
                     <Link
                       href="/panel"
-                      className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
+                      className="md:hidden flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Panel</span>
+                    </Link>
+                    {/* Desktop Panel Button */}
+                    <Link
+                      href="/panel"
+                      className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
                     >
                       <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
                       <span>Panel</span>
                     </Link>
+                    {/* Mobile Dark Mode Toggle */}
+                    <button
+                      onClick={toggleTheme}
+                      className={`md:hidden p-2 rounded-lg transition-all ${isDark
+                        ? 'text-yellow-400 hover:bg-white/10'
+                        : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                      title={isDark ? 'Açık Mod' : 'Karanlık Mod'}
+                    >
+                      {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </button>
                     <div className="hidden sm:flex flex-col items-end mr-2 min-w-[120px]">
                       <span className={`text-xs font-bold truncate max-w-[120px] ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
                         {session?.user?.name || session?.user?.email || ''}
@@ -751,11 +766,10 @@ export default function IsIlanlariPage() {
                     </div>
                     <button
                       onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
-                      className={`p-2 rounded-xl transition-all shadow-sm flex-shrink-0 ${
-                        isDark 
-                          ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30' 
-                          : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
-                      }`}
+                      className={`p-2 rounded-xl transition-all shadow-sm flex-shrink-0 ${isDark
+                        ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30'
+                        : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
+                        }`}
                       title="Çıkış Yap"
                     >
                       <LogOut className="w-5 h-5" />
@@ -765,11 +779,10 @@ export default function IsIlanlariPage() {
                   <div className="w-full sm:w-auto flex justify-end">
                     <Link
                       href="/login"
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap ${
-                        isDark
-                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                          : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                      }`}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap ${isDark
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                        }`}
                     >
                       Giriş Yap
                     </Link>
@@ -797,11 +810,10 @@ export default function IsIlanlariPage() {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
-                  isDark
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${isDark
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
               >
                 {refreshing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -813,9 +825,8 @@ export default function IsIlanlariPage() {
             </div>
 
             {/* Filters */}
-            <div className={`flex flex-col sm:flex-row gap-4 p-4 rounded-lg shadow-sm ${
-              isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'
-            }`}>
+            <div className={`flex flex-col sm:flex-row gap-4 p-4 rounded-lg shadow-sm ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'
+              }`}>
               <div className="flex-1 relative">
                 <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
                 <input
@@ -826,11 +837,10 @@ export default function IsIlanlariPage() {
                     setSearchTerm(e.target.value);
                     setPage(1);
                   }}
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                    isDark
-                      ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400'
-                      : 'bg-white border-gray-300 text-slate-900'
-                  }`}
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${isDark
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400'
+                    : 'bg-white border-gray-300 text-slate-900'
+                    }`}
                 />
               </div>
               <div className="relative">
@@ -841,11 +851,10 @@ export default function IsIlanlariPage() {
                     setSelectedCity(e.target.value);
                     setPage(1);
                   }}
-                  className={`pl-10 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none ${
-                    isDark
-                      ? 'bg-slate-700 border-slate-600 text-white'
-                      : 'bg-white border-gray-300 text-slate-900'
-                  }`}
+                  className={`pl-10 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none ${isDark
+                    ? 'bg-slate-700 border-slate-600 text-white'
+                    : 'bg-white border-gray-300 text-slate-900'
+                    }`}
                 >
                   <option value="">Tüm İller</option>
                   {(() => {
@@ -870,11 +879,10 @@ export default function IsIlanlariPage() {
                     setSelectedCity('');
                     setPage(1);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    isDark
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-slate-100'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDark
+                    ? 'text-slate-300 hover:text-white hover:bg-slate-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-slate-100'
+                    }`}
                 >
                   <X className="w-4 h-4" />
                   Temizle
@@ -892,9 +900,8 @@ export default function IsIlanlariPage() {
               </p>
             </div>
           ) : jobPostings.length === 0 ? (
-            <div className={`text-center py-20 rounded-lg shadow-sm ${
-              isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'
-            }`}>
+            <div className={`text-center py-20 rounded-lg shadow-sm ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'
+              }`}>
               <Briefcase className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
               <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 İlan bulunamadı
@@ -910,15 +917,14 @@ export default function IsIlanlariPage() {
               <div className="space-y-4 mb-8">
                 {jobPostings.map((posting) => {
                   const contentParts = parseContent(posting.content);
-                  
+
                   return (
                     <div
                       key={posting.id}
-                      className={`rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow ${
-                        isDark
-                          ? 'bg-slate-800 border-slate-700'
-                          : 'bg-white border-gray-200'
-                      }`}
+                      className={`rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow ${isDark
+                        ? 'bg-slate-800 border-slate-700'
+                        : 'bg-white border-gray-200'
+                        }`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
@@ -944,11 +950,10 @@ export default function IsIlanlariPage() {
                           <button
                             onClick={() => handleDelete(posting.id)}
                             disabled={deletingId === posting.id}
-                            className={`p-2 rounded-lg transition-colors ${
-                              isDark
-                                ? 'text-red-400 hover:bg-red-500/20 hover:text-red-300'
-                                : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                            } disabled:opacity-50`}
+                            className={`p-2 rounded-lg transition-colors ${isDark
+                              ? 'text-red-400 hover:bg-red-500/20 hover:text-red-300'
+                              : 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                              } disabled:opacity-50`}
                             title="İlanı Sil"
                           >
                             {deletingId === posting.id ? (
@@ -961,9 +966,8 @@ export default function IsIlanlariPage() {
                       </div>
 
                       <div className="prose max-w-none">
-                        <p className={`whitespace-pre-wrap leading-relaxed ${
-                          isDark ? 'text-slate-200' : 'text-gray-800'
-                        }`}>
+                        <p className={`whitespace-pre-wrap leading-relaxed ${isDark ? 'text-slate-200' : 'text-gray-800'
+                          }`}>
                           {contentParts.map((part, index) => {
                             if (part.type === 'text') {
                               return <span key={index}>{part.content}</span>;
@@ -972,11 +976,10 @@ export default function IsIlanlariPage() {
                                 <a
                                   key={index}
                                   href={part.link}
-                                  className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md transition-all ${
-                                    isDark
-                                      ? 'text-blue-300 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 hover:border-blue-400/50'
-                                      : 'text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-300 hover:border-blue-400'
-                                  }`}
+                                  className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md transition-all ${isDark
+                                    ? 'text-blue-300 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 hover:border-blue-400/50'
+                                    : 'text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-300 hover:border-blue-400'
+                                    }`}
                                 >
                                   📞 {part.content}
                                 </a>
@@ -986,11 +989,10 @@ export default function IsIlanlariPage() {
                                 <a
                                   key={index}
                                   href={part.link}
-                                  className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md transition-all ${
-                                    isDark
-                                      ? 'text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 hover:border-emerald-400/50'
-                                      : 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 hover:border-emerald-400'
-                                  }`}
+                                  className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md transition-all ${isDark
+                                    ? 'text-emerald-300 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 hover:border-emerald-400/50'
+                                    : 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 hover:border-emerald-400'
+                                    }`}
                                 >
                                   ✉️ {part.content}
                                 </a>
@@ -999,11 +1001,10 @@ export default function IsIlanlariPage() {
                               return (
                                 <strong
                                   key={index}
-                                  className={`font-bold ${
-                                    isDark
-                                      ? 'text-yellow-300'
-                                      : 'text-yellow-700'
-                                  }`}
+                                  className={`font-bold ${isDark
+                                    ? 'text-yellow-300'
+                                    : 'text-yellow-700'
+                                    }`}
                                 >
                                   {part.content}
                                 </strong>
@@ -1012,11 +1013,10 @@ export default function IsIlanlariPage() {
                               return (
                                 <strong
                                   key={index}
-                                  className={`font-bold ${
-                                    isDark
-                                      ? 'text-purple-300'
-                                      : 'text-purple-700'
-                                  }`}
+                                  className={`font-bold ${isDark
+                                    ? 'text-purple-300'
+                                    : 'text-purple-700'
+                                    }`}
                                 >
                                   {part.content}
                                 </strong>
@@ -1027,9 +1027,8 @@ export default function IsIlanlariPage() {
                         </p>
                       </div>
 
-                      <div className={`mt-4 pt-4 border-t ${
-                        isDark ? 'border-slate-700' : 'border-gray-100'
-                      }`}>
+                      <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-100'
+                        }`}>
                         <div className="flex items-center justify-between mb-4">
                           <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                             {formatDate(posting.postedAt)}
@@ -1038,23 +1037,21 @@ export default function IsIlanlariPage() {
                             {posting.viewCount} görüntülenme
                           </div>
                         </div>
-                        
+
                         {/* Yorum Butonu */}
                         <div className="flex items-center gap-4">
                           <button
                             onClick={() => handleToggleComments(posting.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                              isDark
-                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                            }`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDark
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              }`}
                           >
                             <MessageCircle className="w-4 h-4" />
                             <span>Yorumlar</span>
                             {comments[posting.id] && comments[posting.id].length > 0 && (
-                              <span className={`px-2 py-0.5 rounded-full text-xs ${
-                                isDark ? 'bg-indigo-500' : 'bg-indigo-500'
-                              }`}>
+                              <span className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-indigo-500' : 'bg-indigo-500'
+                                }`}>
                                 {comments[posting.id].length}
                               </span>
                             )}
@@ -1062,11 +1059,10 @@ export default function IsIlanlariPage() {
                           {session && (
                             <button
                               onClick={() => handleOpenCommentModal(posting.id)}
-                              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                                isDark
-                                  ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
-                                  : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
-                              }`}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDark
+                                ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+                                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
+                                }`}
                             >
                               <Send className="w-4 h-4" />
                               <span>Yorum Yap</span>
@@ -1076,9 +1072,8 @@ export default function IsIlanlariPage() {
 
                         {/* Yorumlar Bölümü */}
                         {expandedComments[posting.id] && (
-                          <div className={`mt-4 pt-4 border-t ${
-                            isDark ? 'border-slate-700' : 'border-gray-200'
-                          }`}>
+                          <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'
+                            }`}>
                             {loadingComments[posting.id] ? (
                               <div className="flex items-center justify-center py-8">
                                 <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
@@ -1088,38 +1083,33 @@ export default function IsIlanlariPage() {
                                 {comments[posting.id].map((comment) => (
                                   <div
                                     key={comment.id}
-                                    className={`p-3 rounded-lg ${
-                                      isDark
-                                        ? 'bg-slate-700/50 border border-slate-600'
-                                        : 'bg-gray-50 border border-gray-200'
-                                    }`}
+                                    className={`p-3 rounded-lg ${isDark
+                                      ? 'bg-slate-700/50 border border-slate-600'
+                                      : 'bg-gray-50 border border-gray-200'
+                                      }`}
                                   >
                                     <div className="flex items-start justify-between mb-2">
                                       <div className="flex items-center gap-2">
-                                        <span className={`font-semibold text-sm ${
-                                          isDark ? 'text-slate-200' : 'text-gray-800'
-                                        }`}>
+                                        <span className={`font-semibold text-sm ${isDark ? 'text-slate-200' : 'text-gray-800'
+                                          }`}>
                                           {comment.userName || 'Anonim'}
                                         </span>
-                                        <span className={`text-xs ${
-                                          isDark ? 'text-slate-400' : 'text-gray-500'
-                                        }`}>
+                                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'
+                                          }`}>
                                           {formatRelativeTime(comment.createdAt)}
                                         </span>
                                       </div>
                                     </div>
-                                    <p className={`text-sm ${
-                                      isDark ? 'text-slate-300' : 'text-gray-700'
-                                    }`}>
+                                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'
+                                      }`}>
                                       {comment.content}
                                     </p>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className={`text-center py-4 text-sm ${
-                                isDark ? 'text-slate-400' : 'text-gray-500'
-                              }`}>
+                              <p className={`text-center py-4 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'
+                                }`}>
                                 Henüz yorum yok
                               </p>
                             )}
@@ -1137,27 +1127,24 @@ export default function IsIlanlariPage() {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isDark
-                        ? 'border border-slate-700 text-slate-300 hover:bg-slate-800'
-                        : 'border border-gray-300 text-slate-700 hover:bg-gray-50'
-                    }`}
+                    className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDark
+                      ? 'border border-slate-700 text-slate-300 hover:bg-slate-800'
+                      : 'border border-gray-300 text-slate-700 hover:bg-gray-50'
+                      }`}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className={`px-4 py-2 text-sm ${
-                    isDark ? 'text-slate-400' : 'text-gray-600'
-                  }`}>
+                  <span className={`px-4 py-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'
+                    }`}>
                     Sayfa {page} / {totalPages}
                   </span>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isDark
-                        ? 'border border-slate-700 text-slate-300 hover:bg-slate-800'
-                        : 'border border-gray-300 text-slate-700 hover:bg-gray-50'
-                    }`}
+                    className={`px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDark
+                      ? 'border border-slate-700 text-slate-300 hover:bg-slate-800'
+                      : 'border border-gray-300 text-slate-700 hover:bg-gray-50'
+                      }`}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -1171,24 +1158,20 @@ export default function IsIlanlariPage() {
       {/* Yorum Yapma Modal */}
       {showCommentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`rounded-lg shadow-xl w-full max-w-lg ${
-            isDark ? 'bg-slate-800' : 'bg-white'
-          }`}>
-            <div className={`p-4 border-b flex justify-between items-center ${
-              isDark ? 'border-slate-700' : 'border-gray-200'
+          <div className={`rounded-lg shadow-xl w-full max-w-lg ${isDark ? 'bg-slate-800' : 'bg-white'
             }`}>
-              <h3 className={`text-lg font-bold ${
-                isDark ? 'text-white' : 'text-gray-800'
+            <div className={`p-4 border-b flex justify-between items-center ${isDark ? 'border-slate-700' : 'border-gray-200'
               }`}>
+              <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'
+                }`}>
                 Yorum Yap
               </h3>
               <button
                 onClick={() => setShowCommentModal(null)}
-                className={`p-1 rounded-lg transition-colors ${
-                  isDark
-                    ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`p-1 rounded-lg transition-colors ${isDark
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1196,20 +1179,18 @@ export default function IsIlanlariPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className={`block text-sm font-medium mb-2 ${
-                  isDark ? 'text-slate-300' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'
+                  }`}>
                   Yorumunuz
                 </label>
                 <textarea
                   value={commentContent}
                   onChange={(e) => setCommentContent(e.target.value)}
                   rows={4}
-                  className={`w-full px-3 py-2 rounded-lg border ${
-                    isDark
-                      ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                  } focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                  className={`w-full px-3 py-2 rounded-lg border ${isDark
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                    } focus:outline-none focus:ring-2 focus:ring-indigo-500`}
                   placeholder="Yorumunuzu buraya yazın..."
                 />
               </div>
@@ -1224,19 +1205,17 @@ export default function IsIlanlariPage() {
                 />
                 <label
                   htmlFor="isAnonymous"
-                  className={`text-sm ${
-                    isDark ? 'text-slate-300' : 'text-gray-700'
-                  }`}
+                  className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'
+                    }`}
                 >
                   Adımı gizle (Anonim olarak göster)
                 </label>
               </div>
 
-              <div className={`p-3 rounded-lg text-sm ${
-                isDark
-                  ? 'bg-blue-900/30 border border-blue-800 text-blue-200'
-                  : 'bg-blue-50 border border-blue-200 text-blue-800'
-              }`}>
+              <div className={`p-3 rounded-lg text-sm ${isDark
+                ? 'bg-blue-900/30 border border-blue-800 text-blue-200'
+                : 'bg-blue-50 border border-blue-200 text-blue-800'
+                }`}>
                 <p>
                   Yorumunuz admin onayından sonra yayınlanacaktır.
                 </p>
@@ -1245,22 +1224,20 @@ export default function IsIlanlariPage() {
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   onClick={() => setShowCommentModal(null)}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    isDark
-                      ? 'text-slate-300 hover:bg-slate-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 rounded-lg transition-colors ${isDark
+                    ? 'text-slate-300 hover:bg-slate-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   İptal
                 </button>
                 <button
                   onClick={() => handleSubmitComment(showCommentModal)}
                   disabled={submittingComment || !commentContent.trim()}
-                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                    submittingComment || !commentContent.trim()
-                      ? 'bg-gray-400 cursor-not-allowed text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}
+                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${submittingComment || !commentContent.trim()
+                    ? 'bg-gray-400 cursor-not-allowed text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
                 >
                   {submittingComment ? (
                     <>
