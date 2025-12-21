@@ -93,13 +93,13 @@ export const authOptions: NextAuthOptions = {
             if (user) {
                 token.id = user.id;
             }
-            
+
             // Kullanıcı bilgilerini token'a ekle (sadece gerekirse)
             if (token.email && (!token.id || trigger === 'update')) {
-                // HARDCODED ADMIN CHECK
-                if (token.email === 'serkanxx@gmail.com') {
+                // ADMIN CHECK via Environment Variable
+                if (token.email === process.env.ADMIN_EMAIL) {
                     token.role = 'ADMIN';
-                    token.id = token.id || 'admin-id'; // Admin ID cache'lenebilir
+                    token.id = token.id || 'admin-id';
                 } else if (!token.id || !token.plan) {
                     // Sadece eksik bilgiler varsa DB'ye sorgu at
                     const dbUser = await prisma.user.findUnique({

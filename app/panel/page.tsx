@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,10 +9,12 @@ import { queryKeys, apiFetchers } from '@/lib/queries';
 import {
     Building2, FileText, Shield, Plus, TrendingUp,
     AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle,
-    StickyNote, Clock, Check, Trash2, Bell, X, Calendar, MessageCircle
+    StickyNote, Clock, Check, Trash2, Bell, X, Calendar, MessageCircle,
+    FileSpreadsheet, Upload, Download, Edit2, Loader2, Search, CheckCircle, FolderOpen
 } from 'lucide-react';
 import { Company } from '../types';
 import { useTheme } from '@/app/context/ThemeContext';
+import * as XLSX from 'xlsx';
 
 interface Note {
     id: string;
@@ -88,6 +90,21 @@ export default function PanelPage() {
     const [showJobComments, setShowJobComments] = useState(false);
     const [pendingComments, setPendingComments] = useState<any[]>([]);
     const [loadingComments, setLoadingComments] = useState(false);
+
+    // Toplu yükleme state'leri
+    const [showBulkModal, setShowBulkModal] = useState(false);
+    const [bulkData, setBulkData] = useState<{ title: string; address: string; registration_number: string; danger_class: string }[]>([]);
+    const [bulkUploading, setBulkUploading] = useState(false);
+    const [bulkResult, setBulkResult] = useState<{ success: boolean; successCount: number; errorCount: number; errors: { row: number; message: string }[] } | null>(null);
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(null);
+    const [tempAddress, setTempAddress] = useState('');
+    const [findingAddresses, setFindingAddresses] = useState(false);
+    const [addressFindProgress, setAddressFindProgress] = useState({ current: 0, total: 0 });
+    const csvInputRef = useRef<HTMLInputElement>(null);
+
+    // Arşiv dosya sayısı
+    const [archiveFileCount, setArchiveFileCount] = useState<number | null>(null);
 
     // Dropdown değerleri
     const days = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -204,6 +221,24 @@ export default function PanelPage() {
         }
     }, [isAdmin]);
 
+    // Arşiv dosya sayısını çek
+    useEffect(() => {
+        const fetchArchiveFileCount = async () => {
+            try {
+                const res = await fetch('/api/archive/list');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.files && Array.isArray(data.files)) {
+                        setArchiveFileCount(data.files.length);
+                    }
+                }
+            } catch (err) {
+                console.error("Arşiv dosya sayısı alınamadı:", err);
+            }
+        };
+        fetchArchiveFileCount();
+    }, []);
+
     const fetchPendingCommentsCount = async () => {
         try {
             const res = await fetch('/api/admin/job-comments?status=pending');
@@ -266,6 +301,117 @@ export default function PanelPage() {
             }
         } catch (err) {
             console.error("Reddetme hatası:", err);
+        }
+    };
+
+    // Toplu yükleme fonksiyonları
+    const downloadTemplate = () => {
+        const templateData = [
+            { 'FİRMA': 'ABC Sanayi Ltd. Şti.', 'ADRES': 'İstanbul Organize Sanayi Bölgesi No:15', 'SİCİL NO': '1234567890', 'TEHLİKE SINIFI': 'Tehlikeli' },
+            { 'FİRMA': 'XYZ Ticaret A.Ş.', 'ADRES': 'Ankara Sincan OSB 2. Cadde No:42', 'SİCİL NO': '9876543210', 'TEHLİKE SINIFI': 'Az Tehlikeli' },
+            { 'FİRMA': 'Örnek Metal İmalat', 'ADRES': 'İzmir Atatürk OSB 3. Sokak No:8', 'SİCİL NO': '5555555555', 'TEHLİKE SINIFI': 'Çok Tehlikeli' },
+        ];
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        ws['!cols'] = [{ wch: 35 }, { wch: 45 }, { wch: 15 }, { wch: 18 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Firmalar');
+        XLSX.writeFile(wb, 'firma_sablonu.xlsx');
+    };
+
+    const detectDangerClass = (value: string): string => {
+        const lower = (value || '').toLowerCase().trim();
+        if (lower.includes('çok') || lower.includes('cok')) return 'Çok Tehlikeli';
+        if (lower.includes('az')) return 'Az Tehlikeli';
+        return 'Tehlikeli';
+    };
+
+    const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                if (jsonData.length < 2) {
+                    alert('Dosyada veri bulunamadı!');
+                    return;
+                }
+                let titleColIndex = 0, addressColIndex = 1, registrationColIndex = 2, dangerClassColIndex = 3;
+                const dataRows = jsonData.slice(1);
+                const parsedData: { title: string; address: string; registration_number: string; danger_class: string }[] = [];
+                dataRows.forEach(row => {
+                    const title = (row[titleColIndex] || '').toString().trim();
+                    if (title) {
+                        parsedData.push({
+                            title,
+                            address: (row[addressColIndex] || '').toString().trim(),
+                            registration_number: (row[registrationColIndex] || '').toString().trim(),
+                            danger_class: detectDangerClass((row[dangerClassColIndex] || '').toString())
+                        });
+                    }
+                });
+                if (parsedData.length === 0) {
+                    alert('Geçerli firma verisi bulunamadı!');
+                    return;
+                }
+                setBulkData(parsedData);
+                setBulkResult(null);
+            } catch (error) {
+                alert('Dosya okunamadı!');
+                console.error('Excel parse error:', error);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        if (csvInputRef.current) csvInputRef.current.value = '';
+    };
+
+    const handleAddressUpdate = () => {
+        if (editingAddressIndex !== null) {
+            const updatedData = [...bulkData];
+            updatedData[editingAddressIndex] = { ...updatedData[editingAddressIndex], address: tempAddress.trim() };
+            setBulkData(updatedData);
+            setShowAddressModal(false);
+            setEditingAddressIndex(null);
+            setTempAddress('');
+        }
+    };
+
+    const handleBulkUpload = async () => {
+        if (bulkData.length === 0) {
+            alert('Yüklenecek firma verisi yok!');
+            return;
+        }
+        setBulkUploading(true);
+        setBulkResult(null);
+        try {
+            const res = await fetch('/api/companies/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ companies: bulkData })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                setBulkResult(result);
+                if (result.successCount > 0) {
+                    queryClient.invalidateQueries({ queryKey: queryKeys.companies });
+                    alert(`${result.successCount} firma başarıyla eklendi!`);
+                    setTimeout(() => {
+                        setShowBulkModal(false);
+                        setBulkData([]);
+                        setBulkResult(null);
+                    }, 1000);
+                }
+            } else {
+                alert(result.error || 'Yükleme hatası');
+            }
+        } catch (error) {
+            alert('Sunucu hatası');
+        } finally {
+            setBulkUploading(false);
         }
     };
 
@@ -381,6 +527,161 @@ export default function PanelPage() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
+            {/* Gizli Excel Input */}
+            <input type="file" accept=".xlsx,.xls" ref={csvInputRef} onChange={handleExcelUpload} className="hidden" />
+
+            {/* Toplu Yükleme Modal */}
+            {showBulkModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
+                                    Toplu Firma Yükle
+                                </h2>
+                                <p className="text-sm text-slate-500 mt-1">Excel dosyasından birden fazla firma ekleyin</p>
+                            </div>
+                            <button onClick={() => setShowBulkModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="w-5 h-5 text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                <p className="text-sm text-blue-800 flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span>İsgkatip Platformundan Dışa Aktarılan Belgelerinizi Yükleyebilirsiniz (Adres Bilgisini Manuel Girmelisiniz)</span>
+                                </p>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                                <button onClick={downloadTemplate} className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-600 hover:border-indigo-500 hover:text-indigo-600 transition-all">
+                                    <Download className="w-5 h-5" />
+                                    Şablon Excel İndir
+                                </button>
+                                <button onClick={() => csvInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 hover:bg-emerald-100 hover:border-emerald-500 transition-all">
+                                    <Upload className="w-5 h-5" />
+                                    Excel Dosyası Seç
+                                </button>
+                            </div>
+                            {bulkData.length > 0 && (
+                                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                                        <span className="font-bold text-slate-700">{bulkData.length} firma yüklenmeye hazır</span>
+                                    </div>
+                                    <div className="overflow-x-auto max-h-64">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-slate-100 sticky top-0">
+                                                <tr>
+                                                    <th className="px-4 py-2 text-left font-bold text-slate-600">#</th>
+                                                    <th className="px-4 py-2 text-left font-bold text-slate-600">Firma Adı</th>
+                                                    <th className="px-4 py-2 text-left font-bold text-slate-600">Adres</th>
+                                                    <th className="px-4 py-2 text-left font-bold text-slate-600">Sicil No</th>
+                                                    <th className="px-4 py-2 text-left font-bold text-slate-600">Tehlike Sınıfı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {bulkData.map((item, index) => (
+                                                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
+                                                        <td className="px-4 py-2 text-slate-400">{index + 1}</td>
+                                                        <td className="px-4 py-2 text-slate-800 font-medium max-w-[250px]"><div className="truncate" title={item.title}>{item.title}</div></td>
+                                                        <td className="px-4 py-2 text-slate-600 max-w-[300px]">
+                                                            {item.address ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="truncate flex-1" title={item.address}>{item.address}</div>
+                                                                    <button onClick={() => { setEditingAddressIndex(index); setTempAddress(item.address); setShowAddressModal(true); }} className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors font-medium flex-shrink-0" title="Adresi düzenle">Düzenle</button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-slate-400">-</span>
+                                                                    <button onClick={() => { setEditingAddressIndex(index); setTempAddress(''); setShowAddressModal(true); }} className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors font-medium">Ekle</button>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-slate-600">{item.registration_number || '-'}</td>
+                                                        <td className="px-4 py-2">
+                                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${item.danger_class.toLowerCase().includes('çok') || item.danger_class.toLowerCase().includes('cok') ? 'bg-red-100 text-red-700' : item.danger_class.toLowerCase().includes('az') ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                                {item.danger_class}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                            {bulkResult && (
+                                <div className={`mt-4 p-4 rounded-xl ${bulkResult.success ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {bulkResult.success ? <CheckCircle className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-amber-600" />}
+                                        <span className="font-bold text-slate-800">
+                                            {bulkResult.successCount} firma başarıyla eklendi
+                                            {bulkResult.errorCount > 0 && `, ${bulkResult.errorCount} hata`}
+                                        </span>
+                                    </div>
+                                    {bulkResult.errors.length > 0 && (
+                                        <div className="mt-2 space-y-1">
+                                            {bulkResult.errors.map((err, i) => (
+                                                <p key={i} className="text-sm text-red-600">Satır {err.row}: {err.message}</p>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-slate-200 flex gap-3 bg-slate-50">
+                            <button onClick={() => setShowBulkModal(false)} className="flex-1 px-4 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-white transition-colors">
+                                {bulkResult?.success ? 'Kapat' : 'İptal'}
+                            </button>
+                            <button onClick={handleBulkUpload} disabled={bulkData.length === 0 || bulkUploading || bulkResult?.success} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                {bulkUploading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Yükleniyor...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-5 h-5" />
+                                        Firmaları Yükle
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Adres Düzenleme Modal */}
+            {showAddressModal && editingAddressIndex !== null && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <Edit2 className="w-5 h-5 text-indigo-600" />
+                                    Adres Ekle/Düzenle
+                                </h2>
+                                <p className="text-sm text-slate-500 mt-1">{bulkData[editingAddressIndex]?.title || 'Firma'}</p>
+                            </div>
+                            <button onClick={() => { setShowAddressModal(false); setEditingAddressIndex(null); setTempAddress(''); }} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                                <X className="w-5 h-5 text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Adres</label>
+                                <textarea value={tempAddress} onChange={(e) => setTempAddress(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none" placeholder="Firma adresini giriniz..." rows={4} autoFocus />
+                                <p className="text-xs text-slate-400 mt-2">Adres girmek zorunlu değildir. İsterseniz boş bırakabilirsiniz.</p>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-slate-200 flex gap-3 bg-slate-50">
+                            <button onClick={() => { setShowAddressModal(false); setEditingAddressIndex(null); setTempAddress(''); }} className="flex-1 px-4 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-white transition-colors">İptal</button>
+                            <button onClick={handleAddressUpdate} className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">Kaydet</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Hoşgeldin Kartı */}
             <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-2xl p-4 sm:p-5 mb-6 sm:mb-8 text-white shadow-xl shadow-indigo-600/20">
                 <div className="flex items-start justify-between">
@@ -415,8 +716,8 @@ export default function PanelPage() {
                                 <button
                                     onClick={() => { setShowJobComments(true); fetchPendingComments(); }}
                                     className={`inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg ${pendingCommentsCount > 0
-                                            ? 'bg-blue-500 hover:bg-blue-600 text-white animate-pulse'
-                                            : 'bg-blue-400/80 hover:bg-blue-500 text-white'
+                                        ? 'bg-blue-500 hover:bg-blue-600 text-white animate-pulse'
+                                        : 'bg-blue-400/80 hover:bg-blue-500 text-white'
                                         }`}
                                 >
                                     <MessageCircle className="w-4 h-4 mr-1 sm:mr-2" />
@@ -450,18 +751,28 @@ export default function PanelPage() {
 
             {/* Hızlı Erişim Butonları */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <Link
-                    href="/panel/firmalar?new=true"
-                    className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-white rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group"
-                >
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all flex-shrink-0">
-                        <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 text-sm sm:text-base">Yeni Firma Ekle</h3>
-                        <p className="text-xs sm:text-sm text-slate-500 truncate">Firma bilgilerini kaydet</p>
-                    </div>
-                </Link>
+                <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-white rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group">
+                    <Link
+                        href="/panel/firmalar?new=true"
+                        className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0"
+                    >
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all flex-shrink-0">
+                            <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </div>
+                        <div className="min-w-0">
+                            <h3 className="font-bold text-slate-800 text-sm sm:text-base">Yeni Firma Ekle</h3>
+                            <p className="text-xs sm:text-sm text-slate-500 truncate">Firma bilgilerini kaydet</p>
+                        </div>
+                    </Link>
+                    <button
+                        onClick={() => { setShowBulkModal(true); setBulkData([]); setBulkResult(null); }}
+                        className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 flex-shrink-0"
+                        title="Toplu Yükle"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        <span className="hidden sm:inline">Toplu Yükle</span>
+                    </button>
+                </div>
 
                 <Link
                     href="/risk-degerlendirme"
@@ -512,11 +823,36 @@ export default function PanelPage() {
                     </div>
                 </Link>
 
+                {/* İSG Dosya Arşivi Kartı */}
+                <Link href="/panel/arsiv" className="block h-full">
+                    <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 rounded-xl p-6 border border-purple-500 hover:shadow-2xl hover:shadow-purple-500/50 transition-all group h-full flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
+                        <div className="relative z-10">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white">
+                                    <FolderOpen className="w-6 h-6" />
+                                </div>
+                                <div className="px-3 py-1.5 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-lg border-2 border-yellow-300 shadow-lg shadow-yellow-500/50 animate-pulse">
+                                    <span className="text-xs font-extrabold text-slate-900 tracking-wider uppercase">DEV ARŞİV</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-3xl font-bold text-white mb-1">
+                                    {archiveFileCount !== null ? archiveFileCount.toLocaleString('tr-TR') : '...'}
+                                </h3>
+                                <p className="text-sm text-purple-100 font-medium">İSG Dosya Arşivi</p>
+                                <p className="text-xs text-purple-200 mt-2 leading-relaxed">
+                                    Binlerce İSG dokümanına anında erişin. Kapsamlı arşiv sizi bekliyor!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </Link>
+
                 {/* Risklerim Kartı */}
                 <Link href="/panel/risk-maddelerim" className="block h-full">
                     <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-amber-200 transition-all group h-full flex flex-col justify-between relative overflow-visible">
-
-
                         {/* Post-it Image */}
                         <img
                             src="/postit.png"
@@ -537,114 +873,23 @@ export default function PanelPage() {
                         </div>
                     </div>
                 </Link>
-
-                {/* Rapor İstatistikleri Grafiği */}
-                <div className="bg-white rounded-xl p-6 border border-slate-200 relative overflow-hidden h-full">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h3 className="font-bold text-slate-800 mb-1">Rapor Özeti</h3>
-                            <p className="text-sm text-slate-500 mb-4">Oluşturulan Raporlar</p>
-
-                            {/* Legend */}
-                            <div className="space-y-2 text-xs">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                                    <span className="text-slate-600 font-medium">Risk: {stats.riskReportCount}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                                    <span className="text-slate-600 font-medium">Acil Durum: {stats.emergencyReportCount}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                    <span className="text-slate-600 font-medium">İş İzin: {stats.workPermitCount}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Donut Chart */}
-                        <div className="relative w-24 h-24 flex-shrink-0">
-                            <svg width="100%" height="100%" viewBox="0 0 100 100" className="transform -rotate-90">
-                                {/* Arkaplan Halkası */}
-                                <circle
-                                    cx="50"
-                                    cy="50"
-                                    r={radius}
-                                    fill="transparent"
-                                    stroke={isEmpty ? "#f1f5f9" : "transparent"}
-                                    strokeWidth="12"
-                                />
-
-                                {!isEmpty && (
-                                    <>
-                                        {/* Risk Dilimi */}
-                                        <circle
-                                            cx="50"
-                                            cy="50"
-                                            r={radius}
-                                            fill="transparent"
-                                            stroke="#10b981" // emerald-500
-                                            strokeWidth="12"
-                                            strokeDasharray={`${riskDash} ${circumference}`}
-                                            strokeDashoffset="0"
-                                            strokeLinecap="round"
-                                            className="transition-all duration-1000 ease-out"
-                                        />
-                                        {/* Acil Durum Dilimi */}
-                                        <circle
-                                            cx="50"
-                                            cy="50"
-                                            r={radius}
-                                            fill="transparent"
-                                            stroke="#f97316" // orange-500
-                                            strokeWidth="12"
-                                            strokeDasharray={`${emergencyDash} ${circumference}`}
-                                            strokeDashoffset={-riskDash}
-                                            strokeLinecap="round"
-                                            className="transition-all duration-1000 ease-out"
-                                        />
-                                        {/* İş İzin Formu Dilimi */}
-                                        <circle
-                                            cx="50"
-                                            cy="50"
-                                            r={radius}
-                                            fill="transparent"
-                                            stroke="#3b82f6" // blue-500
-                                            strokeWidth="12"
-                                            strokeDasharray={`${workPermitDash} ${circumference}`}
-                                            strokeDashoffset={-(riskDash + emergencyDash)}
-                                            strokeLinecap="round"
-                                            className="transition-all duration-1000 ease-out"
-                                        />
-                                    </>
-                                )}
-                            </svg>
-                            {/* Ortadaki Sayı */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-2xl font-bold text-slate-800 leading-none">
-                                    {stats.reportCount}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            {/* Container for Visit Programs and Notes */}
+            {/* Container for Visit Programs, Notes and Risks */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6 w-full">
                 {/* Ziyaret Programları */}
                 {visitPrograms.length > 0 && (
-                    <div className="xl:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden w-full">
-                        <div className="p-3 border-b border-slate-200 flex items-center justify-between">
+                    <div className="xl:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden w-full self-start max-h-[310px] flex flex-col">
+                        <div className="p-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
                             <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                                 <Calendar className="w-4 h-4 text-indigo-600" />
                                 Ziyaret Programım
                             </h2>
-                            <Link href="/panel/ziyaret-programi" className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
-                                Tümünü Gör <ChevronRight className="w-3 h-3" />
+                            <Link href="/panel/ziyaret-programi" className="text-[10px] text-indigo-600 font-medium hover:underline flex items-center gap-0.5">
+                                Tümünü Gör <ChevronRight className="w-2.5 h-2.5" />
                             </Link>
                         </div>
-                        <div className="p-3">
+                        <div className="p-2 overflow-y-auto">
                             <div className="flex flex-col gap-2">
                                 {(() => {
                                     // Tarihi en yakın olan programı bul
@@ -716,10 +961,10 @@ export default function PanelPage() {
                                         <Link
                                             key={nearestProgram.id}
                                             href="/panel/ziyaret-programi"
-                                            className="p-3 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all bg-white w-full"
+                                            className="p-2.5 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all bg-white w-full block"
                                         >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                                            <div className="flex items-start justify-between mb-1.5">
+                                                <div className="flex flex-col gap-0 min-w-0 flex-1">
                                                     <h3 className="font-bold text-sm truncate visit-program-title">{nearestProgram.name}</h3>
                                                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
                                                         <Building2 className="w-3 h-3" />
@@ -732,7 +977,7 @@ export default function PanelPage() {
                                             </div>
 
                                             {/* Mini Takvim Önizleme - Kompakt */}
-                                            <div className="mt-2 pt-2 border-t border-indigo-100/50 dark:border-indigo-900/30">
+                                            <div className="mt-1.5 pt-1.5 border-t border-indigo-100/50 dark:border-indigo-900/30">
                                                 <div className="grid grid-cols-5 gap-1 mb-1">
                                                     {['Pzt', 'Sal', 'Çar', 'Per', 'Cum'].map(d => (
                                                         <div key={d} className="text-[10px] text-center text-slate-400 dark:text-slate-500 font-bold uppercase">{d}</div>
@@ -790,11 +1035,103 @@ export default function PanelPage() {
                     </div>
                 )}
 
-                {/* Notlar Kartı (Taşındı) */}
-                <div className="xl:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden h-full">
-                    <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <StickyNote className="w-5 h-5 text-amber-500" />
+                {/* Rapor İstatistikleri Grafiği */}
+                <div className="xl:col-span-1 bg-white rounded-xl p-5 border border-slate-200 relative overflow-hidden h-full max-h-[310px] self-start flex flex-col">
+                    <div className="mb-4">
+                        <h3 className="font-bold text-slate-800 text-sm">Rapor Özeti</h3>
+                        <p className="text-[10px] text-slate-500">Oluşturulan Raporlar</p>
+                    </div>
+
+                    <div className="flex-1 flex items-center justify-between gap-4">
+                        <div className="space-y-3">
+                            {/* Legend */}
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20"></div>
+                                <span className="text-slate-700 font-bold text-sm">Risk: {stats.riskReportCount}</span>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-sm shadow-orange-500/20"></div>
+                                <span className="text-slate-700 font-bold text-sm">Acil Durum: {stats.emergencyReportCount}</span>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-3.5 h-3.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/20"></div>
+                                <span className="text-slate-700 font-bold text-sm">İş İzin: {stats.workPermitCount}</span>
+                            </div>
+                        </div>
+
+                        {/* Donut Chart */}
+                        <div className="relative w-32 h-32 flex-shrink-0">
+                            <svg width="100%" height="100%" viewBox="0 0 100 100" className="transform -rotate-90">
+                                {/* Arkaplan Halkası */}
+                                <circle
+                                    cx="50"
+                                    cy="50"
+                                    r={radius}
+                                    fill="transparent"
+                                    stroke={isEmpty ? "#f1f5f9" : "transparent"}
+                                    strokeWidth="12"
+                                />
+
+                                {!isEmpty && (
+                                    <>
+                                        {/* Risk Dilimi */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r={radius}
+                                            fill="transparent"
+                                            stroke="#10b981" // emerald-500
+                                            strokeWidth="12"
+                                            strokeDasharray={`${riskDash} ${circumference}`}
+                                            strokeDashoffset="0"
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                        {/* Acil Durum Dilimi */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r={radius}
+                                            fill="transparent"
+                                            stroke="#f97316" // orange-500
+                                            strokeWidth="12"
+                                            strokeDasharray={`${emergencyDash} ${circumference}`}
+                                            strokeDashoffset={-riskDash}
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                        {/* İş İzin Formu Dilimi */}
+                                        <circle
+                                            cx="50"
+                                            cy="50"
+                                            r={radius}
+                                            fill="transparent"
+                                            stroke="#3b82f6" // blue-500
+                                            strokeWidth="12"
+                                            strokeDasharray={`${workPermitDash} ${circumference}`}
+                                            strokeDashoffset={-(riskDash + emergencyDash)}
+                                            strokeLinecap="round"
+                                            className="transition-all duration-1000 ease-out"
+                                        />
+                                    </>
+                                )}
+                            </svg>
+                            {/* Ortadaki Sayı */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="text-3xl font-black text-slate-800 leading-none">
+                                    {stats.reportCount}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">Toplam</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Notlar Kartı */}
+                <div className="xl:col-span-1 bg-white rounded-xl border border-slate-200 overflow-hidden h-full max-h-[310px] self-start flex flex-col">
+                    <div className="p-3 border-b border-slate-200 flex items-center justify-between shrink-0">
+                        <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <StickyNote className="w-4 h-4 text-amber-500" />
                             Notlarım
                         </h2>
                         <button
@@ -868,19 +1205,19 @@ export default function PanelPage() {
 
                     {/* Not Listesi */}
                     {notes.length === 0 ? (
-                        <div className="p-8 text-center">
-                            <StickyNote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                            <p className="text-slate-500 mb-4">Henüz not eklemediniz</p>
+                        <div className="p-4 text-center">
+                            <StickyNote className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                            <p className="text-slate-500 mb-3 text-xs">Henüz not eklemediniz</p>
                             <button
                                 onClick={() => setShowNoteForm(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600 transition-colors"
                             >
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-3 h-3" />
                                 İlk Notu Ekle
                             </button>
                         </div>
                     ) : (
-                        <ul className="divide-y divide-slate-100 h-[400px] overflow-y-auto">
+                        <ul className="divide-y divide-slate-100 flex-1 overflow-y-auto">
                             {notes.slice(0, 10).map((note) => (
                                 <li key={note.id} className={`p-4 hover:bg-slate-50 transition-colors ${note.isCompleted ? 'opacity-60' : ''
                                     }`}>

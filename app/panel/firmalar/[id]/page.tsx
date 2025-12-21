@@ -11,6 +11,7 @@ import {
     Plus, Check, Trash2, X
 } from 'lucide-react';
 import { Company, DANGER_CLASS_LABELS, DangerClass } from '../../../types';
+import { useTheme } from '@/app/context/ThemeContext';
 
 // Not tipi
 interface Note {
@@ -34,6 +35,7 @@ export default function FirmaDetayPage() {
     const params = useParams();
     const companyId = params?.id as string;
 
+    const { isDark } = useTheme();
     const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
     const [reports, setReports] = useState<any[]>([]);
@@ -251,7 +253,7 @@ export default function FirmaDetayPage() {
             <div className="mb-6">
                 <button
                     onClick={() => router.push('/panel/firmalar')}
-                    className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 transition-colors"
+                    className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-indigo-400' : 'text-slate-600 hover:text-indigo-600'}`}
                 >
                     <ArrowLeft className="w-5 h-5" />
                     <span className="font-medium">Firmalara Dön</span>
@@ -262,7 +264,7 @@ export default function FirmaDetayPage() {
                 {/* Sol Kolon - Firma Bilgileri */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Ana Bilgi Kartı */}
-                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border overflow-hidden shadow-sm`}>
                         {/* Header Gradient */}
                         <div className={`h-32 bg-gradient-to-br ${dangerClassColor} relative`}>
                             <div className="absolute -bottom-10 left-6">
@@ -270,16 +272,16 @@ export default function FirmaDetayPage() {
                                     <img
                                         src={company.logo}
                                         alt={company.title}
-                                        className="w-20 h-20 rounded-2xl object-contain bg-white border-4 border-white shadow-xl"
+                                        className={`w-20 h-20 rounded-2xl object-contain bg-white border-4 ${isDark ? 'border-slate-900' : 'border-white'} shadow-xl`}
                                     />
                                 ) : (
-                                    <div className="w-20 h-20 rounded-2xl bg-white border-4 border-white shadow-xl flex items-center justify-center">
+                                    <div className={`w-20 h-20 rounded-2xl bg-white border-4 ${isDark ? 'border-slate-900' : 'border-white'} shadow-xl flex items-center justify-center`}>
                                         <Building2 className="w-8 h-8 text-slate-400" />
                                     </div>
                                 )}
                             </div>
                             <div className="absolute top-4 right-4">
-                                <span className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold shadow-md">
+                                <span className={`${isDark ? 'bg-slate-900/90 text-white' : 'bg-white/90 text-slate-800'} backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold shadow-md`}>
                                     {DANGER_CLASS_LABELS[company.danger_class]}
                                 </span>
                             </div>
@@ -289,15 +291,15 @@ export default function FirmaDetayPage() {
                         <div className="pt-14 pb-6 px-6">
                             <div className="flex items-start justify-between mb-4">
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-800 mb-2">{company.title}</h1>
-                                    <div className="flex items-center gap-2 text-slate-500">
+                                    <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>{company.title}</h1>
+                                    <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                         <MapPin className="w-4 h-4" />
                                         <span className="text-sm">{company.address || 'Adres bilgisi yok'}</span>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => router.push(`/panel/firmalar?edit=${company.id}`)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 rounded-xl transition-colors"
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
                                 >
                                     <Edit2 className="w-4 h-4" />
                                     <span className="font-medium">Düzenle</span>
@@ -305,30 +307,30 @@ export default function FirmaDetayPage() {
                             </div>
 
                             {/* Bilgi Grid - SGK Sicil No geniş, Rapor Sayısı küçük */}
-                            <div className="grid grid-cols-12 gap-3 mt-6 pt-6 border-t border-slate-100">
-                                <div className="col-span-5 bg-slate-50 rounded-xl p-4">
-                                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">SGK Sicil No</p>
-                                    <p className="font-bold text-slate-700 text-sm break-all">{company.registration_number || '-'}</p>
+                            <div className={`grid grid-cols-12 gap-3 mt-6 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                <div className={`${isDark ? 'bg-slate-800/50' : 'bg-slate-50'} col-span-5 rounded-xl p-4`}>
+                                    <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>SGK Sicil No</p>
+                                    <p className={`font-bold text-sm break-all ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{company.registration_number || '-'}</p>
                                 </div>
-                                <div className="col-span-3 bg-slate-50 rounded-xl p-4">
-                                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Tehlike Sınıfı</p>
-                                    <p className="font-bold text-slate-700 text-sm">{DANGER_CLASS_LABELS[company.danger_class]}</p>
+                                <div className={`${isDark ? 'bg-slate-800/50' : 'bg-slate-50'} col-span-3 rounded-xl p-4`}>
+                                    <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Tehlike Sınıfı</p>
+                                    <p className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{DANGER_CLASS_LABELS[company.danger_class]}</p>
                                 </div>
-                                <div className="col-span-1 bg-slate-50 rounded-xl p-3 flex flex-col items-center justify-center">
-                                    <p className="text-[10px] text-slate-400 uppercase">Rapor</p>
-                                    <p className="font-bold text-slate-700 text-lg">{reports.length}</p>
+                                <div className={`${isDark ? 'bg-slate-800/50' : 'bg-slate-50'} col-span-1 rounded-xl p-3 flex flex-col items-center justify-center`}>
+                                    <p className={`text-[10px] uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Rapor</p>
+                                    <p className={`font-bold text-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{reports.length}</p>
                                 </div>
-                                <div className="col-span-3 bg-slate-50 rounded-xl p-4">
-                                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Kayıt Tarihi</p>
-                                    <p className="font-bold text-slate-700 text-sm">{formatDate(company.created_at)}</p>
+                                <div className={`${isDark ? 'bg-slate-800/50' : 'bg-slate-50'} col-span-3 rounded-xl p-4`}>
+                                    <p className={`text-xs uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Kayıt Tarihi</p>
+                                    <p className={`font-bold text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{formatDate(company.created_at)}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Risk Değerlendirme Ekibi */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border p-6 shadow-sm`}>
+                        <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                             <Users className="w-5 h-5 text-indigo-600" />
                             Risk Değerlendirme Ekibi
                         </h2>
@@ -340,22 +342,22 @@ export default function FirmaDetayPage() {
                                 { label: 'Çalışan Temsilcisi', value: company.representative },
                                 { label: 'Destek Elemanı', value: company.support }
                             ].map((item, idx) => (
-                                <div key={idx} className="bg-slate-50 rounded-xl p-4">
-                                    <p className="text-xs text-slate-400 mb-1">{item.label}</p>
-                                    <p className="font-medium text-slate-700">{item.value || '-'}</p>
+                                <div key={idx} className={`${isDark ? 'bg-slate-800/50' : 'bg-slate-50'} rounded-xl p-4`}>
+                                    <p className={`text-xs mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>
+                                    <p className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{item.value || '-'}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Rapor İstatistikleri */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border p-6 shadow-sm`}>
+                        <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                             <BarChart3 className="w-5 h-5 text-indigo-600" />
                             Rapor Geçmişi
                         </h2>
                         {reports.length === 0 ? (
-                            <div className="text-center py-8 text-slate-400">
+                            <div className={`text-center py-8 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
                                 <p>Henüz rapor oluşturulmamış</p>
                                 <Link
@@ -377,17 +379,19 @@ export default function FirmaDetayPage() {
                                         <Link
                                             key={report.id || idx}
                                             href={`/panel/raporlarim?view=${report.id}`}
-                                            className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 border border-transparent transition-all cursor-pointer group"
+                                            className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${isDark
+                                                ? 'bg-slate-800/50 border-transparent hover:bg-slate-800 hover:border-slate-700'
+                                                : 'bg-slate-50 border-transparent hover:bg-indigo-50 hover:border-indigo-200'}`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                                                    <FileText className="w-5 h-5 text-indigo-600" />
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDark ? 'bg-indigo-900/30' : 'bg-indigo-100'} group-hover:bg-indigo-500 group-hover:text-white`}>
+                                                    <FileText className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'} group-hover:text-white`} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium text-slate-700 group-hover:text-indigo-700 transition-colors">
+                                                    <p className={`font-medium transition-colors ${isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-indigo-700'}`}>
                                                         {report.title || 'Risk Değerlendirme Raporu'}
                                                     </p>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                    <div className={`flex items-center gap-2 text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                                                         <span>Rapor: {formatDate(reportDate)}</span>
                                                         <span>•</span>
                                                         <span>Kayıt: {formatDate(report.createdAt)}</span>
@@ -395,7 +399,7 @@ export default function FirmaDetayPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm">
-                                                <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium">
+                                                <span className={`${isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700'} px-3 py-1 rounded-full font-medium`}>
                                                     {riskCount} Risk
                                                 </span>
                                                 <ExternalLink className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -411,9 +415,9 @@ export default function FirmaDetayPage() {
                 {/* Sağ Kolon - Harita ve Hızlı İşlemler */}
                 <div className="space-y-6">
                     {/* Konum Haritası */}
-                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                        <div className="p-4 border-b border-slate-100">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border overflow-hidden shadow-sm`}>
+                        <div className={`p-4 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                            <h3 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                                 <MapPin className="w-5 h-5 text-indigo-600" />
                                 Konum
                             </h3>
@@ -468,40 +472,40 @@ export default function FirmaDetayPage() {
                     </div>
 
                     {/* Hızlı İşlemler */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-                        <h3 className="font-bold text-slate-800 mb-4">Hızlı İşlemler</h3>
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border p-4 shadow-sm`}>
+                        <h3 className={`font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>Hızlı İşlemler</h3>
                         <div className="space-y-3">
                             <Link
                                 href={`/risk-degerlendirme?company=${companyId}`}
-                                className="flex items-center gap-3 p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors group"
+                                className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${isDark ? 'bg-emerald-900/20 hover:bg-emerald-900/30' : 'bg-emerald-50 hover:bg-emerald-100'}`}
                             >
-                                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/20">
                                     <Shield className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <p className="font-medium text-slate-700">Risk Değerlendirmesi</p>
-                                    <p className="text-xs text-slate-400">Yeni rapor oluştur</p>
+                                    <p className={`font-medium ${isDark ? 'text-emerald-400' : 'text-slate-700'}`}>Risk Değerlendirmesi</p>
+                                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Yeni rapor oluştur</p>
                                 </div>
                             </Link>
                             <Link
                                 href={`/panel/acil-durum?company=${companyId}`}
-                                className="flex items-center gap-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors group"
+                                className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${isDark ? 'bg-orange-900/20 hover:bg-orange-900/30' : 'bg-orange-50 hover:bg-orange-100'}`}
                             >
-                                <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-orange-500/20">
                                     <AlertTriangle className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <p className="font-medium text-slate-700">Acil Durum Planı</p>
-                                    <p className="text-xs text-slate-400">ADEP oluştur</p>
+                                    <p className={`font-medium ${isDark ? 'text-orange-400' : 'text-slate-700'}`}>Acil Durum Planı</p>
+                                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>ADEP oluştur</p>
                                 </div>
                             </Link>
                         </div>
                     </div>
 
                     {/* Firma Notları */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border p-4 shadow-sm`}>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                            <h3 className={`font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                                 <StickyNote className="w-5 h-5 text-amber-500" />
                                 Notlar
                             </h3>
@@ -562,16 +566,16 @@ export default function FirmaDetayPage() {
                         {/* Not Listesi */}
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                             {notes.length === 0 ? (
-                                <p className="text-center text-slate-400 text-sm py-4">Henüz not yok</p>
+                                <p className={`text-center text-sm py-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Henüz not yok</p>
                             ) : (
                                 notes.map((note) => (
                                     <div
                                         key={note.id}
                                         className={`p-3 rounded-lg border transition-all ${note.isCompleted
-                                            ? 'bg-slate-50 border-slate-200 opacity-60'
+                                            ? (isDark ? 'bg-slate-800/30 border-slate-800 opacity-60' : 'bg-slate-50 border-slate-200 opacity-60')
                                             : isOverdue(note.dueDate)
-                                                ? 'bg-red-50 border-red-200'
-                                                : 'bg-amber-50 border-amber-200'
+                                                ? (isDark ? 'bg-red-900/20 border-red-900/30' : 'bg-red-50 border-red-200')
+                                                : (isDark ? 'bg-amber-900/20 border-amber-900/30' : 'bg-amber-50 border-amber-200')
                                             }`}
                                     >
                                         <div className="flex items-start gap-2">
@@ -579,19 +583,19 @@ export default function FirmaDetayPage() {
                                                 onClick={() => toggleNoteComplete(note.id, note.isCompleted)}
                                                 className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${note.isCompleted
                                                     ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                    : 'border-slate-300 hover:border-emerald-500'
+                                                    : (isDark ? 'border-slate-700 hover:border-emerald-500' : 'border-slate-300 hover:border-emerald-500')
                                                     }`}
                                             >
                                                 {note.isCompleted && <Check className="w-3 h-3" />}
                                             </button>
                                             <div className="flex-1 min-w-0">
-                                                <p className={`text-sm ${note.isCompleted ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                                <p className={`text-sm ${note.isCompleted ? 'line-through text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
                                                     {note.content}
                                                 </p>
                                                 {note.dueDate && (
                                                     <p className={`text-xs mt-1 ${isOverdue(note.dueDate) && !note.isCompleted
-                                                        ? 'text-red-600 font-medium'
-                                                        : 'text-slate-400'
+                                                        ? 'text-red-500 font-medium'
+                                                        : (isDark ? 'text-slate-500' : 'text-slate-400')
                                                         }`}>
                                                         <Clock className="w-3 h-3 inline mr-1" />
                                                         {formatDate(note.dueDate)}
@@ -600,7 +604,7 @@ export default function FirmaDetayPage() {
                                             </div>
                                             <button
                                                 onClick={() => handleDeleteNote(note.id)}
-                                                className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                className={`p-1 rounded transition-colors ${isDark ? 'text-slate-600 hover:text-red-400 hover:bg-red-900/30' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </button>
