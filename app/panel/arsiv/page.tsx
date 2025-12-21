@@ -250,14 +250,14 @@ export default function ArsivPage() {
                         { label: 'Word Dosyaları', value: stats.wordCount, icon: File, color: 'text-blue-500', bg: 'bg-blue-500/10' },
                         { label: 'Excel Tabloları', value: stats.excelCount, icon: FileSpreadsheet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
                     ].map((stat, i) => (
-                        <div key={i} className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} shadow-sm transition-all hover:shadow-md group`}>
+                        <div key={i} className={`p-3 md:p-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} shadow-sm transition-all hover:shadow-md group`}>
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{stat.label}</p>
-                                    <h4 className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{stat.value}</h4>
+                                    <p className={`text-[10px] md:text-xs font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{stat.label}</p>
+                                    <h4 className={`text-lg md:text-2xl font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>{stat.value}</h4>
                                 </div>
-                                <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110`}>
-                                    <stat.icon className="w-5 h-5" />
+                                <div className={`p-2 md:p-2.5 rounded-xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110`}>
+                                    <stat.icon className="w-4 h-4 md:w-5 md:h-5" />
                                 </div>
                             </div>
                         </div>
@@ -278,8 +278,8 @@ export default function ArsivPage() {
                 )}
 
                 {/* Filtreler ve Arama */}
-                <div className={`mb-6 md:mb-8 p-4 md:p-6 rounded-2xl shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                    <div className="flex flex-col gap-4 md:gap-6">
+                <div className={`mb-6 md:mb-8 p-3 md:p-6 rounded-2xl shadow-sm border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                    <div className="flex flex-col gap-3 md:gap-6">
                         {/* Arama */}
                         <div className="flex-1">
                             <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -292,7 +292,7 @@ export default function ArsivPage() {
                                     placeholder="Dosya adı veya kategori ile ara..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 transition-all outline-none text-base md:text-sm ${isDark
+                                    className={`w-full pl-11 pr-4 py-2.5 md:py-3.5 rounded-xl border-2 transition-all outline-none text-sm ${isDark
                                         ? 'bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10'
                                         : 'bg-slate-50 border-slate-100 text-slate-900 placeholder:text-slate-400 focus:border-indigo-600/20 focus:ring-4 focus:ring-indigo-600/5'
                                         }`}
@@ -305,12 +305,12 @@ export default function ArsivPage() {
                             <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                                 Kategoriye Göre Filtrele
                             </label>
-                            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 md:flex-wrap scrollbar-hide">
+                            <div className="flex gap-1.5 overflow-x-auto pb-2 md:pb-0 md:flex-wrap scrollbar-hide -mx-1 px-1">
                                 {categories.map(cat => (
                                     <button
                                         key={cat}
                                         onClick={() => setSelectedCategory(cat)}
-                                        className={`flex-shrink-0 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 border-2 whitespace-nowrap ${selectedCategory === cat
+                                        className={`flex-shrink-0 px-2.5 md:px-4 py-1.5 md:py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-sm font-semibold transition-all duration-200 border-2 whitespace-nowrap ${selectedCategory === cat
                                             ? isDark
                                                 ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20'
                                                 : 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200'
@@ -352,22 +352,22 @@ export default function ArsivPage() {
                                 return (
                                     <div
                                         key={index}
-                                        className={`group relative py-2.5 md:py-4 px-3 md:px-6 hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-all duration-300 ${isDark ? 'bg-slate-800' : 'bg-white'
+                                        className={`group relative py-2 md:py-4 px-2 md:px-6 hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-all duration-300 ${isDark ? 'bg-slate-800' : 'bg-white'
                                             }`}
                                     >
                                         {/* Hover Highlight Line - hidden on mobile */}
                                         <div className="hidden md:block absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center" />
 
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
-                                            <div className="flex-1 min-w-0 flex items-start md:items-center gap-2.5 md:gap-4">
+                                            <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-4">
                                                 {/* File Icon - smaller on mobile */}
-                                                <div className={`flex-shrink-0 w-9 h-9 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${isDark ? darkBg : bg} ${color}`}>
-                                                    <FileIcon className="w-4 h-4 md:w-6 md:h-6" />
+                                                <div className={`flex-shrink-0 w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300 ${isDark ? darkBg : bg} ${color}`}>
+                                                    <FileIcon className="w-3.5 h-3.5 md:w-6 md:h-6" />
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
                                                     {/* File name - smaller on mobile, better truncation */}
-                                                    <h3 className={`font-semibold md:font-bold text-sm md:text-lg leading-snug md:leading-tight line-clamp-2 md:truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                    <h3 className={`font-semibold md:font-extrabold text-[13px] md:text-lg leading-tight line-clamp-2 md:truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                                         {file.fileName}
                                                     </h3>
 
@@ -379,22 +379,25 @@ export default function ArsivPage() {
                                                             }`}>
                                                             {file.category}
                                                         </span>
+                                                        <span className={`md:hidden text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                            • {file.fileName.split('.').pop()?.toUpperCase()}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Action buttons - more compact on mobile */}
-                                            <div className="flex items-center gap-2 pl-11 md:pl-0 md:w-auto md:ml-4">
+                                            <div className="flex items-center gap-1.5 md:gap-2 justify-end md:w-auto md:ml-4">
                                                 <a
                                                     href={downloadLink}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className={`flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm transition-all duration-300 shadow-sm hover:shadow-lg active:scale-95 ${isDark
+                                                    className={`inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-5 py-1.5 md:py-2.5 rounded-lg md:rounded-xl font-bold text-[11px] md:text-sm transition-all duration-300 shadow-sm hover:shadow-lg active:scale-95 ${isDark
                                                         ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/20'
                                                         : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
                                                         }`}
                                                 >
-                                                    <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                                    <Download className="w-3 h-3 md:w-4 md:h-4" />
                                                     İndir
                                                 </a>
                                                 <button
@@ -403,12 +406,12 @@ export default function ArsivPage() {
                                                         setShowErrorModal(true);
                                                     }}
                                                     title="Dosyada bir hata varsa bildirin"
-                                                    className={`inline-flex items-center justify-center p-2 md:p-2.5 rounded-lg md:rounded-xl transition-all duration-300 border ${isDark
+                                                    className={`inline-flex items-center justify-center p-1.5 md:p-2.5 rounded-lg md:rounded-xl transition-all duration-300 border ${isDark
                                                         ? 'bg-slate-900 border-slate-700 text-red-400 hover:bg-red-500/10 hover:border-red-500/50'
                                                         : 'bg-white border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200'
                                                         }`}
                                                 >
-                                                    <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />
+                                                    <AlertCircle className="w-3.5 h-3.5 md:w-5 md:h-5" />
                                                 </button>
                                                 <div className={`hidden lg:block text-slate-300 dark:text-slate-600 transition-transform group-hover:translate-x-1 duration-300`}>
                                                     <ChevronRight className="w-5 h-5" />
