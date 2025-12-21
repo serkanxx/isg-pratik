@@ -97,20 +97,6 @@ const menuItems = [
         active: true,
         dataTour: 'arsiv'
     },
-    {
-        name: 'Saha Gözlem Formları',
-        href: '#',
-        icon: Eye,
-        active: false,
-        badge: 'YAKINDA'
-    },
-    {
-        name: 'DÖF Yönetimi',
-        href: '#',
-        icon: FileCheck,
-        active: false,
-        badge: 'YAKINDA'
-    },
 ];
 
 const ADMIN_EMAIL = 'serkanxx@gmail.com';
@@ -389,12 +375,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     >
                                         {Icon && <Icon className="w-5 h-5" />}
                                         <span className="flex-1">{item.name}</span>
-                                        {item.badge && (
-                                            <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${isDark ? 'bg-white/10 text-slate-400' : 'bg-slate-200 text-slate-500'}`}>
-                                                {item.badge}
-                                            </span>
-                                        )}
-                                        {item.active && !item.badge && (
+                                        {item.active && (
                                             <ChevronRight className="w-4 h-4 opacity-50" />
                                         )}
                                     </Link>

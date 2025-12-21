@@ -75,6 +75,18 @@ const TOUR_STEPS: TourStep[] = [
         position: 'right'
     },
     {
+        target: '[data-tour="is-ilanlari"]',
+        title: '💼 İSG İş İlanları',
+        description: 'İş sağlığı ve güvenliği alanındaki güncel iş ilanlarını görüntüleyin ve başvurun.',
+        position: 'right'
+    },
+    {
+        target: '[data-tour="arsiv"]',
+        title: '📂 İSG Arşiv Dosyaları',
+        description: 'Hazır İSG dokümanlarını, formları ve şablonları görüntüleyin ve indirin.',
+        position: 'right'
+    },
+    {
         target: '[data-tour="dark-mode"]',
         title: '🌙 Karanlık Mod',
         description: 'Göz yorgunluğunu azaltmak için karanlık modu açıp kapatabilirsiniz. Tercihiniz kaydedilir.',
@@ -289,8 +301,8 @@ export default function OnboardingTour({ onComplete, isMobile = false, isSidebar
             {/* Tooltip */}
             <div
                 className={`fixed z-[999] w-80 rounded-2xl shadow-2xl overflow-hidden animate-fade-in transition-colors ${isDark
-                        ? 'bg-slate-800 border border-slate-700'
-                        : 'bg-white border border-indigo-100'
+                    ? 'bg-slate-800 border border-slate-700'
+                    : 'bg-white border border-indigo-100'
                     }`}
                 style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
             >
@@ -337,8 +349,8 @@ export default function OnboardingTour({ onComplete, isMobile = false, isSidebar
                             <button
                                 onClick={handlePrev}
                                 className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1 ${isDark
-                                        ? 'text-slate-300 hover:bg-slate-700'
-                                        : 'text-slate-600 hover:bg-slate-100'
+                                    ? 'text-slate-300 hover:bg-slate-700'
+                                    : 'text-slate-600 hover:bg-slate-100'
                                     }`}
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -367,10 +379,10 @@ export default function OnboardingTour({ onComplete, isMobile = false, isSidebar
                             <div
                                 key={index}
                                 className={`w-2 h-2 rounded-full transition-colors ${index === currentStep
-                                        ? 'bg-indigo-600'
-                                        : index < currentStep
-                                            ? isDark ? 'bg-indigo-400' : 'bg-indigo-300'
-                                            : isDark ? 'bg-slate-600' : 'bg-slate-200'
+                                    ? 'bg-indigo-600'
+                                    : index < currentStep
+                                        ? isDark ? 'bg-indigo-400' : 'bg-indigo-300'
+                                        : isDark ? 'bg-slate-600' : 'bg-slate-200'
                                     }`}
                             />
                         ))}
