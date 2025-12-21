@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, Sparkles, Menu } from 'lucide-react';
 import { useTheme } from '@/app/context/ThemeContext';
 
 interface TourStep {
@@ -10,6 +10,14 @@ interface TourStep {
     description: string;
     position: 'top' | 'bottom' | 'left' | 'right';
 }
+
+// Mobile-specific hamburger step
+const MOBILE_HAMBURGER_STEP: TourStep = {
+    target: '[data-mobile-tour="hamburger-menu"]',
+    title: '🍔 Menüyü Keşfedin',
+    description: 'Tüm özelliklerine erişmek için bu menü butonuna tıklayın. Firmalar, riskler, raporlar ve daha fazlası menüde!',
+    position: 'bottom'
+};
 
 const TOUR_STEPS: TourStep[] = [
     {
@@ -78,16 +86,74 @@ const TOUR_STORAGE_KEY = 'isg_panel_tour_completed';
 
 interface OnboardingTourProps {
     onComplete: () => void;
+    isMobile?: boolean;
+    isSidebarOpen?: boolean;
+    onOpenSidebar?: () => void;
 }
 
-export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
+export default function OnboardingTour({ onComplete, isMobile = false, isSidebarOpen = false, onOpenSidebar }: OnboardingTourProps) {
     const { isDark } = useTheme();
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+    const [isMobileDevice, setIsMobileDevice] = useState(false);
+    const [showingHamburgerStep, setShowingHamburgerStep] = useState(false);
+    const [waitingForSidebar, setWaitingForSidebar] = useState(false);
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobileDevice(mobile);
+            // On mobile, start with hamburger step
+            if (mobile && !localStorage.getItem('hamburger_menu_tooltip_seen')) {
+                setShowingHamburgerStep(true);
+            }
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Auto-open sidebar after showing hamburger step for 3 seconds
+    useEffect(() => {
+        if (showingHamburgerStep && isMobileDevice && onOpenSidebar && !isSidebarOpen) {
+            const timer = setTimeout(() => {
+                onOpenSidebar();
+                setWaitingForSidebar(true);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showingHamburgerStep, isMobileDevice, onOpenSidebar, isSidebarOpen]);
+
+    // After sidebar opens, transition to normal tour
+    useEffect(() => {
+        if (waitingForSidebar && isSidebarOpen) {
+            const timer = setTimeout(() => {
+                setShowingHamburgerStep(false);
+                setWaitingForSidebar(false);
+                localStorage.setItem('hamburger_menu_tooltip_seen', 'true');
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [waitingForSidebar, isSidebarOpen]);
+
+    // Get current step data
+    const getCurrentStep = useCallback(() => {
+        if (showingHamburgerStep && isMobileDevice) {
+            return MOBILE_HAMBURGER_STEP;
+        }
+        // On mobile, skip the dark-mode step since it's now in navbar
+        if (isMobileDevice && TOUR_STEPS[currentStep]?.target === '[data-tour="dark-mode"]') {
+            return null; // Will be skipped
+        }
+        return TOUR_STEPS[currentStep];
+    }, [showingHamburgerStep, isMobileDevice, currentStep]);
 
     const updateTooltipPosition = useCallback(() => {
-        const step = TOUR_STEPS[currentStep];
+        const step = getCurrentStep();
+        if (!step) return;
+
         const targetElement = document.querySelector(step.target);
 
         if (targetElement) {
@@ -125,7 +191,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
             // Target elementi vurgula
             targetElement.classList.add('tour-highlight');
         }
-    }, [currentStep]);
+    }, [getCurrentStep]);
 
     useEffect(() => {
         // Önceki highlight'ı kaldır
@@ -143,11 +209,29 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 el.classList.remove('tour-highlight');
             });
         };
-    }, [currentStep, updateTooltipPosition]);
+    }, [currentStep, updateTooltipPosition, showingHamburgerStep]);
 
     const handleNext = () => {
-        if (currentStep < TOUR_STEPS.length - 1) {
-            setCurrentStep(prev => prev + 1);
+        // If showing hamburger step, trigger sidebar open and wait
+        if (showingHamburgerStep && isMobileDevice) {
+            if (onOpenSidebar && !isSidebarOpen) {
+                onOpenSidebar();
+                setWaitingForSidebar(true);
+            } else {
+                setShowingHamburgerStep(false);
+                localStorage.setItem('hamburger_menu_tooltip_seen', 'true');
+            }
+            return;
+        }
+
+        // Skip dark-mode step on mobile
+        let nextStep = currentStep + 1;
+        if (isMobileDevice && TOUR_STEPS[nextStep]?.target === '[data-tour="dark-mode"]') {
+            nextStep++;
+        }
+
+        if (nextStep < TOUR_STEPS.length) {
+            setCurrentStep(nextStep);
         } else {
             handleComplete();
         }
@@ -155,12 +239,20 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
 
     const handlePrev = () => {
         if (currentStep > 0) {
-            setCurrentStep(prev => prev - 1);
+            let prevStep = currentStep - 1;
+            // Skip dark-mode step on mobile
+            if (isMobileDevice && TOUR_STEPS[prevStep]?.target === '[data-tour="dark-mode"]') {
+                prevStep--;
+            }
+            if (prevStep >= 0) {
+                setCurrentStep(prevStep);
+            }
         }
     };
 
     const handleComplete = () => {
         localStorage.setItem(TOUR_STORAGE_KEY, 'true');
+        localStorage.setItem('hamburger_menu_tooltip_seen', 'true');
         setIsVisible(false);
         document.querySelectorAll('.tour-highlight').forEach(el => {
             el.classList.remove('tour-highlight');
@@ -174,7 +266,20 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
 
     if (!isVisible) return null;
 
-    const step = TOUR_STEPS[currentStep];
+    const step = getCurrentStep();
+    if (!step) {
+        // Skip to next step if current is null
+        handleNext();
+        return null;
+    }
+
+    // Calculate total steps (excluding dark-mode on mobile)
+    const totalSteps = isMobileDevice
+        ? TOUR_STEPS.filter(s => s.target !== '[data-tour="dark-mode"]').length
+        : TOUR_STEPS.length;
+
+    // Calculate current step number for display
+    const displayStepNumber = showingHamburgerStep ? 0 : (currentStep + 1);
 
     return (
         <>
@@ -183,19 +288,25 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
 
             {/* Tooltip */}
             <div
-                className={`fixed z-[999] w-80 rounded-2xl shadow-2xl overflow-hidden animate-fade-in transition-colors ${
-                    isDark 
-                        ? 'bg-slate-800 border border-slate-700' 
+                className={`fixed z-[999] w-80 rounded-2xl shadow-2xl overflow-hidden animate-fade-in transition-colors ${isDark
+                        ? 'bg-slate-800 border border-slate-700'
                         : 'bg-white border border-indigo-100'
-                }`}
+                    }`}
                 style={{ top: tooltipPosition.top, left: tooltipPosition.left }}
             >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-yellow-300" />
+                        {showingHamburgerStep ? (
+                            <Menu className="w-5 h-5 text-white" />
+                        ) : (
+                            <Sparkles className="w-5 h-5 text-yellow-300" />
+                        )}
                         <span className="text-white font-bold text-sm">
-                            Adım {currentStep + 1} / {TOUR_STEPS.length}
+                            {showingHamburgerStep
+                                ? 'Hoş Geldiniz!'
+                                : `Adım ${displayStepNumber} / ${totalSteps}`
+                            }
                         </span>
                     </div>
                     <button
@@ -222,14 +333,13 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                         Atla
                     </button>
                     <div className="flex items-center gap-2">
-                        {currentStep > 0 && (
+                        {!showingHamburgerStep && currentStep > 0 && (
                             <button
                                 onClick={handlePrev}
-                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1 ${
-                                    isDark 
-                                        ? 'text-slate-300 hover:bg-slate-700' 
+                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1 ${isDark
+                                        ? 'text-slate-300 hover:bg-slate-700'
                                         : 'text-slate-600 hover:bg-slate-100'
-                                }`}
+                                    }`}
                             >
                                 <ChevronLeft className="w-4 h-4" />
                                 Geri
@@ -239,27 +349,33 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                             onClick={handleNext}
                             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-1"
                         >
-                            {currentStep === TOUR_STEPS.length - 1 ? 'Tamamla' : 'İleri'}
-                            {currentStep < TOUR_STEPS.length - 1 && <ChevronRight className="w-4 h-4" />}
+                            {showingHamburgerStep
+                                ? 'Menüyü Aç'
+                                : currentStep === TOUR_STEPS.length - 1 || (isMobileDevice && currentStep === TOUR_STEPS.length - 2)
+                                    ? 'Tamamla'
+                                    : 'İleri'
+                            }
+                            {!showingHamburgerStep && currentStep < TOUR_STEPS.length - 1 && <ChevronRight className="w-4 h-4" />}
                         </button>
                     </div>
                 </div>
 
                 {/* Progress dots */}
-                <div className="px-4 pb-3 flex justify-center gap-1.5">
-                    {TOUR_STEPS.map((_, index) => (
-                        <div
-                            key={index}
-                            className={`w-2 h-2 rounded-full transition-colors ${
-                                index === currentStep
-                                    ? 'bg-indigo-600'
-                                    : index < currentStep
-                                        ? isDark ? 'bg-indigo-400' : 'bg-indigo-300'
-                                        : isDark ? 'bg-slate-600' : 'bg-slate-200'
-                            }`}
-                        />
-                    ))}
-                </div>
+                {!showingHamburgerStep && (
+                    <div className="px-4 pb-3 flex justify-center gap-1.5">
+                        {TOUR_STEPS.filter(s => !isMobileDevice || s.target !== '[data-tour="dark-mode"]').map((_, index) => (
+                            <div
+                                key={index}
+                                className={`w-2 h-2 rounded-full transition-colors ${index === currentStep
+                                        ? 'bg-indigo-600'
+                                        : index < currentStep
+                                            ? isDark ? 'bg-indigo-400' : 'bg-indigo-300'
+                                            : isDark ? 'bg-slate-600' : 'bg-slate-200'
+                                    }`}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </>
     );
@@ -291,3 +407,4 @@ export function useTourStatus() {
 
     return { showTour, completeTour, resetTour };
 }
+

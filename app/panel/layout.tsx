@@ -159,21 +159,27 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         }
     }, [isAdmin]);
 
-    // Hamburger menü tooltip kontrolü - sadece mobil ve ilk girişte
+    // Hamburger menü tooltip kontrolü - sadece mobil ve ilk girişte (ve tur aktif değilse)
     useEffect(() => {
+        // Eğer onboarding turu aktifse, hamburger tooltip'ı gösterme
+        if (showTour) {
+            setShowHamburgerTooltip(false);
+            return;
+        }
+
         const hasSeenTooltip = localStorage.getItem('hamburger_menu_tooltip_seen');
         if (!hasSeenTooltip) {
             // Mobil cihaz kontrolü
             const isMobile = window.innerWidth < 768; // md breakpoint
             if (isMobile) {
-                // Sayfa yüklendikten kısa bir süre sonra göster
+                // Sayfa yüklendk sonra kısa bir süre sonra göster
                 const timer = setTimeout(() => {
                     setShowHamburgerTooltip(true);
                 }, 1500);
                 return () => clearTimeout(timer);
             }
         }
-    }, []);
+    }, [showTour]);
 
     // Hamburger menüye tıklandığında tooltip'i kapat
     const handleHamburgerClick = () => {
@@ -398,9 +404,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     </ul>
                 </nav>
 
-                {/* Alt Menü - Dark Mode Toggle + Destek */}
+                {/* Alt Menü - Dark Mode Toggle + Destek (Desktop only) */}
                 <div className={`p-4 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="hidden md:flex items-center justify-center gap-2">
                         <button
                             onClick={toggleTheme}
                             data-tour="dark-mode"
@@ -424,8 +430,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             <main className={`flex-1 md:ml-72 min-h-screen ${isDark ? 'dark-content bg-slate-900' : 'bg-slate-100'}`}>
                 {/* Üst Navbar - Tam Genişlik */}
                 <nav className={`shadow-xl backdrop-blur-md sticky top-0 z-40 transition-all duration-300 ${isDark
-                        ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10'
-                        : 'bg-gradient-to-r from-white via-indigo-50 to-white border-b border-slate-200'
+                    ? 'bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 border-b border-white/10'
+                    : 'bg-gradient-to-r from-white via-indigo-50 to-white border-b border-slate-200'
                     }`}>
                     <div className="w-full px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center justify-between h-14">
@@ -433,9 +439,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                             <div className="relative md:hidden">
                                 <button
                                     onClick={handleHamburgerClick}
+                                    data-mobile-tour="hamburger-menu"
                                     className={`p-2 rounded-lg relative z-10 transition-colors ${isDark
-                                            ? 'text-blue-100 hover:bg-white/10'
-                                            : 'text-indigo-600 hover:bg-indigo-100'
+                                        ? 'text-blue-100 hover:bg-white/10'
+                                        : 'text-indigo-600 hover:bg-indigo-100'
                                         }`}
                                 >
                                     <Menu className="w-6 h-6" />
@@ -444,13 +451,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                 {/* Hamburger Menü Tooltip - İlk Giriş */}
                                 {showHamburgerTooltip && (
                                     <div className={`absolute left-0 top-full mt-2 z-30 w-64 rounded-xl shadow-2xl border-2 animate-fade-in pointer-events-none ${isDark
-                                            ? 'bg-slate-800 border-indigo-500'
-                                            : 'bg-white border-indigo-200'
+                                        ? 'bg-slate-800 border-indigo-500'
+                                        : 'bg-white border-indigo-200'
                                         }`}>
                                         {/* Ok işareti */}
                                         <div className={`absolute -top-2 left-6 w-4 h-4 transform rotate-45 border-l-2 border-t-2 ${isDark
-                                                ? 'bg-slate-800 border-indigo-500'
-                                                : 'bg-white border-indigo-200'
+                                            ? 'bg-slate-800 border-indigo-500'
+                                            : 'bg-white border-indigo-200'
                                             }`}></div>
 
                                         {/* İçerik */}
@@ -484,16 +491,36 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                             </div>
 
                             {/* Sağ taraf - Kullanıcı bilgisi - Layout shift önleme için min-width */}
-                            <div className="flex items-center gap-3 min-w-[200px] sm:min-w-[280px] justify-end">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[280px] justify-end">
                                 {session ? (
                                     <>
+                                        {/* Mobile Panel Button */}
                                         <Link
                                             href="/panel"
-                                            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
+                                            className="md:hidden flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
+                                        >
+                                            <LayoutDashboard className="w-4 h-4" />
+                                            <span>Panel</span>
+                                        </Link>
+                                        {/* Desktop Panel Button */}
+                                        <Link
+                                            href="/panel"
+                                            className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 whitespace-nowrap"
                                         >
                                             <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
                                             <span>Panel</span>
                                         </Link>
+                                        {/* Mobile Dark Mode Toggle */}
+                                        <button
+                                            onClick={toggleTheme}
+                                            className={`md:hidden p-2 rounded-lg transition-all ${isDark
+                                                ? 'text-yellow-400 hover:bg-white/10'
+                                                : 'text-slate-600 hover:bg-slate-100'
+                                                }`}
+                                            title={isDark ? 'Açık Mod' : 'Karanlık Mod'}
+                                        >
+                                            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                                        </button>
                                         <div className="hidden sm:flex flex-col items-end mr-2 min-w-[120px]">
                                             <span className={`text-xs font-bold truncate max-w-[120px] ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
                                                 {session?.user?.name || session?.user?.email || ''}
@@ -502,8 +529,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                         <button
                                             onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                                             className={`p-2 rounded-xl transition-all shadow-sm flex-shrink-0 ${isDark
-                                                    ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30'
-                                                    : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
+                                                ? 'bg-white/10 hover:bg-red-500/20 text-blue-200 hover:text-red-200 border border-white/10 hover:border-red-400/30'
+                                                : 'bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-600 border border-slate-200 hover:border-red-300'
                                                 }`}
                                             title="Çıkış Yap"
                                         >
@@ -515,8 +542,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                         <Link
                                             href="/login"
                                             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap ${isDark
-                                                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                                                : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                                                 }`}
                                         >
                                             Giriş Yap
@@ -684,7 +711,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             }
 
             {/* Kullanıcı Turu */}
-            {showTour && <OnboardingTour onComplete={completeTour} />}
+            {showTour && (
+                <OnboardingTour
+                    onComplete={completeTour}
+                    isSidebarOpen={isMobileSidebarOpen}
+                    onOpenSidebar={() => setIsMobileSidebarOpen(true)}
+                />
+            )}
         </div >
     );
 }

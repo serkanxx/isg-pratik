@@ -43,11 +43,13 @@
 
 /* Ziyaret programı kartı başlığı - Aydınlık modda siyah, karanlık modda beyaz */
 .visit-program-title {
-  color: #0f172a !important; /* slate-900 - siyah */
+  color: #0f172a !important;
+  /* slate-900 - siyah */
 }
 
 .dark-content .visit-program-title {
-  color: #ffffff !important; /* beyaz */
+  color: #ffffff !important;
+  /* beyaz */
 }
 
 /* Dark mode - Metin renkleri */
@@ -231,6 +233,7 @@ body {
 
 /* Küçük mobil ekranlar için ek stiller */
 @media (max-width: 480px) {
+
   /* Daha da küçük padding */
   .p-8 {
     padding: 12px !important;
@@ -313,4 +316,14 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
