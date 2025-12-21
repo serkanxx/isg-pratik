@@ -771,6 +771,7 @@ export default function PanelPage() {
                     >
                         <FileSpreadsheet className="w-4 h-4" />
                         <span className="hidden sm:inline">Toplu Yükle</span>
+                        <span className="sm:hidden text-[10px]">Toplu</span>
                     </button>
                 </div>
 

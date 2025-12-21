@@ -174,7 +174,7 @@ function turkishToEnglish(text: string): string {
         'ş': 's', 'Ş': 'S',
         'ü': 'u', 'Ü': 'U'
     };
-    
+
     return text.split('').map(char => turkishChars[char] || char).join('');
 }
 
@@ -188,7 +188,7 @@ function getCategory(fileName: string): string {
     }
 
     // Kanunlar ve Tebliğler
-    if (name.includes('kanun') || name.includes('tebliğ') || name.includes('teblig') || 
+    if (name.includes('kanun') || name.includes('tebliğ') || name.includes('teblig') ||
         name.includes('yönerge') || name.includes('yonerge') ||
         name.includes('genelge') || name.includes('tüzük') || name.includes('tuzuk')) {
         return 'Kanunlar';
@@ -283,13 +283,8 @@ function getFileStyle(fileName: string) {
     }
 }
 
-// İndirme linkini oluştur (R2 için direkt link)
+// İndirme linkini oluştur (SSL sorunlarını önlemek için proxy kullan)
 function getDownloadLink(link: string, fileName: string): string {
-    // Eğer R2 linki ise direkt kullan
-    if (link.startsWith('http://') || link.startsWith('https://')) {
-        return link;
-    }
-    // Eski Google Drive linkleri için API kullan
     const encodedUrl = encodeURIComponent(link);
     const encodedName = encodeURIComponent(fileName);
     return `/api/archive/download?url=${encodedUrl}&name=${encodedName}`;
@@ -419,14 +414,14 @@ export default function ArsivPage() {
     // Dosya formatını al ve grup anahtarına çevir
     const getFormatKey = (fileName: string): string => {
         const ext = fileName.toLowerCase().split('.').pop() || '';
-        
+
         // Format gruplarını kontrol et
         for (const [key, group] of Object.entries(formatGroups)) {
             if (group.extensions.includes(ext)) {
                 return key;
             }
         }
-        
+
         // Eğer gruplanmamışsa, uzantıyı döndür
         return ext;
     };
@@ -448,16 +443,16 @@ export default function ArsivPage() {
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             const termEnglish = turkishToEnglish(term); // Türkçe karakterleri İngilizce'ye çevir
-            
+
             filtered = filtered.filter(f => {
                 const fileNameLower = f.fileName.toLowerCase();
                 const fileNameEnglish = turkishToEnglish(fileNameLower);
                 const categoryLower = f.category.toLowerCase();
                 const categoryEnglish = turkishToEnglish(categoryLower);
-                
+
                 // Hem Türkçe hem İngilizce versiyonları kontrol et
                 return (
-                    fileNameLower.includes(term) || 
+                    fileNameLower.includes(term) ||
                     fileNameEnglish.includes(termEnglish) ||
                     categoryLower.includes(term) ||
                     categoryEnglish.includes(termEnglish)
@@ -495,8 +490,8 @@ export default function ArsivPage() {
 
     // Format seçimini toggle et
     const toggleFormat = (format: string) => {
-        setSelectedFormats(prev => 
-            prev.includes(format) 
+        setSelectedFormats(prev =>
+            prev.includes(format)
                 ? prev.filter(f => f !== format)
                 : [...prev, format]
         );
@@ -629,7 +624,7 @@ export default function ArsivPage() {
                                         }`}
                                 />
                             </div>
-                            
+
                             {/* Dosya Formatı Filtreleri - Sadece Simgeler */}
                             {availableFormats.length > 0 && (
                                 <div className="mt-2 w-full md:w-64">
@@ -639,22 +634,21 @@ export default function ArsivPage() {
                                             const formatInfo = formatGroups[formatKey];
                                             const FormatIcon = formatInfo ? formatInfo.icon : File;
                                             const iconColor = formatInfo ? formatInfo.color : 'text-slate-500';
-                                            
+
                                             return (
                                                 <button
                                                     key={formatKey}
                                                     onClick={() => toggleFormat(formatKey)}
                                                     type="button"
                                                     title={formatInfo ? formatInfo.label : formatKey.toUpperCase()}
-                                                    className={`inline-flex items-center justify-center p-1.5 rounded-lg transition-all border-2 ${
-                                                        isSelected
+                                                    className={`inline-flex items-center justify-center p-1.5 rounded-lg transition-all border-2 ${isSelected
                                                             ? isDark
                                                                 ? 'bg-indigo-600/20 border-indigo-500 shadow-sm'
                                                                 : 'bg-indigo-50 border-indigo-500 shadow-sm'
                                                             : isDark
                                                                 ? 'bg-slate-900/50 border-slate-700 hover:border-slate-600 hover:bg-slate-800'
                                                                 : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <FormatIcon className={`w-5 h-5 ${isSelected ? iconColor : iconColor} ${isSelected ? 'opacity-100' : 'opacity-70'}`} />
                                                 </button>
@@ -814,7 +808,6 @@ export default function ArsivPage() {
                                             <div className="flex items-center gap-0.5 md:gap-2 justify-end flex-shrink-0 md:ml-4">
                                                 <a
                                                     href={downloadLink}
-                                                    target="_blank"
                                                     rel="noopener noreferrer"
                                                     download
                                                     className={`inline-flex items-center justify-center gap-1 md:gap-2 px-2 md:px-5 py-1 md:py-2.5 rounded-md md:rounded-xl font-bold text-[9px] md:text-sm transition-all duration-300 shadow-sm hover:shadow-lg active:scale-95 whitespace-nowrap ${isDark
@@ -869,11 +862,10 @@ export default function ArsivPage() {
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        currentPage === 1
+                                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === 1
                                             ? 'opacity-50 cursor-not-allowed'
                                             : 'hover:bg-slate-100 dark:hover:bg-slate-700'
-                                    } ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
+                                        } ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                     <span className="hidden sm:inline">Önceki</span>
@@ -910,15 +902,14 @@ export default function ArsivPage() {
                                             <button
                                                 key={pageNum}
                                                 onClick={() => setCurrentPage(pageNum)}
-                                                className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                                    currentPage === pageNum
+                                                className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === pageNum
                                                         ? isDark
                                                             ? 'bg-indigo-600 text-white'
                                                             : 'bg-indigo-600 text-white'
                                                         : isDark
                                                             ? 'text-slate-300 hover:bg-slate-700'
                                                             : 'text-slate-700 hover:bg-slate-100'
-                                                }`}
+                                                    }`}
                                             >
                                                 {pageNum}
                                             </button>
@@ -930,11 +921,10 @@ export default function ArsivPage() {
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        currentPage === totalPages
+                                    className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${currentPage === totalPages
                                             ? 'opacity-50 cursor-not-allowed'
                                             : 'hover:bg-slate-100 dark:hover:bg-slate-700'
-                                    } ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
+                                        } ${isDark ? 'text-slate-300' : 'text-slate-700'}`}
                                 >
                                     <span className="hidden sm:inline">Sonraki</span>
                                     <ChevronRight className="w-4 h-4" />

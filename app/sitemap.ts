@@ -41,6 +41,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.8,
         },
         {
+            url: `${baseUrl}/acil-durum`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.8,
+        },
+        {
             url: `${baseUrl}/panel/nace-kod`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
