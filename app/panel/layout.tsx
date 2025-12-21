@@ -303,7 +303,11 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 {/* Logo + Premium Bilgisi */}
                 <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between">
-                        <Link href="/" className="flex items-center group">
+                        <Link
+                            href="/"
+                            className="flex items-center group"
+                            onClick={() => setIsMobileSidebarOpen(false)}
+                        >
                             <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
                             <div className="ml-3">
                                 <span className={`text-xl font-bold bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-white to-blue-200' : 'bg-gradient-to-r from-indigo-600 to-purple-600'}`}>
@@ -326,7 +330,11 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
 
                 {/* Kullanıcı Bilgisi */}
                 <div className={`px-6 py-4 border-b ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'} transition-colors cursor-pointer`}>
-                    <Link href="/panel" className="flex items-center gap-3">
+                    <Link
+                        href="/panel"
+                        className="flex items-center gap-3"
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                    >
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
                             {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U'}
                         </div>
@@ -355,6 +363,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     <Link
                                         href={item.active ? item.href : '#'}
                                         data-tour={item.dataTour}
+                                        onClick={() => setIsMobileSidebarOpen(false)}
                                         className={`
                                             flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
                                             ${isActive
@@ -400,6 +409,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                             href="/destek"
                             className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'}`}
                             title="Destek"
+                            onClick={() => setIsMobileSidebarOpen(false)}
                         >
                             <HeadphonesIcon className="w-5 h-5" />
                         </Link>
