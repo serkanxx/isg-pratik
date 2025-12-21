@@ -12,7 +12,7 @@ import {
   Trash2, Menu, Moon, Sun, Home, LayoutDashboard, LogOut,
   Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
   ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin,
-  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen
+  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen, Bell, Info
 } from 'lucide-react';
 import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
 
@@ -347,6 +347,10 @@ export default function IsIlanlariPage() {
     type: 'success'
   });
 
+  // Bildirim state'leri
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
+
   const isAdmin = session?.user?.email === ADMIN_EMAIL || (session?.user as any)?.role === 'ADMIN';
 
   // Notification göster
@@ -357,10 +361,97 @@ export default function IsIlanlariPage() {
     }, 5000);
   };
 
+  // Bildirimleri localStorage'dan yükle
+  useEffect(() => {
+    const stored = localStorage.getItem('readNotificationIds');
+    if (stored) {
+      try {
+        setReadNotificationIds(new Set(JSON.parse(stored)));
+      } catch (err) {
+        console.error("Bildirim verileri yüklenemedi:", err);
+      }
+    }
+  }, []);
+
   // İş ilanlarını çek - filtreler değiştiğinde
   useEffect(() => {
     fetchJobPostings();
   }, [page, searchTerm, selectedCity]);
+
+  // Bildirim verileri
+  const today = new Date();
+  const notifications = [
+    {
+      id: 'is-ilanlari',
+      title: 'İSG İş İlanları Eklendi',
+      description: 'İSG iş ilanları bölümü eklendi, iş arayanlar ve işverenler için platform oluşturuldu.',
+      date: new Date(today)
+    },
+    {
+      id: 'mobil-iyilestirme',
+      title: 'Mobil Görünümde İyileştirmeler Yapıldı',
+      description: 'Mobil cihazlarda daha iyi bir deneyim için arayüz iyileştirmeleri yapıldı.',
+      date: new Date(today)
+    },
+    {
+      id: 'dosya-arsivi',
+      title: 'İSG Dev Dosya Arşivi Eklendi',
+      description: 'Kapsamlı İSG dosya arşivi eklendi, binlerce dokümana kolayca erişebilirsiniz.',
+      date: new Date(today)
+    }
+  ];
+
+  // Okunmamış bildirim sayısı
+  const unreadCount = notifications.filter(n => !readNotificationIds.has(n.id)).length;
+
+  // Bildirim penceresini aç
+  const handleOpenNotifications = () => {
+    setShowNotifications(true);
+  };
+
+  // Bildirim penceresini kapat
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
+  };
+
+  // Bildirim penceresi açıldığında 2 saniye sonra otomatik okundu işaretle
+  useEffect(() => {
+    if (showNotifications && unreadCount > 0) {
+      const timer = setTimeout(() => {
+        // Tüm okunmamış bildirimleri okundu olarak işaretle
+        setReadNotificationIds(prevIds => {
+          const unreadIds = notifications
+            .filter(n => !prevIds.has(n.id))
+            .map(n => n.id);
+          
+          if (unreadIds.length > 0) {
+            const newReadIds = new Set(prevIds);
+            unreadIds.forEach(id => newReadIds.add(id));
+            localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(newReadIds)));
+            return newReadIds;
+          }
+          return prevIds;
+        });
+      }, 2000); // 2 saniye
+
+      return () => clearTimeout(timer);
+    }
+  }, [showNotifications, unreadCount]);
+
+  // Bildirimi okundu olarak işaretle
+  const markAsRead = (id: string) => {
+    const newReadIds = new Set(readNotificationIds);
+    newReadIds.add(id);
+    setReadNotificationIds(newReadIds);
+    localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(newReadIds)));
+  };
+
+  // Tüm bildirimleri okundu olarak işaretle
+  const markAllAsRead = () => {
+    const allIds = new Set(notifications.map(n => n.id));
+    setReadNotificationIds(allIds);
+    localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(allIds)));
+  };
 
   const fetchJobPostings = async () => {
     try {
@@ -748,6 +839,27 @@ export default function IsIlanlariPage() {
                       <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
                       <span>Panel</span>
                     </Link>
+                    {/* Bildirim Butonu */}
+                    <div className="relative">
+                      <button
+                        onClick={handleOpenNotifications}
+                        className={`relative p-2 rounded-xl transition-all flex-shrink-0 ${isDark
+                          ? 'text-blue-200 hover:bg-white/10 hover:text-white'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          }`}
+                        title="Bildirimler"
+                      >
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                          <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[10px] font-bold ${isDark
+                            ? 'bg-red-500 text-white'
+                            : 'bg-red-500 text-white'
+                            }`}>
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                     {/* Mobile Dark Mode Toggle */}
                     <button
                       onClick={toggleTheme}
@@ -1255,6 +1367,122 @@ export default function IsIlanlariPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Bildirim Penceresi */}
+      {showNotifications && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={handleCloseNotifications}
+          />
+          <div className={`fixed right-4 top-20 md:right-8 md:top-20 w-[90vw] max-w-md max-h-[80vh] rounded-xl shadow-2xl z-50 overflow-hidden ${isDark
+            ? 'bg-slate-800 border border-white/10'
+            : 'bg-white border border-slate-200'
+            }`}>
+            {/* Başlık */}
+            <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+              <div className="flex items-center gap-2">
+                <Bell className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-indigo-600'}`} />
+                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  Bildirimler
+                </h3>
+                {unreadCount > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isDark
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : 'bg-red-100 text-red-600'
+                    }`}>
+                    {unreadCount} yeni
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${isDark
+                      ? 'text-blue-400 hover:bg-white/10'
+                      : 'text-indigo-600 hover:bg-slate-100'
+                      }`}
+                  >
+                    Tümünü okundu işaretle
+                  </button>
+                )}
+                <button
+                  onClick={handleCloseNotifications}
+                  className={`p-1.5 rounded-lg transition-colors ${isDark
+                    ? 'text-slate-400 hover:text-white hover:bg-white/10'
+                    : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bildirim Listesi */}
+            <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
+              {notifications.length === 0 ? (
+                <div className={`p-8 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Henüz bildirim yok</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200 dark:divide-white/10">
+                  {notifications.map((notification) => {
+                    const isRead = readNotificationIds.has(notification.id);
+                    return (
+                      <div
+                        key={notification.id}
+                        onClick={() => markAsRead(notification.id)}
+                        className={`p-4 cursor-pointer transition-colors ${isRead
+                          ? isDark
+                            ? 'bg-slate-800/50 hover:bg-slate-800'
+                            : 'bg-slate-50 hover:bg-slate-100'
+                          : isDark
+                            ? 'bg-blue-500/10 hover:bg-blue-500/15 border-l-4 border-blue-500'
+                            : 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500'
+                          }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-1 flex-shrink-0 ${isRead
+                            ? isDark ? 'text-slate-500' : 'text-slate-400'
+                            : isDark ? 'text-blue-400' : 'text-blue-600'
+                            }`}>
+                            <Info className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {notification.title}
+                              </h4>
+                              {!isRead && (
+                                <span className={`flex-shrink-0 w-2 h-2 rounded-full ${isDark
+                                  ? 'bg-blue-400'
+                                  : 'bg-blue-500'
+                                  }`} />
+                              )}
+                            </div>
+                            <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                              {notification.description}
+                            </p>
+                            <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                              {notification.date.toLocaleDateString('tr-TR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

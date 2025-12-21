@@ -1,11 +1,11 @@
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from "next/link";
 import {
   Shield, Brain, AlertTriangle, Calendar, BookOpen, Eye, FileText, Users, Building,
   CheckCircle, Clock, ChevronRight, Star, Zap, Target, BarChart3, FileCheck, Map, LogOut, User,
-  StickyNote, CalendarDays, Flame, Moon, Search
+  StickyNote, CalendarDays, Flame, Moon, Search, Bell, Info, X
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -27,6 +27,97 @@ const LiveDashboard = dynamic(() => import('./components/LiveDashboard'), {
 export default function LandingPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  
+  // Bildirim state'leri
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
+
+  // Bildirimleri localStorage'dan yükle
+  useEffect(() => {
+    const stored = localStorage.getItem('readNotificationIds');
+    if (stored) {
+      try {
+        setReadNotificationIds(new Set(JSON.parse(stored)));
+      } catch (err) {
+        console.error("Bildirim verileri yüklenemedi:", err);
+      }
+    }
+  }, []);
+
+  // Bildirim verileri
+  const today = new Date();
+  const notifications = [
+    {
+      id: 'is-ilanlari',
+      title: 'İSG İş İlanları Eklendi',
+      description: 'İSG iş ilanları bölümü eklendi, iş arayanlar ve işverenler için platform oluşturuldu.',
+      date: new Date(today)
+    },
+    {
+      id: 'mobil-iyilestirme',
+      title: 'Mobil Görünümde İyileştirmeler Yapıldı',
+      description: 'Mobil cihazlarda daha iyi bir deneyim için arayüz iyileştirmeleri yapıldı.',
+      date: new Date(today)
+    },
+    {
+      id: 'dosya-arsivi',
+      title: 'İSG Dev Dosya Arşivi Eklendi',
+      description: 'Kapsamlı İSG dosya arşivi eklendi, binlerce dokümana kolayca erişebilirsiniz.',
+      date: new Date(today)
+    }
+  ];
+
+  // Okunmamış bildirim sayısı
+  const unreadCount = notifications.filter(n => !readNotificationIds.has(n.id)).length;
+
+  // Bildirim penceresini aç
+  const handleOpenNotifications = () => {
+    setShowNotifications(true);
+  };
+
+  // Bildirim penceresini kapat
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
+  };
+
+  // Bildirim penceresi açıldığında 2 saniye sonra otomatik okundu işaretle
+  useEffect(() => {
+    if (showNotifications && unreadCount > 0) {
+      const timer = setTimeout(() => {
+        // Tüm okunmamış bildirimleri okundu olarak işaretle
+        setReadNotificationIds(prevIds => {
+          const unreadIds = notifications
+            .filter(n => !prevIds.has(n.id))
+            .map(n => n.id);
+          
+          if (unreadIds.length > 0) {
+            const newReadIds = new Set(prevIds);
+            unreadIds.forEach(id => newReadIds.add(id));
+            localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(newReadIds)));
+            return newReadIds;
+          }
+          return prevIds;
+        });
+      }, 2000); // 2 saniye
+
+      return () => clearTimeout(timer);
+    }
+  }, [showNotifications, unreadCount]);
+
+  // Bildirimi okundu olarak işaretle
+  const markAsRead = (id: string) => {
+    const newReadIds = new Set(readNotificationIds);
+    newReadIds.add(id);
+    setReadNotificationIds(newReadIds);
+    localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(newReadIds)));
+  };
+
+  // Tüm bildirimleri okundu olarak işaretle
+  const markAllAsRead = () => {
+    const allIds = new Set(notifications.map(n => n.id));
+    setReadNotificationIds(allIds);
+    localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(allIds)));
+  };
 
   const features = [
     {
@@ -201,6 +292,21 @@ export default function LandingPage() {
                   <span className="hidden sm:inline">Panele Git</span>
                   <span className="sm:hidden">Panel</span>
                 </Link>
+                {/* Bildirim Butonu */}
+                <div className="relative">
+                  <button
+                    onClick={handleOpenNotifications}
+                    className="relative p-2 text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                    title="Bildirimler"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[10px] font-bold bg-red-500 text-white">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
                 <button
                   onClick={() => signOut({ callbackUrl: 'https://www.isgpratik.com/' })}
                   className="p-2 text-white/70 hover:text-red-400 hover:bg-white/5 rounded-lg transition-all"
@@ -434,6 +540,103 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Bildirim Penceresi */}
+      {showNotifications && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={handleCloseNotifications}
+          />
+          <div className="fixed right-4 top-20 md:right-8 md:top-20 w-[90vw] max-w-md max-h-[80vh] rounded-xl shadow-2xl z-50 overflow-hidden bg-white border border-slate-200">
+            {/* Başlık */}
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-lg text-slate-900">
+                  Bildirimler
+                </h3>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600">
+                    {unreadCount} yeni
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="px-2 py-1 text-xs font-medium rounded-lg transition-colors text-indigo-600 hover:bg-slate-100"
+                  >
+                    Tümünü okundu işaretle
+                  </button>
+                )}
+                <button
+                  onClick={handleCloseNotifications}
+                  className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bildirim Listesi */}
+            <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Henüz bildirim yok</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-200">
+                  {notifications.map((notification) => {
+                    const isRead = readNotificationIds.has(notification.id);
+                    return (
+                      <div
+                        key={notification.id}
+                        onClick={() => markAsRead(notification.id)}
+                        className={`p-4 cursor-pointer transition-colors ${isRead
+                          ? 'bg-slate-50 hover:bg-slate-100'
+                          : 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500'
+                          }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`mt-1 flex-shrink-0 ${isRead
+                            ? 'text-slate-400'
+                            : 'text-blue-600'
+                            }`}>
+                            <Info className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <h4 className="font-bold text-sm text-slate-900">
+                                {notification.title}
+                              </h4>
+                              {!isRead && (
+                                <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500" />
+                              )}
+                            </div>
+                            <p className="text-sm leading-relaxed text-slate-600">
+                              {notification.description}
+                            </p>
+                            <p className="text-xs mt-2 text-slate-400">
+                              {notification.date.toLocaleDateString('tr-TR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
     </>
   );

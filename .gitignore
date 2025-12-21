@@ -45,3 +45,5 @@ next-env.d.ts
 # Telegram bot token içeren dosyalar
 webhook-kur.bat
 webhook-kontrol.bat
+
+.vercel

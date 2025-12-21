@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase, FolderOpen
+    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase, FolderOpen, Loader2, Bell
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -91,10 +91,12 @@ const menuItems = [
         dataTour: 'is-ilanlari'
     },
     {
-        name: 'İSG Arşiv Dosyaları',
+        name: 'İSG Dosya Arşivi',
         href: '/panel/arsiv',
         icon: FolderOpen,
         active: true,
+        highlight: true,
+        featured: true,
         dataTour: 'arsiv'
     },
 ];
@@ -118,6 +120,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const [editForm, setEditForm] = useState<any>({});
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [showHamburgerTooltip, setShowHamburgerTooltip] = useState(false);
+    const [archiveFileCount, setArchiveFileCount] = useState<number | null>(null);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
 
     const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
@@ -144,6 +149,129 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
             fetchPendingCount();
         }
     }, [isAdmin]);
+
+    // R2'den arşiv dosya sayısını çek
+    useEffect(() => {
+        const fetchArchiveFileCount = async () => {
+            try {
+                const res = await fetch('/api/archive/list');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.files && Array.isArray(data.files)) {
+                        setArchiveFileCount(data.files.length);
+                    }
+                }
+            } catch (err) {
+                console.error("Arşiv dosya sayısı alınamadı:", err);
+            }
+        };
+        fetchArchiveFileCount();
+    }, []);
+
+    // Bildirimleri localStorage'dan yükle
+    useEffect(() => {
+        const stored = localStorage.getItem('readNotificationIds');
+        if (stored) {
+            try {
+                setReadNotificationIds(new Set(JSON.parse(stored)));
+            } catch (err) {
+                console.error("Bildirim verileri yüklenemedi:", err);
+            }
+        }
+    }, []);
+
+    // Bildirim verileri
+    const today = new Date();
+    const notifications = [
+        {
+            id: 'is-ilanlari',
+            title: 'İSG İş İlanları Eklendi',
+            description: 'İSG iş ilanları bölümü eklendi, iş arayanlar ve işverenler için platform oluşturuldu.',
+            date: new Date(today)
+        },
+        {
+            id: 'mobil-iyilestirme',
+            title: 'Mobil Görünümde İyileştirmeler Yapıldı',
+            description: 'Mobil cihazlarda daha iyi bir deneyim için arayüz iyileştirmeleri yapıldı.',
+            date: new Date(today)
+        },
+        {
+            id: 'dosya-arsivi',
+            title: 'İSG Dev Dosya Arşivi Eklendi',
+            description: 'Kapsamlı İSG dosya arşivi eklendi, binlerce dokümana kolayca erişebilirsiniz.',
+            date: new Date(today)
+        }
+    ];
+
+    // Okunmamış bildirim sayısı
+    const unreadCount = notifications.filter(n => !readNotificationIds.has(n.id)).length;
+
+    // Bildirim penceresini aç
+    const handleOpenNotifications = () => {
+        setShowNotifications(true);
+    };
+
+    // Bildirim penceresini kapat
+    const handleCloseNotifications = () => {
+        setShowNotifications(false);
+    };
+
+    // Bildirim penceresi açıldığında 2 saniye sonra otomatik okundu işaretle
+    useEffect(() => {
+        if (showNotifications && unreadCount > 0) {
+            const timer = setTimeout(() => {
+                // Tüm okunmamış bildirimleri okundu olarak işaretle
+                setReadNotificationIds(prevIds => {
+                    const unreadIds = notifications
+                        .filter(n => !prevIds.has(n.id))
+                        .map(n => n.id);
+                    
+                    if (unreadIds.length > 0) {
+                        const newReadIds = new Set(prevIds);
+                        unreadIds.forEach(id => newReadIds.add(id));
+                        localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(newReadIds)));
+                        return newReadIds;
+                    }
+                    return prevIds;
+                });
+            }, 2000); // 2 saniye
+
+            return () => clearTimeout(timer);
+        }
+    }, [showNotifications, unreadCount]);
+
+    // Tur tamamlandığında bildirim penceresini aç
+    const handleTourComplete = () => {
+        completeTour();
+        // Tur tamamlandıktan sonra bildirim penceresini aç
+        const hasOpenedNotifications = localStorage.getItem('notifications_auto_opened');
+        if (!hasOpenedNotifications) {
+            // Okunmamış bildirim sayısını kontrol et
+            const currentUnreadCount = notifications.filter(n => !readNotificationIds.has(n.id)).length;
+            if (currentUnreadCount > 0) {
+                // Tur animasyonlarının bitmesi için kısa bir gecikme
+                setTimeout(() => {
+                    setShowNotifications(true);
+                    localStorage.setItem('notifications_auto_opened', 'true');
+                }, 1500);
+            }
+        }
+    };
+
+    // Bildirimi okundu olarak işaretle
+    const markAsRead = (id: string) => {
+        const newReadIds = new Set(readNotificationIds);
+        newReadIds.add(id);
+        setReadNotificationIds(newReadIds);
+        localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(newReadIds)));
+    };
+
+    // Tüm bildirimleri okundu olarak işaretle
+    const markAllAsRead = () => {
+        const allIds = new Set(notifications.map(n => n.id));
+        setReadNotificationIds(allIds);
+        localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(allIds)));
+    };
 
     // Hamburger menü tooltip kontrolü - sadece mobil ve ilk girişte (ve tur aktif değilse)
     useEffect(() => {
@@ -304,7 +432,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between">
                         <Link
-                            href="/"
+                            href="/panel"
                             className="flex items-center group"
                             onClick={() => setIsMobileSidebarOpen(false)}
                         >
@@ -328,25 +456,6 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     </div>
                 </div>
 
-                {/* Kullanıcı Bilgisi */}
-                <div className={`px-6 py-4 border-b ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'} transition-colors cursor-pointer`}>
-                    <Link
-                        href="/panel"
-                        className="flex items-center gap-3"
-                        onClick={() => setIsMobileSidebarOpen(false)}
-                    >
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                            {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                {session.user?.name || session.user?.email}
-                            </p>
-                            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kullanıcı</p>
-                        </div>
-                    </Link>
-                </div>
-
                 {/* Menü */}
                 <nav className="flex-1 px-4 py-6 overflow-y-auto">
                     <ul className="space-y-1">
@@ -358,6 +467,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                             const isActive = pathname === item.href;
                             const Icon = item.icon;
 
+                            // Özel stillendirme: İSG Dosya Arşivi
+                            const isFeatured = (item as any).featured === true;
+
                             return (
                                 <li key={index}>
                                     <Link
@@ -367,24 +479,56 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                         className={`
                                             flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
                                             ${isActive
-                                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                                ? isFeatured
+                                                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/50 ring-2 ring-purple-400/50'
+                                                    : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                                                 : item.active
-                                                    ? item.highlight
+                                                    ? isFeatured
                                                         ? isDark
-                                                            ? 'text-emerald-400 hover:bg-white/5'
-                                                            : 'text-emerald-600 hover:bg-slate-100'
-                                                        : isDark
-                                                            ? 'text-slate-300 hover:bg-white/5 hover:text-white'
-                                                            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                                                            ? 'bg-gradient-to-r from-purple-600/20 to-indigo-600/20 text-purple-300 hover:from-purple-600/30 hover:to-indigo-600/30 border-2 border-purple-500/50 hover:border-purple-400 shadow-lg shadow-purple-600/20 font-bold'
+                                                            : 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-700 hover:from-purple-500/30 hover:to-indigo-500/30 border-2 border-purple-400 hover:border-purple-500 shadow-lg shadow-purple-500/20 font-bold'
+                                                        : item.highlight
+                                                            ? isDark
+                                                                ? 'text-emerald-400 hover:bg-white/5'
+                                                                : 'text-emerald-600 hover:bg-slate-100'
+                                                            : isDark
+                                                                ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                                                     : isDark
                                                         ? 'text-slate-500 cursor-not-allowed'
                                                         : 'text-slate-400 cursor-not-allowed'
                                             }
                                         `}
                                     >
-                                        {Icon && <Icon className="w-5 h-5" />}
+                                        {Icon && <Icon className={`w-5 h-5 ${isFeatured && !isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />}
                                         <span className="flex-1">{item.name}</span>
-                                        {item.active && (
+                                        {isFeatured && archiveFileCount !== null && (
+                                            <span className={`
+                                                px-2 py-0.5 rounded-full text-xs font-bold
+                                                ${isActive || isFeatured
+                                                    ? isDark
+                                                        ? 'bg-purple-500/30 text-purple-200 border border-purple-400/50'
+                                                        : 'bg-purple-500 text-white'
+                                                    : isDark
+                                                        ? 'bg-purple-600/40 text-purple-300 border border-purple-500/50'
+                                                        : 'bg-purple-600 text-white'
+                                                }
+                                            `}>
+                                                {archiveFileCount.toLocaleString('tr-TR')} dosya
+                                            </span>
+                                        )}
+                                        {isFeatured && archiveFileCount === null && (
+                                            <span className={`
+                                                px-2 py-0.5 rounded-full text-xs font-bold
+                                                ${isDark
+                                                    ? 'bg-slate-700/40 text-slate-400 border border-slate-600/50'
+                                                    : 'bg-slate-300 text-slate-600'
+                                                }
+                                            `}>
+                                                <Loader2 className="w-3 h-3 animate-spin inline" />
+                                            </span>
+                                        )}
+                                        {item.active && !isFeatured && (
                                             <ChevronRight className="w-4 h-4 opacity-50" />
                                         )}
                                     </Link>
@@ -501,6 +645,27 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                             <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
                                             <span>Panel</span>
                                         </Link>
+                                        {/* Bildirim Butonu */}
+                                        <div className="relative">
+                                            <button
+                                                onClick={handleOpenNotifications}
+                                                className={`relative p-2 rounded-xl transition-all flex-shrink-0 ${isDark
+                                                    ? 'text-blue-200 hover:bg-white/10 hover:text-white'
+                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                                    }`}
+                                                title="Bildirimler"
+                                            >
+                                                <Bell className="w-5 h-5" />
+                                                {unreadCount > 0 && (
+                                                    <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full text-[10px] font-bold ${isDark
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-red-500 text-white'
+                                                        }`}>
+                                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </div>
                                         {/* Mobile Dark Mode Toggle */}
                                         <button
                                             onClick={toggleTheme}
@@ -513,7 +678,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                                         </button>
                                         <div className="hidden sm:flex flex-col items-end mr-2 min-w-[120px]">
-                                            <span className={`text-xs font-bold truncate max-w-[120px] ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
+                                            <span className={`text-[10px] font-bold truncate max-w-[120px] ${isDark ? 'text-blue-100' : 'text-slate-700'}`}>
                                                 {session?.user?.name || session?.user?.email || ''}
                                             </span>
                                         </div>
@@ -701,10 +866,126 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                 )
             }
 
+            {/* Bildirim Penceresi */}
+            {showNotifications && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/50 z-50"
+                        onClick={handleCloseNotifications}
+                    />
+                    <div className={`fixed right-4 top-20 md:right-8 md:top-20 w-[90vw] max-w-md max-h-[80vh] rounded-xl shadow-2xl z-50 overflow-hidden ${isDark
+                        ? 'bg-slate-800 border border-white/10'
+                        : 'bg-white border border-slate-200'
+                        }`}>
+                        {/* Başlık */}
+                        <div className={`px-4 py-3 border-b flex items-center justify-between ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                            <div className="flex items-center gap-2">
+                                <Bell className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-indigo-600'}`} />
+                                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    Bildirimler
+                                </h3>
+                                {unreadCount > 0 && (
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isDark
+                                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                        : 'bg-red-100 text-red-600'
+                                        }`}>
+                                        {unreadCount} yeni
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={markAllAsRead}
+                                        className={`px-2 py-1 text-xs font-medium rounded-lg transition-colors ${isDark
+                                            ? 'text-blue-400 hover:bg-white/10'
+                                            : 'text-indigo-600 hover:bg-slate-100'
+                                            }`}
+                                    >
+                                        Tümünü okundu işaretle
+                                    </button>
+                                )}
+                                <button
+                                    onClick={handleCloseNotifications}
+                                    className={`p-1.5 rounded-lg transition-colors ${isDark
+                                        ? 'text-slate-400 hover:text-white hover:bg-white/10'
+                                        : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
+                                        }`}
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Bildirim Listesi */}
+                        <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
+                            {notifications.length === 0 ? (
+                                <div className={`p-8 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                    <p>Henüz bildirim yok</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-200 dark:divide-white/10">
+                                    {notifications.map((notification) => {
+                                        const isRead = readNotificationIds.has(notification.id);
+                                        return (
+                                            <div
+                                                key={notification.id}
+                                                onClick={() => markAsRead(notification.id)}
+                                                className={`p-4 cursor-pointer transition-colors ${isRead
+                                                    ? isDark
+                                                        ? 'bg-slate-800/50 hover:bg-slate-800'
+                                                        : 'bg-slate-50 hover:bg-slate-100'
+                                                    : isDark
+                                                        ? 'bg-blue-500/10 hover:bg-blue-500/15 border-l-4 border-blue-500'
+                                                        : 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className={`mt-1 flex-shrink-0 ${isRead
+                                                        ? isDark ? 'text-slate-500' : 'text-slate-400'
+                                                        : isDark ? 'text-blue-400' : 'text-blue-600'
+                                                        }`}>
+                                                        <Info className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between gap-2 mb-1">
+                                                            <h4 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                                {notification.title}
+                                                            </h4>
+                                                            {!isRead && (
+                                                                <span className={`flex-shrink-0 w-2 h-2 rounded-full ${isDark
+                                                                    ? 'bg-blue-400'
+                                                                    : 'bg-blue-500'
+                                                                    }`} />
+                                                            )}
+                                                        </div>
+                                                        <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                            {notification.description}
+                                                        </p>
+                                                        <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                            {notification.date.toLocaleDateString('tr-TR', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Kullanıcı Turu */}
             {showTour && (
                 <OnboardingTour
-                    onComplete={completeTour}
+                    onComplete={handleTourComplete}
                     isSidebarOpen={isMobileSidebarOpen}
                     onOpenSidebar={() => setIsMobileSidebarOpen(true)}
                 />
