@@ -224,7 +224,7 @@ export default function ArsivPage() {
 
     return (
         <div className={`min-h-screen ${isDark ? 'dark-content bg-slate-900' : 'bg-gray-50'}`}>
-            <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+            <div className="max-w-7xl mx-auto p-3 md:p-6 lg:p-8 overflow-x-hidden">
                 {/* Başlık */}
                 <div className="mb-6 md:mb-8">
                     <div className="flex items-center gap-3 mb-2">
@@ -305,7 +305,7 @@ export default function ArsivPage() {
                             <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                                 Kategoriye Göre Filtrele
                             </label>
-                            <div className="flex gap-1.5 overflow-x-auto pb-2 md:pb-0 md:flex-wrap scrollbar-hide -mx-1 px-1">
+                            <div className="flex gap-1.5 overflow-x-auto pb-2 md:pb-0 md:flex-wrap scrollbar-hide">
                                 {categories.map(cat => (
                                     <button
                                         key={cat}
@@ -343,7 +343,7 @@ export default function ArsivPage() {
                         </p>
                     </div>
                 ) : (
-                    <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-2xl shadow-xl border ${isDark ? 'border-slate-700' : 'border-slate-200'} overflow-hidden`}>
+                    <div className={`${isDark ? 'bg-slate-800' : 'bg-white'} rounded-2xl shadow-xl border ${isDark ? 'border-slate-700' : 'border-slate-200'} overflow-hidden max-w-full`}>
                         <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
                             {filteredFiles.map((file, index) => {
                                 const downloadLink = getDownloadLink(file.link, file.fileName);
