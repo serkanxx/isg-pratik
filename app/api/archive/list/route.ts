@@ -32,7 +32,7 @@ export async function GET() {
 
         // Tüm dosyaları pagination ile çek
         while (isTruncated) {
-            const command = new ListObjectsV2Command({
+            const command: ListObjectsV2Command = new ListObjectsV2Command({
                 Bucket: bucketName,
                 ContinuationToken: continuationToken,
                 MaxKeys: 1000, // Her istekte maksimum 1000 dosya
