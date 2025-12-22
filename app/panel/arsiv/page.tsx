@@ -240,12 +240,9 @@ function getCategory(fileName: string): string {
         return 'Sunumlar';
     }
 
-    // Prosedürler
-    if (name.includes('prosedür') || name.includes('prosedur') || name.includes('prosedürü') ||
-        name.includes('proseduru') || name.includes('prosedurleri') ||
-        name.includes('işlem prosedürü') || name.includes('islem proseduru') ||
-        name.includes('çalışma prosedürü') || name.includes('calisma proseduru')) {
-        return 'Prosedürler';
+    // Toolbox Eğitimleri
+    if (name.includes('toolbox')) {
+        return 'Toolbox Eğitimleri';
     }
 
     // Notlar
@@ -359,16 +356,30 @@ export default function ArsivPage() {
         loadArchiveFiles();
     }, []);
 
-    // Kategorileri hesapla - Diğerleri'ni en sona al
+    // Kategorileri hesapla - Belirli bir sıraya göre ve Diğerleri'ni en sona al
     const categories = useMemo(() => {
-        const cats = new Set(archiveFiles.map(f => f.category));
-        const sortedCats = Array.from(cats).sort();
-        // Diğerleri'ni ayır ve en sona ekle
-        const otherIndex = sortedCats.indexOf('Diğerleri');
-        if (otherIndex > -1) {
-            sortedCats.splice(otherIndex, 1);
-            sortedCats.push('Diğerleri');
-        }
+        const cats = Array.from(new Set(archiveFiles.map(f => f.category)));
+
+        // Öncelikli sıralama
+        const priorityOrder = ['Talimatlar', 'Toolbox Eğitimleri', 'Yönetmelikler', 'Risk Değerlendirmeleri'];
+
+        const sortedCats = cats.sort((a, b) => {
+            // "Diğerleri" her zaman en sonda olmalı
+            if (a === 'Diğerleri') return 1;
+            if (b === 'Diğerleri') return -1;
+
+            // Öncelikli listedekileri kontrol et
+            const indexA = priorityOrder.indexOf(a);
+            const indexB = priorityOrder.indexOf(b);
+
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+
+            // Diğerlerini alfabetik sırala
+            return a.localeCompare(b, 'tr');
+        });
+
         return ['Tümü', ...sortedCats];
     }, [archiveFiles]);
 
@@ -435,7 +446,7 @@ export default function ArsivPage() {
             filtered = filtered.filter(f => f.category === selectedCategory);
         } else if (selectedCategory === 'Diğerleri') {
             // Diğerleri için: bilinen kategoriler dışındakileri göster
-            const knownCategories = ['Yönetmelikler', 'Kanunlar', 'Kontrol Listeleri', 'Risk Değerlendirmeleri', 'Talimatlar', 'Formlar', 'Rehberler', 'Sunumlar', 'Prosedürler', 'Notlar'];
+            const knownCategories = ['Yönetmelikler', 'Kanunlar', 'Kontrol Listeleri', 'Risk Değerlendirmeleri', 'Talimatlar', 'Formlar', 'Rehberler', 'Sunumlar', 'Notlar', 'Toolbox Eğitimleri'];
             filtered = filtered.filter(f => !knownCategories.includes(f.category));
         }
 
@@ -704,10 +715,10 @@ export default function ArsivPage() {
                                                 return { icon: BookOpen, color: 'text-amber-500' };
                                             case 'Sunumlar':
                                                 return { icon: Presentation, color: 'text-orange-500' };
-                                            case 'Prosedürler':
-                                                return { icon: FileCode2, color: 'text-cyan-500' };
                                             case 'Notlar':
                                                 return { icon: StickyNote, color: 'text-yellow-500' };
+                                            case 'Toolbox Eğitimleri':
+                                                return { icon: ListChecks, color: 'text-orange-500' };
                                             case 'Diğerleri':
                                                 return { icon: MoreHorizontal, color: 'text-slate-500' };
                                             default:

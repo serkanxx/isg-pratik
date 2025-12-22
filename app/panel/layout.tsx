@@ -9,7 +9,7 @@ import {
     Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
     ChevronRight, LogOut, User, Settings, Home, LayoutDashboard,
     PlusCircle, Info, Clock, X, Check, RefreshCw, Edit, Save, Menu, StickyNote,
-    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase, FolderOpen, Loader2, Bell
+    Headphones as HeadphonesIcon, Moon, Sun, Calendar, Search, Briefcase, FolderOpen, Loader2, Bell, GraduationCap
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { P_VALUES, F_VALUES, S_VALUES } from '../utils';
@@ -61,6 +61,13 @@ const menuItems = [
         icon: AlertTriangle,
         active: true,
         dataTour: 'acil-durum'
+    },
+    {
+        name: 'Eğitim Katılım Formu',
+        href: '/panel/egitim-katilim',
+        icon: GraduationCap,
+        active: true,
+        dataTour: 'egitim-katilim'
     },
     {
         name: 'İş İzin Formu',
@@ -184,6 +191,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const today = new Date();
     const notifications = [
         {
+            id: 'egitim-katilim',
+            title: 'Eğitim Katılım Formu Hazırla',
+            description: 'Saniyeler içinde profesyonel Eğitim Katılım Formu oluşturun ve PDF olarak indirin.',
+            date: new Date(today)
+        },
+        {
             id: 'is-ilanlari',
             title: 'İSG İş İlanları Eklendi',
             description: 'İSG iş ilanları bölümü eklendi, iş arayanlar ve işverenler için platform oluşturuldu.',
@@ -225,7 +238,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                     const unreadIds = notifications
                         .filter(n => !prevIds.has(n.id))
                         .map(n => n.id);
-                    
+
                     if (unreadIds.length > 0) {
                         const newReadIds = new Set(prevIds);
                         unreadIds.forEach(id => newReadIds.add(id));
