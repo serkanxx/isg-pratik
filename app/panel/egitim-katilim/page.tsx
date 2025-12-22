@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useTheme } from '@/app/context/ThemeContext';
 
 // Eğitim Konuları
 const TRAINING_SUBJECTS = {
@@ -74,6 +75,7 @@ const YEARS = Array.from({ length: 11 }, (_, i) => (new Date().getFullYear() - 5
 
 export default function EgitimKatilimPage() {
     const { data: session } = useSession();
+    const { isDark } = useTheme();
 
     // State management
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -164,19 +166,47 @@ export default function EgitimKatilimPage() {
     };
 
     const handleDateChange = (dayIndex: number, part: 'day' | 'month' | 'year', value: string) => {
-        setTrainingDays(prev => prev.map((d, i) => {
-            if (i !== dayIndex) return d;
-            const currentParts = d.date.split('-'); // YYYY-MM-DD
-            let year = currentParts[0] || new Date().getFullYear().toString();
-            let month = currentParts[1] || '01';
-            let day = currentParts[2] || '01';
+        setTrainingDays(prev => {
+            const updated = prev.map((d, i) => {
+                if (i !== dayIndex) return d;
+                const currentParts = d.date.split('-'); // YYYY-MM-DD
+                let year = currentParts[0] || new Date().getFullYear().toString();
+                let month = currentParts[1] || '01';
+                let day = currentParts[2] || '01';
 
-            if (part === 'day') day = value;
-            if (part === 'month') month = value;
-            if (part === 'year') year = value;
+                if (part === 'day') day = value;
+                if (part === 'month') month = value;
+                if (part === 'year') year = value;
 
-            return { ...d, date: `${year}-${month}-${day}` };
-        }));
+                return { ...d, date: `${year}-${month}-${day}` };
+            });
+
+            // 1. gün tarihi seçildiğinde sonraki günleri otomatik doldur
+            if (dayIndex === 0) {
+                const firstDate = updated[0].date;
+                const [yearStr, monthStr, dayStr] = firstDate.split('-');
+
+                // Tam tarih girilmişse otomatik doldur
+                if (yearStr && monthStr && dayStr && yearStr !== '' && monthStr !== '' && dayStr !== '') {
+                    const baseDate = new Date(parseInt(yearStr), parseInt(monthStr) - 1, parseInt(dayStr));
+
+                    if (!isNaN(baseDate.getTime())) {
+                        return updated.map((d, i) => {
+                            if (i === 0) return d; // 1. gün değişmez
+
+                            // Sonraki günlerin tarihlerini otomatik ayarla
+                            const nextDate = new Date(baseDate);
+                            nextDate.setDate(baseDate.getDate() + i);
+
+                            const newDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+                            return { ...d, date: newDateStr };
+                        });
+                    }
+                }
+            }
+
+            return updated;
+        });
     };
 
     const toggleGlobalSubject = (subjectId: string) => {
@@ -427,7 +457,7 @@ export default function EgitimKatilimPage() {
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-slate-950 p-4 md:p-8 transition-colors duration-300 text-slate-900 dark:text-slate-100">
+        <div className="egitim-katilim-page min-h-screen bg-white dark:bg-slate-950 p-4 md:p-8 transition-colors duration-300 text-black dark:text-slate-100">
             <div className="max-w-6xl mx-auto space-y-6">
 
                 {/* Header */}
@@ -437,8 +467,8 @@ export default function EgitimKatilimPage() {
                             <GraduationCap className="w-8 h-8" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-outfit">Eğitim Katılım Formu</h1>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm">Eğitim verilerini girin ve resmi katılım formunu oluşturun</p>
+                            <h1 className="text-2xl font-bold text-black dark:text-slate-50 font-outfit">Eğitim Katılım Formu</h1>
+                            <p className="text-black dark:text-slate-400 text-sm">Eğitim verilerini girin ve resmi katılım formunu oluşturun</p>
                         </div>
                     </div>
                     <button
@@ -459,13 +489,13 @@ export default function EgitimKatilimPage() {
 
                         {/* Section 1: Company & Training */}
                         <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
-                            <h3 className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100 border-b pb-3 border-slate-50 dark:border-slate-800">
+                            <h3 className="flex items-center gap-2 font-bold text-black dark:text-slate-100 border-b pb-3 border-slate-50 dark:border-slate-800">
                                 <Building2 className="w-5 h-5 text-indigo-500" />
                                 Firma ve Eğitim Bilgileri
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-3">
-                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block px-1 tracking-wider">Firma Seçin *</label>
+                                    <label className="text-xs font-bold text-black dark:text-slate-400 uppercase block px-1 tracking-wider">Firma Seçin *</label>
                                     <select
                                         value={selectedCompanyId}
                                         onChange={(e) => {
@@ -478,13 +508,13 @@ export default function EgitimKatilimPage() {
                                                 setSelectedCompanyId(val);
                                             }
                                         }}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-slate-100"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-black dark:text-slate-100"
                                     >
-                                        <option value="">Firma Seçiniz</option>
+                                        <option value="" className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">Firma Seçiniz</option>
                                         {companies.map(c => (
-                                            <option key={c.id} value={c.id}>{c.title}</option>
+                                            <option key={c.id} value={c.id} className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">{c.title}</option>
                                         ))}
-                                        <option value="manual">➕ El ile Manuel Giriş</option>
+                                        <option value="manual" className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">➥ El ile Manuel Giriş</option>
                                     </select>
 
                                     {isManualCompany && (
@@ -493,31 +523,31 @@ export default function EgitimKatilimPage() {
                                             value={manualCompanyTitle}
                                             onChange={(e) => setManualCompanyTitle(e.target.value)}
                                             placeholder="Firma adını manuel yazın..."
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-slate-100 animate-in fade-in slide-in-from-top-2"
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-black dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-500 animate-in fade-in slide-in-from-top-2"
                                         />
                                     )}
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1.5 px-1 tracking-wider">Eğitim Başlığı</label>
+                                    <label className="text-xs font-bold text-black dark:text-slate-400 uppercase block mb-1.5 px-1 tracking-wider">Eğitim Başlığı</label>
                                     <select
                                         value={trainingTitle}
                                         onChange={(e) => setTrainingTitle(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-slate-100"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-black dark:text-slate-100"
                                     >
-                                        <option value="İŞ SAĞLIĞI ve GÜVENLİĞİ">İŞ SAĞLIĞI ve GÜVENLİĞİ</option>
+                                        <option value="İŞ SAĞLIĞI ve GÜVENLİĞİ" className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">İŞ SAĞLIĞI ve GÜVENLİĞİ</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1.5 px-1 tracking-wider">Eğitim Süresi (Gün)</label>
+                                    <label className="text-xs font-bold text-black dark:text-slate-400 uppercase block mb-1.5 px-1 tracking-wider">Eğitim Süresi (Gün)</label>
                                     <select
                                         value={dayCount}
                                         onChange={(e) => setDayCount(parseInt(e.target.value))}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all dark:text-slate-100"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-black dark:text-slate-100"
                                     >
-                                        {[1, 2, 3, 4].map(d => <option key={d} value={d}>{d} Gün</option>)}
+                                        {[1, 2, 3, 4].map(d => <option key={d} value={d} className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">{d} Gün</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -525,14 +555,14 @@ export default function EgitimKatilimPage() {
 
                         {/* Section 2: Days Configuration */}
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
-                            <h3 className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100 border-b pb-3 border-slate-50 dark:border-slate-800">
+                            <h3 className="flex items-center gap-2 font-bold text-black dark:text-slate-100 border-b pb-3 border-slate-50 dark:border-slate-800">
                                 <Calendar className="w-5 h-5 text-indigo-500" />
                                 Gün Detayları ve Konu Seçimi
                             </h3>
 
                             <div className="space-y-6">
                                 {trainingDays.map((day, dIdx) => (
-                                    <div key={dIdx} className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700 transition-all hover:border-indigo-200 dark:hover:border-indigo-500/30">
+                                    <div key={dIdx} className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 transition-all hover:border-indigo-200 dark:hover:border-indigo-500/30">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-lg tracking-widest">
@@ -540,66 +570,66 @@ export default function EgitimKatilimPage() {
                                                 </span>
                                             </div>
                                             <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3">
-                                                <div className="w-full xs:w-auto flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
-                                                    <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                <div className="w-full xs:w-auto flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 transition-all focus-within:ring-2 focus-within:ring-indigo-500/20">
+                                                    <Calendar className="w-4 h-4 text-slate-700 dark:text-slate-500 flex-shrink-0" />
                                                     <div className="flex items-center gap-1">
                                                         <select
                                                             value={day.date.split('-')[2] || ''}
                                                             onChange={(e) => handleDateChange(dIdx, 'day', e.target.value)}
-                                                            className="bg-transparent text-xs outline-none dark:text-slate-100 cursor-pointer font-bold appearance-none"
+                                                            className="bg-transparent text-xs outline-none text-black dark:text-slate-100 cursor-pointer font-bold appearance-none text-center"
                                                         >
-                                                            <option value="">Gün</option>
-                                                            {DAYS.map(d => <option key={d} value={d} className="dark:bg-slate-900">{d}</option>)}
+                                                            <option value="" className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">Gün</option>
+                                                            {DAYS.map(d => <option key={d} value={d} className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">{d}</option>)}
                                                         </select>
-                                                        <span className="text-slate-300 dark:text-slate-600">/</span>
+                                                        <span className="text-slate-500 dark:text-slate-600">/</span>
                                                         <select
                                                             value={day.date.split('-')[1] || ''}
                                                             onChange={(e) => handleDateChange(dIdx, 'month', e.target.value)}
-                                                            className="bg-transparent text-xs outline-none dark:text-slate-100 cursor-pointer font-bold appearance-none"
+                                                            className="bg-transparent text-xs outline-none text-black dark:text-slate-100 cursor-pointer font-bold appearance-none text-center"
                                                         >
-                                                            <option value="">Ay</option>
-                                                            {MONTHS.map(m => <option key={m.value} value={m.value} className="dark:bg-slate-900">{m.label}</option>)}
+                                                            <option value="" className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">Ay</option>
+                                                            {MONTHS.map(m => <option key={m.value} value={m.value} className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">{m.label}</option>)}
                                                         </select>
-                                                        <span className="text-slate-300 dark:text-slate-600">/</span>
+                                                        <span className="text-slate-500 dark:text-slate-600">/</span>
                                                         <select
                                                             value={day.date.split('-')[0] || ''}
                                                             onChange={(e) => handleDateChange(dIdx, 'year', e.target.value)}
-                                                            className="bg-transparent text-xs outline-none dark:text-slate-100 cursor-pointer font-bold appearance-none"
+                                                            className="bg-transparent text-xs outline-none text-black dark:text-slate-100 cursor-pointer font-bold appearance-none text-center"
                                                         >
-                                                            <option value="">Yıl</option>
-                                                            {YEARS.map(y => <option key={y} value={y} className="dark:bg-slate-900">{y}</option>)}
+                                                            <option value="" className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">Yıl</option>
+                                                            {YEARS.map(y => <option key={y} value={y} className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">{y}</option>)}
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div className="w-full xs:w-auto flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 overflow-hidden">
-                                                    <Clock className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                <div className="w-full xs:w-auto flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 overflow-hidden">
+                                                    <Clock className="w-4 h-4 text-slate-700 dark:text-slate-500 flex-shrink-0" />
                                                     <select
                                                         value={day.hours}
                                                         onChange={(e) => {
                                                             const val = e.target.value;
                                                             setTrainingDays(prev => prev.map((d, i) => i === dIdx ? { ...d, hours: val } : d));
                                                         }}
-                                                        className="w-full bg-transparent text-sm outline-none dark:text-slate-100 cursor-pointer appearance-none"
+                                                        className="w-full bg-transparent text-sm outline-none text-black dark:text-slate-100 cursor-pointer appearance-none"
                                                     >
-                                                        {['2 SAAT', '4 SAAT', '6 SAAT', '8 SAAT'].map(h => <option key={h} value={h} className="dark:bg-slate-900">{h}</option>)}
+                                                        {['2 SAAT', '4 SAAT', '6 SAAT', '8 SAAT'].map(h => <option key={h} value={h} className="bg-white text-black dark:bg-slate-800 dark:text-slate-100">{h}</option>)}
                                                     </select>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
-                                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold">BU GÜN VERİLEN EĞİTİM KONU BAŞLIKLARI</label>
+                                            <label className="text-[10px] font-black text-black dark:text-slate-500 uppercase tracking-widest block font-bold">BU GÜN VERİLEN EĞİTİM KONU BAŞLIKLARI</label>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
                                                 {Object.entries(TRAINING_SUBJECTS).map(([category, subjects]) => {
                                                     const isSelected = day.selectedCategories.includes(category);
                                                     return (
-                                                        <div key={category} className="space-y-3 p-3 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-colors">
+                                                        <div key={category} className="space-y-3 p-3 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-colors">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => toggleCategory(dIdx, category)}
                                                                 className={`w-full flex items-center gap-3 transition-all p-2 rounded-lg ${isSelected
                                                                     ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
-                                                                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                                    : 'text-black dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                                                                     }`}
                                                             >
                                                                 <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected
@@ -613,7 +643,7 @@ export default function EgitimKatilimPage() {
 
                                                             <div className="pl-8 space-y-1.5 opacity-80 dark:opacity-90">
                                                                 {subjects.map((s, idx) => (
-                                                                    <p key={idx} className="text-[10px] leading-tight text-slate-600 dark:text-slate-300 font-medium">
+                                                                    <p key={idx} className="text-[10px] leading-tight text-black dark:text-slate-300 font-medium">
                                                                         • {s}
                                                                     </p>
                                                                 ))}
@@ -632,7 +662,7 @@ export default function EgitimKatilimPage() {
                     {/* Right Side: Participant List */}
                     <div className="space-y-6">
                         <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col h-full lg:sticky lg:top-24">
-                            <h3 className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100 border-b pb-3 border-slate-50 dark:border-slate-800 mb-4">
+                            <h3 className="flex items-center gap-2 font-bold text-black dark:text-slate-100 border-b pb-3 border-slate-50 dark:border-slate-800 mb-4">
                                 <User className="w-5 h-5 text-indigo-500" />
                                 Katılımcı Listesi ({participants.length})
                             </h3>
@@ -644,7 +674,7 @@ export default function EgitimKatilimPage() {
                                     placeholder="Ad Soyad"
                                     value={newParticipant.name}
                                     onChange={(e) => setNewParticipant({ ...newParticipant, name: e.target.value })}
-                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold dark:text-slate-100"
+                                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-black dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-500"
                                 />
                                 <div className="grid grid-cols-2 gap-2 font-bold">
                                     <input
@@ -656,19 +686,19 @@ export default function EgitimKatilimPage() {
                                             const value = e.target.value.replace(/[^0-9]/g, '');
                                             setNewParticipant({ ...newParticipant, tc: value });
                                         }}
-                                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold dark:text-slate-100"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-black dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-500"
                                     />
                                     <input
                                         type="text"
                                         placeholder="Görev"
                                         value={newParticipant.position}
                                         onChange={(e) => setNewParticipant({ ...newParticipant, position: e.target.value })}
-                                        className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold dark:text-slate-100"
+                                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-bold text-black dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-500"
                                     />
                                 </div>
                                 <button
                                     onClick={addParticipant}
-                                    className="w-full py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-black hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-md"
+                                    className="w-full py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg text-sm font-black hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 shadow-md"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Listeye Ekle
@@ -678,16 +708,16 @@ export default function EgitimKatilimPage() {
                             {/* Participants Scrollable List */}
                             <div className="flex-1 overflow-y-auto max-h-[400px] space-y-2 pr-1 custom-scrollbar">
                                 {participants.length === 0 ? (
-                                    <div className="text-center py-10 opacity-30">
-                                        <User className="w-12 h-12 mx-auto mb-2 text-slate-400" />
-                                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Henüz katılımcı yok</p>
+                                    <div className="text-center py-10 opacity-70">
+                                        <User className="w-12 h-12 mx-auto mb-2 text-slate-500 dark:text-slate-500" />
+                                        <p className="text-xs font-black uppercase tracking-widest text-black dark:text-slate-400">Henüz katılımcı yok</p>
                                     </div>
                                 ) : (
                                     participants.map((p, idx) => (
                                         <div key={p.id} className="group bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-3 rounded-xl flex items-center justify-between hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all">
                                             <div className="min-w-0">
-                                                <p className="text-sm font-black text-slate-800 dark:text-slate-200 truncate font-outfit">{idx + 1}. {p.name}</p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                                <p className="text-sm font-black text-black dark:text-slate-200 truncate font-outfit">{idx + 1}. {p.name}</p>
+                                                <p className="text-[10px] text-black dark:text-slate-400 flex items-center gap-2 mt-0.5">
                                                     <span className="font-bold tracking-tighter">{p.tc}</span>
                                                     <span className="w-1 h-1 bg-indigo-300 dark:bg-indigo-700 rounded-full" />
                                                     <span className="italic font-bold">{p.position}</span>
@@ -695,7 +725,7 @@ export default function EgitimKatilimPage() {
                                             </div>
                                             <button
                                                 onClick={() => removeParticipant(p.id)}
-                                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                                className="p-1.5 text-slate-500 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>

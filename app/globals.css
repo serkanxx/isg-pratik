@@ -23,6 +23,48 @@
   /* slate-800 */
 }
 
+/* Eğitim Katılım sayfası için dark-content override'larını devre dışı bırak */
+/* Aydınlık modda (HTML'de dark class yokken) - her zaman beyaz */
+html:not(.dark) .egitim-katilim-page .bg-white,
+html:not(.dark) .dark-content .egitim-katilim-page .bg-white {
+  background-color: #ffffff !important;
+  /* light mode - beyaz */
+}
+
+/* Karanlık modda (HTML'de dark class varken) - koyu arka plan */
+html.dark .egitim-katilim-page .bg-white,
+html.dark .dark-content .egitim-katilim-page .bg-white {
+  background-color: #0f172a !important;
+  /* slate-900 - dark mode */
+}
+
+/* Eğitim Katılım sayfası aydınlık mod metin renkleri - Tam Siyah Zorunlu */
+html:not(.dark) .egitim-katilim-page label,
+html:not(.dark) .egitim-katilim-page h1,
+html:not(.dark) .egitim-katilim-page h3,
+html:not(.dark) .egitim-katilim-page h5,
+html:not(.dark) .egitim-katilim-page p:not(.text-indigo-600):not(.text-amber-700),
+html:not(.dark) .egitim-katilim-page span:not(.text-indigo-600):not(.text-white),
+html:not(.dark) .egitim-katilim-page select,
+html:not(.dark) .egitim-katilim-page input:not([type="checkbox"]) {
+  color: #000000 !important;
+}
+
+html:not(.dark) .egitim-katilim-page .text-black {
+  color: #000000 !important;
+}
+
+/* Ana container için */
+html:not(.dark) .egitim-katilim-page.bg-white {
+  background-color: #ffffff !important;
+  /* light mode */
+}
+
+html.dark .egitim-katilim-page.bg-white {
+  background-color: #020617 !important;
+  /* slate-950 - dark mode */
+}
+
 /* Ziyaret olan takvim günleri - Aydınlık modda beyaz arka plan korunmalı */
 .visit-day-light {
   background-color: #ffffff !important;
@@ -65,11 +107,28 @@
   /* slate-400 */
 }
 
+/* Eğitim Katılım sayfası için metin renk override'larını devre dışı bırak - Tailwind dark: prefix'lerini kullan */
+.dark-content .egitim-katilim-page .text-slate-800,
+.dark-content .egitim-katilim-page .text-slate-700,
+.dark-content .egitim-katilim-page .text-slate-600,
+.dark-content .egitim-katilim-page .text-slate-500,
+.dark-content .egitim-katilim-page .text-slate-900 {
+  color: unset !important;
+}
+
 /* Dark mode - Kenarlıklar */
 .dark-content .border-slate-200,
 .dark-content .border-slate-100 {
   border-color: #334155 !important;
   /* slate-700 */
+}
+
+/* Eğitim Katılım sayfası için border override'larını devre dışı bırak - Tailwind dark: prefix'lerini kullan */
+.dark-content .egitim-katilim-page .border-slate-200,
+.dark-content .egitim-katilim-page .border-slate-100,
+.dark-content .egitim-katilim-page .border-slate-700,
+.dark-content .egitim-katilim-page .border-slate-800 {
+  border-color: unset !important;
 }
 
 /* Dark mode - Gri arkaplanlar */
@@ -78,6 +137,15 @@
 .dark-content .bg-gray-50 {
   background-color: #0f172a !important;
   /* slate-900 */
+}
+
+/* Eğitim Katılım sayfası için arkaplan override'larını devre dışı bırak - Tailwind dark: prefix'lerini kullan */
+.dark-content .egitim-katilim-page .bg-slate-100,
+.dark-content .egitim-katilim-page .bg-slate-50,
+.dark-content .egitim-katilim-page .bg-gray-50,
+.dark-content .egitim-katilim-page .bg-slate-800,
+.dark-content .egitim-katilim-page .bg-slate-900 {
+  background-color: unset !important;
 }
 
 /* Dark mode - Hover durumları */
@@ -98,6 +166,20 @@
 .dark-content input::placeholder,
 .dark-content textarea::placeholder {
   color: #64748b !important;
+}
+
+/* Eğitim Katılım sayfası için input override'ını devre dışı bırak - Tailwind dark: prefix'lerini kullan */
+.dark-content .egitim-katilim-page input,
+.dark-content .egitim-katilim-page textarea,
+.dark-content .egitim-katilim-page select {
+  background-color: unset !important;
+  border-color: unset !important;
+  color: unset !important;
+}
+
+.dark-content .egitim-katilim-page input::placeholder,
+.dark-content .egitim-katilim-page textarea::placeholder {
+  color: unset !important;
 }
 
 @theme inline {
