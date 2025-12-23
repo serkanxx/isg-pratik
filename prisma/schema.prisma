@@ -71,7 +71,6 @@ model User {
   
   accounts      Account[]
   sessions      Session[]
-  risks         UserRisk[]
   reports       ReportHistory[]
   headerInfo    HeaderInfo?
   notes         Note[]
@@ -80,20 +79,19 @@ model User {
   userJobPostings UserJobPosting[]
 }
 
-// Kullanıcı risk tablosu
+// Kullanıcı risk tablosu - Supabase'deki user_risks tablosuyla uyumlu
 model UserRisk {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id")
+  userEmail    String   @map("user_email")
   
-  riskNo       String
-  categoryCode String
-  sub_category String?
-  source       String
-  hazard       String
-  risk         String
-  affected     String?
-  responsible  String?
+  riskNo       String   @map("risk_no")
+  categoryName String?  @default("Önerilen") @map("category_name")
+  subCategory  String?  @map("sub_category")
+  source       String?
+  hazard       String?
+  risk         String?
+  affected     String?  @default("Çalışanlar")
   
   probability  Int      @default(1)
   frequency    Int      @default(1)
@@ -102,11 +100,12 @@ model UserRisk {
   frequency2   Int      @default(1)
   severity2    Int      @default(1)
   
-  measures     String?  @db.Text
-  image        String?  @db.Text
+  measures     String?
+  image        String?
+  status       String?  @default("pending")
   
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("user_risks")
 }

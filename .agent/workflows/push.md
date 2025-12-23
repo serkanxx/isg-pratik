@@ -1,6 +1,7 @@
 ---
 description: Değişiklikleri GitHub'a pushlar ve Vercel dağıtımını tetikler.
 ---
+
 // turbo-all
 1. Tüm değişiklikleri sahnele:
 `git add .`
@@ -10,3 +11,6 @@ description: Değişiklikleri GitHub'a pushlar ve Vercel dağıtımını tetikle
 
 3. Ana branch'e pushla:
 `git push origin main`
+
+4. git push
+  'git add -A && git commit -m "fix: Prisma UserRisk model updated to match Supabase table structure" && git push'
