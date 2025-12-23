@@ -6,7 +6,9 @@
 ## Notlar
 Buraya istediğiniz metni yazın...
 
-
+- ilan onay sayfası çalışmıyor
+- iş ilanları sayfasındaki sidebar değişecek
+- acil durum sayfası docx formatında da çıktı versin.
 
 - sitemap güncelle
 - GİTHUB PUSH

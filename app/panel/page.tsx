@@ -99,6 +99,9 @@ export default function PanelPage() {
     const [editingJobPosting, setEditingJobPosting] = useState<any | null>(null);
     const [editedJobContent, setEditedJobContent] = useState('');
 
+    // Risk önerileri state (admin için)
+    const [pendingRiskSuggestionsCount, setPendingRiskSuggestionsCount] = useState(0);
+
     // Toplu yükleme state'leri
     const [showBulkModal, setShowBulkModal] = useState(false);
     const [bulkData, setBulkData] = useState<{ title: string; address: string; registration_number: string; danger_class: string }[]>([]);
@@ -226,8 +229,22 @@ export default function PanelPage() {
     useEffect(() => {
         if (isAdmin) {
             fetchPendingCommentsCount();
+            fetchPendingRiskSuggestionsCount();
         }
     }, [isAdmin]);
+
+    // Bekleyen risk önerileri sayısını çek
+    const fetchPendingRiskSuggestionsCount = async () => {
+        try {
+            const res = await fetch('/api/admin/user-risks?status=pending');
+            if (res.ok) {
+                const data = await res.json();
+                setPendingRiskSuggestionsCount(data.length || 0);
+            }
+        } catch (err) {
+            console.error("Bekleyen risk önerileri sayısı alınamadı:", err);
+        }
+    };
 
     // Arşiv dosya sayısını çek
     useEffect(() => {
@@ -785,11 +802,19 @@ export default function PanelPage() {
                                 </Link>
                                 <Link
                                     href="/panel?showRiskSuggestions=true"
-                                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg"
+                                    className={`relative inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg ${pendingRiskSuggestionsCount > 0
+                                            ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
+                                            : 'bg-amber-400/80 hover:bg-amber-500 text-white'
+                                        }`}
                                 >
                                     <span className="mr-1 sm:mr-2">📥</span>
                                     <span className="hidden sm:inline">Risk Önerileri</span>
                                     <span className="sm:hidden">Öneriler</span>
+                                    {pendingRiskSuggestionsCount > 0 && (
+                                        <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[20px] h-5 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full shadow-lg border-2 border-white">
+                                            {pendingRiskSuggestionsCount}
+                                        </span>
+                                    )}
                                 </Link>
                                 <button
                                     onClick={() => { setShowJobComments(true); fetchPendingComments(); }}
