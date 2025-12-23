@@ -12,7 +12,7 @@ import {
   Trash2, Menu, Moon, Sun, Home, LayoutDashboard, LogOut,
   Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
   ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin,
-  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen, Bell, Info
+  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen, Bell, Info, GraduationCap
 } from 'lucide-react';
 import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
 
@@ -64,6 +64,13 @@ const menuItems = [
     dataTour: 'acil-durum'
   },
   {
+    name: 'Eğitim Katılım Formu',
+    href: '/panel/egitim-katilim',
+    icon: GraduationCap,
+    active: true,
+    dataTour: 'egitim-katilim'
+  },
+  {
     name: 'İş İzin Formu',
     href: '/panel/is-izin-formu',
     icon: FileCheck,
@@ -92,10 +99,12 @@ const menuItems = [
     dataTour: 'is-ilanlari'
   },
   {
-    name: 'İSG Arşiv Dosyaları',
+    name: 'İSG Dosya Arşivi',
     href: '/panel/arsiv',
     icon: FolderOpen,
     active: true,
+    highlight: true,
+    featured: true,
     dataTour: 'arsiv'
   },
 ];
@@ -137,7 +146,18 @@ const HIGHLIGHT_TERMS = [
   'C sınıfı İSG Uzmanı',
   'A Sınıfı İş Güvenlik Uzmanı',
   'B Sınıfı İş Güvenlik Uzmanı',
-  'C Sınıfı İş Güvenlik Uzmanı'
+  'C Sınıfı İş Güvenlik Uzmanı',
+  // Yeni eklenen terimler
+  'A Sınıfı İş Güvenliği',
+  'A Sınıfı İş Güvenlik',
+  'B Sınıfı İş Güvenliği',
+  'B Sınıfı İş Güvenlik',
+  'C Sınıfı İş Güvenliği',
+  'C Sınıfı İş Güvenlik',
+  'İş Güvenliği Uzmanı',
+  'A sınıfı İsg uzmanı',
+  'B sınıfı İsg uzmanı',
+  'C sınıfı İsg uzmanı'
 ];
 
 // Telefon numarası, email, il isimleri ve özel terimleri tespit ve formatla
@@ -339,6 +359,7 @@ export default function IsIlanlariPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [archiveFileCount, setArchiveFileCount] = useState<number | null>(null);
 
   // Notification state
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -360,6 +381,24 @@ export default function IsIlanlariPage() {
       setNotification({ show: false, message: '', type: 'success' });
     }, 5000);
   };
+
+  // R2'den arşiv dosya sayısını çek
+  useEffect(() => {
+    const fetchArchiveFileCount = async () => {
+      try {
+        const res = await fetch('/api/archive/list');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.files && Array.isArray(data.files)) {
+            setArchiveFileCount(data.files.length);
+          }
+        }
+      } catch (err) {
+        console.error("Arşiv dosya sayısı alınamadı:", err);
+      }
+    };
+    fetchArchiveFileCount();
+  }, []);
 
   // Bildirimleri localStorage'dan yükle
   useEffect(() => {
@@ -423,7 +462,7 @@ export default function IsIlanlariPage() {
           const unreadIds = notifications
             .filter(n => !prevIds.has(n.id))
             .map(n => n.id);
-          
+
           if (unreadIds.length > 0) {
             const newReadIds = new Set(prevIds);
             unreadIds.forEach(id => newReadIds.add(id));
@@ -675,11 +714,11 @@ export default function IsIlanlariPage() {
           : 'bg-gradient-to-b from-white via-slate-50 to-white text-slate-900 border-r border-slate-200'
         }
       `}>
-        {/* Logo */}
+        {/* Logo + Premium Bilgisi */}
         <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
           <div className="flex items-center justify-between">
             <Link
-              href="/"
+              href="/panel"
               className="flex items-center group"
               onClick={() => setIsMobileSidebarOpen(false)}
             >
@@ -693,6 +732,7 @@ export default function IsIlanlariPage() {
                 </span>
               </div>
             </Link>
+            {/* Mobil Kapat Butonu */}
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
               className={`md:hidden p-2 rounded-lg transition-colors ${isDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
@@ -701,27 +741,6 @@ export default function IsIlanlariPage() {
             </button>
           </div>
         </div>
-
-        {/* Kullanıcı Bilgisi */}
-        {session && (
-          <div className={`px-6 py-4 border-b ${isDark ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-100'} transition-colors cursor-pointer`}>
-            <Link
-              href="/panel"
-              className="flex items-center gap-3"
-              onClick={() => setIsMobileSidebarOpen(false)}
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                {session.user?.name?.charAt(0) || session.user?.email?.charAt(0) || 'U'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {session.user?.name || session.user?.email}
-                </p>
-                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Kullanıcı</p>
-              </div>
-            </Link>
-          </div>
-        )}
 
         {/* Menü */}
         <nav className="flex-1 px-4 py-6 overflow-y-auto">
@@ -734,6 +753,9 @@ export default function IsIlanlariPage() {
               const isActive = pathname === item.href;
               const Icon = item.icon;
 
+              // Özel stillendirme: İSG Dosya Arşivi
+              const isFeatured = (item as any).featured === true;
+
               return (
                 <li key={index}>
                   <Link
@@ -743,24 +765,56 @@ export default function IsIlanlariPage() {
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
                       ${isActive
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                        ? isFeatured
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/50 ring-2 ring-purple-400/50'
+                          : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                         : item.active
-                          ? item.highlight
+                          ? isFeatured
                             ? isDark
-                              ? 'text-emerald-400 hover:bg-white/5'
-                              : 'text-emerald-600 hover:bg-slate-100'
-                            : isDark
-                              ? 'text-slate-300 hover:bg-white/5 hover:text-white'
-                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                              ? 'bg-gradient-to-r from-purple-600/20 to-indigo-600/20 text-purple-300 hover:from-purple-600/30 hover:to-indigo-600/30 border-2 border-purple-500/50 hover:border-purple-400 shadow-lg shadow-purple-600/20 font-bold'
+                              : 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-700 hover:from-purple-500/30 hover:to-indigo-500/30 border-2 border-purple-400 hover:border-purple-500 shadow-lg shadow-purple-500/20 font-bold'
+                            : item.highlight
+                              ? isDark
+                                ? 'text-emerald-400 hover:bg-white/5'
+                                : 'text-emerald-600 hover:bg-slate-100'
+                              : isDark
+                                ? 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                           : isDark
                             ? 'text-slate-500 cursor-not-allowed'
                             : 'text-slate-400 cursor-not-allowed'
                       }
                     `}
                   >
-                    {Icon && <Icon className="w-5 h-5" />}
+                    {Icon && <Icon className={`w-5 h-5 ${isFeatured && !isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />}
                     <span className="flex-1">{item.name}</span>
-                    {item.active && (
+                    {isFeatured && archiveFileCount !== null && (
+                      <span className={`
+                        px-2 py-0.5 rounded-full text-xs font-bold
+                        ${isActive || isFeatured
+                          ? isDark
+                            ? 'bg-purple-500/30 text-purple-200 border border-purple-400/50'
+                            : 'bg-purple-500 text-white'
+                          : isDark
+                            ? 'bg-purple-600/40 text-purple-300 border border-purple-500/50'
+                            : 'bg-purple-600 text-white'
+                        }
+                      `}>
+                        {archiveFileCount.toLocaleString('tr-TR')} dosya
+                      </span>
+                    )}
+                    {isFeatured && archiveFileCount === null && (
+                      <span className={`
+                        px-2 py-0.5 rounded-full text-xs font-bold
+                        ${isDark
+                          ? 'bg-slate-700/40 text-slate-400 border border-slate-600/50'
+                          : 'bg-slate-300 text-slate-600'
+                        }
+                      `}>
+                        <Loader2 className="w-3 h-3 animate-spin inline" />
+                      </span>
+                    )}
+                    {item.active && !isFeatured && (
                       <ChevronRightIcon className="w-4 h-4 opacity-50" />
                     )}
                   </Link>
