@@ -10,7 +10,7 @@ import {
     Building2, FileText, Shield, Plus, TrendingUp,
     AlertCircle, ChevronRight, PlusCircle, PieChart, Activity, AlertTriangle,
     StickyNote, Clock, Check, Trash2, Bell, X, Calendar, MessageCircle,
-    FileSpreadsheet, Upload, Download, Edit2, Loader2, Search, CheckCircle, FolderOpen
+    FileSpreadsheet, Upload, Download, Edit2, Loader2, Search, CheckCircle, FolderOpen, RefreshCw
 } from 'lucide-react';
 import { Company } from '../types';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -90,6 +90,14 @@ export default function PanelPage() {
     const [showJobComments, setShowJobComments] = useState(false);
     const [pendingComments, setPendingComments] = useState<any[]>([]);
     const [loadingComments, setLoadingComments] = useState(false);
+
+    // İlan onay state'leri (admin için)
+    const [pendingJobPostingsCount, setPendingJobPostingsCount] = useState(0);
+    const [showJobPostingApproval, setShowJobPostingApproval] = useState(false);
+    const [pendingJobPostings, setPendingJobPostings] = useState<any[]>([]);
+    const [loadingJobPostings, setLoadingJobPostings] = useState(false);
+    const [editingJobPosting, setEditingJobPosting] = useState<any | null>(null);
+    const [editedJobContent, setEditedJobContent] = useState('');
 
     // Toplu yükleme state'leri
     const [showBulkModal, setShowBulkModal] = useState(false);
@@ -477,6 +485,76 @@ export default function PanelPage() {
         }
     };
 
+    // İlan Onay Fonksiyonları
+    const fetchPendingJobPostingsCount = async () => {
+        try {
+            const res = await fetch('/api/admin/user-job-postings?status=pending');
+            if (res.ok) {
+                const result = await res.json();
+                setPendingJobPostingsCount(result.data?.length || 0);
+            }
+        } catch (err) {
+            console.error("Bekleyen ilan sayısı alınamadı:", err);
+        }
+    };
+
+    const fetchPendingJobPostings = async () => {
+        setLoadingJobPostings(true);
+        try {
+            const res = await fetch('/api/admin/user-job-postings?status=pending');
+            if (res.ok) {
+                const result = await res.json();
+                setPendingJobPostings(result.data || []);
+            }
+        } catch (err) {
+            console.error("Bekleyen ilanlar çekilemedi:", err);
+        } finally {
+            setLoadingJobPostings(false);
+        }
+    };
+
+    const handleApproveJobPosting = async (id: string, content?: string) => {
+        try {
+            const res = await fetch(`/api/admin/user-job-postings/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'approved', content })
+            });
+            if (res.ok) {
+                setPendingJobPostings(pendingJobPostings.filter(p => p.id !== id));
+                setPendingJobPostingsCount(prev => Math.max(0, prev - 1));
+                setEditingJobPosting(null);
+                alert('İlan onaylandı ve yayınlandı!');
+            }
+        } catch (err) {
+            console.error("İlan onaylama hatası:", err);
+        }
+    };
+
+    const handleRejectJobPosting = async (id: string) => {
+        if (!confirm('Bu ilanı reddetmek istediğinize emin misiniz?')) return;
+        try {
+            const res = await fetch(`/api/admin/user-job-postings/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'rejected' })
+            });
+            if (res.ok) {
+                setPendingJobPostings(pendingJobPostings.filter(p => p.id !== id));
+                setPendingJobPostingsCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (err) {
+            console.error("İlan reddetme hatası:", err);
+        }
+    };
+
+    // Admin için bekleyen ilanları çek
+    useEffect(() => {
+        if (isAdmin) {
+            fetchPendingJobPostingsCount();
+        }
+    }, [isAdmin]);
+
     // Yardımcı fonksiyonlar
     const isOverdue = (dueDate: string | null) => {
         if (!dueDate) return false;
@@ -726,6 +804,22 @@ export default function PanelPage() {
                                     {pendingCommentsCount > 0 && (
                                         <span className="ml-2 bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
                                             {pendingCommentsCount}
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => { setShowJobPostingApproval(true); fetchPendingJobPostings(); }}
+                                    className={`inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg ${pendingJobPostingsCount > 0
+                                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white animate-pulse'
+                                        : 'bg-emerald-400/80 hover:bg-emerald-500 text-white'
+                                        }`}
+                                >
+                                    <span className="mr-1 sm:mr-2">📋</span>
+                                    <span className="hidden sm:inline">İlan Onay</span>
+                                    <span className="sm:hidden">İlanlar</span>
+                                    {pendingJobPostingsCount > 0 && (
+                                        <span className="ml-2 bg-white text-emerald-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                                            {pendingJobPostingsCount}
                                         </span>
                                     )}
                                 </button>
@@ -1573,6 +1667,118 @@ export default function PanelPage() {
                                                     </button>
                                                 </div>
                                             </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* İlan Onay Modal */}
+            {showJobPostingApproval && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className={`rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                        <div className={`p-4 border-b flex justify-between items-center ${isDark ? 'border-slate-700 bg-emerald-900/20' : 'border-slate-200 bg-emerald-50'}`}>
+                            <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
+                                📋 Kullanıcı İlan Onayları
+                                {pendingJobPostingsCount > 0 && (
+                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${isDark ? 'bg-emerald-500 text-white' : 'bg-emerald-600 text-white'}`}>
+                                        {pendingJobPostingsCount} bekleyen
+                                    </span>
+                                )}
+                            </h2>
+                            <button
+                                onClick={() => { setShowJobPostingApproval(false); setEditingJobPosting(null); }}
+                                className={`p-2 rounded transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-emerald-100 text-emerald-700'}`}
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-4 overflow-y-auto max-h-[70vh]">
+                            {loadingJobPostings ? (
+                                <div className="text-center py-8">
+                                    <RefreshCw className={`w-8 h-8 animate-spin mx-auto mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                                    <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>Yükleniyor...</p>
+                                </div>
+                            ) : pendingJobPostings.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bekleyen ilan yok.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {pendingJobPostings.map((posting) => (
+                                        <div key={posting.id} className={`border rounded-lg p-4 ${isDark ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-slate-50'}`}>
+                                            {editingJobPosting?.id === posting.id ? (
+                                                // Düzenleme Modu
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <label className={`text-xs font-bold block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>İlan İçeriği</label>
+                                                        <textarea
+                                                            rows={6}
+                                                            className={`w-full border rounded p-3 text-sm ${isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                                            value={editedJobContent}
+                                                            onChange={e => setEditedJobContent(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2 justify-end">
+                                                        <button
+                                                            onClick={() => setEditingJobPosting(null)}
+                                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${isDark ? 'bg-slate-600 text-white hover:bg-slate-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                                                        >
+                                                            İptal
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleApproveJobPosting(posting.id, editedJobContent)}
+                                                            className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700"
+                                                        >
+                                                            <Check className="w-4 h-4 inline mr-1" /> Onayla ve Yayınla
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                // Görüntüleme Modu
+                                                <>
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div>
+                                                            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                <span className="font-bold">Gönderen:</span> {posting.user?.name || posting.user?.email || 'Anonim'}
+                                                            </p>
+                                                            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                <span className="font-bold">Tarih:</span> {new Date(posting.createdAt).toLocaleString('tr-TR')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`p-3 rounded-lg mb-3 whitespace-pre-wrap text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                                                        {posting.content}
+                                                    </div>
+                                                    <div className="flex gap-2 justify-end">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingJobPosting(posting);
+                                                                setEditedJobContent(posting.content);
+                                                            }}
+                                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${isDark ? 'bg-slate-600 text-white hover:bg-slate-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                                                        >
+                                                            <Edit2 className="w-4 h-4 inline mr-1" /> Düzenle
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleApproveJobPosting(posting.id)}
+                                                            className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700"
+                                                        >
+                                                            <Check className="w-4 h-4 inline mr-1" /> Onayla
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectJobPosting(posting.id)}
+                                                            className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700"
+                                                        >
+                                                            <X className="w-4 h-4 inline mr-1" /> Reddet
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

@@ -56,6 +56,14 @@ export default function AdminPage() {
     const [pendingComments, setPendingComments] = useState<any[]>([]);
     const [loadingComments, setLoadingComments] = useState(false);
 
+    // Kullanıcı İş İlanları State
+    const [pendingJobPostingsCount, setPendingJobPostingsCount] = useState(0);
+    const [showJobPostings, setShowJobPostings] = useState(false);
+    const [pendingJobPostings, setPendingJobPostings] = useState<any[]>([]);
+    const [loadingJobPostings, setLoadingJobPostings] = useState(false);
+    const [editingJobPostingId, setEditingJobPostingId] = useState<string | null>(null);
+    const [editedJobPostingContent, setEditedJobPostingContent] = useState('');
+
     // Form State
     const [formData, setFormData] = useState({
         riskNo: '',
@@ -83,9 +91,9 @@ export default function AdminPage() {
             // Email veya role kontrolü (panel sayfasıyla aynı mantık)
             const userEmail = session.user.email;
             const userRole = (session.user as any)?.role;
-            
+
             const isAdmin = userEmail === ADMIN_EMAIL || userRole === 'ADMIN';
-            
+
             if (isAdmin) {
                 setIsChecking(false);
                 setIsAuthenticated(true);
@@ -127,6 +135,14 @@ export default function AdminPage() {
                 const commentsData = await pendingCommentsRes.json();
                 if (commentsData.success) {
                     setPendingCommentsCount(commentsData.data.length);
+                }
+            }
+            // Bekleyen iş ilanlarının sayısını çek
+            const pendingJobPostingsRes = await fetch('/api/admin/user-job-postings?status=pending');
+            if (pendingJobPostingsRes.ok) {
+                const jobPostingsData = await pendingJobPostingsRes.json();
+                if (jobPostingsData.success) {
+                    setPendingJobPostingsCount(jobPostingsData.data.length);
                 }
             }
         } catch (err) {
@@ -230,6 +246,63 @@ export default function AdminPage() {
             if (res.ok) {
                 setPendingComments(pendingComments.filter(c => c.id !== id));
                 setPendingCommentsCount(prev => prev - 1);
+            }
+        } catch (err) {
+            console.error("Reddetme hatası:", err);
+        }
+    };
+
+    // Kullanıcı İş İlanları Fonksiyonları
+    const fetchPendingJobPostings = async () => {
+        setLoadingJobPostings(true);
+        try {
+            const res = await fetch('/api/admin/user-job-postings?status=pending');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    setPendingJobPostings(data.data);
+                }
+            }
+        } catch (err) {
+            console.error("İlanlar çekilemedi:", err);
+        } finally {
+            setLoadingJobPostings(false);
+        }
+    };
+
+    const handleApproveJobPosting = async (id: string, content?: string) => {
+        try {
+            const res = await fetch(`/api/admin/user-job-postings/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'approved',
+                    content: content || undefined
+                })
+            });
+            if (res.ok) {
+                setPendingJobPostings(pendingJobPostings.filter(p => p.id !== id));
+                setPendingJobPostingsCount(prev => prev - 1);
+                setEditingJobPostingId(null);
+                setEditedJobPostingContent('');
+                alert('İlan onaylandı ve yayınlandı!');
+            }
+        } catch (err) {
+            console.error("Onaylama hatası:", err);
+        }
+    };
+
+    const handleRejectJobPosting = async (id: string) => {
+        if (!confirm('Bu ilanı reddetmek istediğinize emin misiniz?')) return;
+        try {
+            const res = await fetch(`/api/admin/user-job-postings/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'rejected' })
+            });
+            if (res.ok) {
+                setPendingJobPostings(pendingJobPostings.filter(p => p.id !== id));
+                setPendingJobPostingsCount(prev => prev - 1);
             }
         } catch (err) {
             console.error("Reddetme hatası:", err);
@@ -722,6 +795,22 @@ export default function AdminPage() {
                                 </span>
                             )}
                         </button>
+                        {/* Bekleyen İlanlar Butonu */}
+                        <button
+                            onClick={() => { setShowJobPostings(true); fetchPendingJobPostings(); }}
+                            className={`flex items-center px-4 py-2 rounded-md font-bold transition-colors ${pendingJobPostingsCount > 0
+                                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            <span className="mr-2">📋</span>
+                            İlan Onay
+                            {pendingJobPostingsCount > 0 && (
+                                <span className="ml-2 bg-white text-emerald-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                                    {pendingJobPostingsCount}
+                                </span>
+                            )}
+                        </button>
                         <button
                             onClick={handleSyncToSupabase}
                             disabled={isSyncing}
@@ -822,508 +911,697 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {loading ? (
-                    <div className="text-center py-10">Yükleniyor...</div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredData.length === 0 ? (
-                            <div className="text-center py-10 text-gray-500 bg-white rounded-lg border border-gray-200">
-                                <Search className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-                                <p>Aradığınız kriterlere uygun kayıt bulunamadı.</p>
-                                <button onClick={() => { setSearchTerm(''); setSelectedTag(null); }} className="text-blue-600 hover:underline mt-2 text-sm">Filtreleri Temizle</button>
-                            </div>
-                        ) : (
-                            filteredData.map((category) => {
-                                const subCategories = getSubCategories(category.items);
+                {
+                    loading ? (
+                        <div className="text-center py-10">Yükleniyor...</div>
+                    ) : (
+                        <div className="space-y-4">
+                            {filteredData.length === 0 ? (
+                                <div className="text-center py-10 text-gray-500 bg-white rounded-lg border border-gray-200">
+                                    <Search className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                                    <p>Aradığınız kriterlere uygun kayıt bulunamadı.</p>
+                                    <button onClick={() => { setSearchTerm(''); setSelectedTag(null); }} className="text-blue-600 hover:underline mt-2 text-sm">Filtreleri Temizle</button>
+                                </div>
+                            ) : (
+                                filteredData.map((category) => {
+                                    const subCategories = getSubCategories(category.items);
 
-                                return (
-                                    <div key={`cat-${category.code}-${data.indexOf(category)}`} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                        <div
-                                            className="p-4 bg-gray-50 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
-                                            onClick={() => setExpandedCategory(expandedCategory === category.code ? null : category.code)}
-                                        >
-                                            <div className="flex items-center space-x-3">
-                                                {expandedCategory === category.code ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
-                                                <span className="font-bold text-blue-900">{category.code}</span>
-                                                <span className="font-semibold text-gray-700">{category.category}</span>
-                                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{category.items.length} Madde</span>
-                                            </div>
+                                    return (
+                                        <div key={`cat-${category.code}-${data.indexOf(category)}`} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                            <div
+                                                className="p-4 bg-gray-50 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => setExpandedCategory(expandedCategory === category.code ? null : category.code)}
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    {expandedCategory === category.code ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+                                                    <span className="font-bold text-blue-900">{category.code}</span>
+                                                    <span className="font-semibold text-gray-700">{category.category}</span>
+                                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{category.items.length} Madde</span>
+                                                </div>
 
-                                            {/* Tag Yönetimi */}
-                                            <div className="flex-1 px-4 flex flex-wrap gap-1 items-center justify-start" onClick={(e) => e.stopPropagation()}>
-                                                {Array.from(new Set(category.items.flatMap((i: any) => i.sector_tags || []))).sort().map((tag: any) => (
-                                                    <span
-                                                        key={tag}
-                                                        className={`flex items-center text-[10px] px-1.5 py-0.5 rounded border group shadow-sm transition-colors ${selectedTag === tag
-                                                            ? 'bg-blue-600 text-white border-blue-700 font-bold ring-2 ring-blue-200'
-                                                            : 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                                                            }`}
-                                                    >
-                                                        #{tag}
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleRemoveTagFromCategory(category.code, tag); }}
-                                                            className={`ml-1 hidden group-hover:block transition-colors ${selectedTag === tag ? 'text-blue-200 hover:text-red-200' : 'text-indigo-400 hover:text-red-600'
+                                                {/* Tag Yönetimi */}
+                                                <div className="flex-1 px-4 flex flex-wrap gap-1 items-center justify-start" onClick={(e) => e.stopPropagation()}>
+                                                    {Array.from(new Set(category.items.flatMap((i: any) => i.sector_tags || []))).sort().map((tag: any) => (
+                                                        <span
+                                                            key={tag}
+                                                            className={`flex items-center text-[10px] px-1.5 py-0.5 rounded border group shadow-sm transition-colors ${selectedTag === tag
+                                                                ? 'bg-blue-600 text-white border-blue-700 font-bold ring-2 ring-blue-200'
+                                                                : 'bg-indigo-50 text-indigo-700 border-indigo-100'
                                                                 }`}
-                                                            title="Bu etiketi kategoriden sil"
                                                         >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleAddTagToCategory(category.code); }}
-                                                    className="text-[10px] bg-white text-gray-500 px-1.5 py-0.5 rounded border border-dashed border-gray-300 hover:text-blue-600 hover:border-blue-300 flex items-center transition-colors shadow-sm"
-                                                    title="Kategoriye Toplu Etiket Ekle"
-                                                >
-                                                    <Plus className="w-3 h-3 mr-1" /> Etiket
-                                                </button>
+                                                            #{tag}
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleRemoveTagFromCategory(category.code, tag); }}
+                                                                className={`ml-1 hidden group-hover:block transition-colors ${selectedTag === tag ? 'text-blue-200 hover:text-red-200' : 'text-indigo-400 hover:text-red-600'
+                                                                    }`}
+                                                                title="Bu etiketi kategoriden sil"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleAddTagToCategory(category.code); }}
+                                                        className="text-[10px] bg-white text-gray-500 px-1.5 py-0.5 rounded border border-dashed border-gray-300 hover:text-blue-600 hover:border-blue-300 flex items-center transition-colors shadow-sm"
+                                                        title="Kategoriye Toplu Etiket Ekle"
+                                                    >
+                                                        <Plus className="w-3 h-3 mr-1" /> Etiket
+                                                    </button>
+                                                </div>
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); openCategoryEditModal(category); }}
+                                                        className="flex items-center text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200 transition-colors"
+                                                        title="Kategori İsmini Düzenle"
+                                                    >
+                                                        <Pencil className="w-3 h-3 mr-1" /> Düzenle
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteCategory(category.code); }}
+                                                        className="flex items-center text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors"
+                                                        title="Kategoriyi Sil"
+                                                    >
+                                                        <Trash2 className="w-3 h-3 mr-1" /> Sil
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); openModal('add', category.code); }}
+                                                        className="flex items-center text-xs bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 transition-colors"
+                                                    >
+                                                        <Plus className="w-4 h-4 mr-1" /> Yeni Ekle
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); openCategoryEditModal(category); }}
-                                                    className="flex items-center text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200 transition-colors"
-                                                    title="Kategori İsmini Düzenle"
-                                                >
-                                                    <Pencil className="w-3 h-3 mr-1" /> Düzenle
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteCategory(category.code); }}
-                                                    className="flex items-center text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors"
-                                                    title="Kategoriyi Sil"
-                                                >
-                                                    <Trash2 className="w-3 h-3 mr-1" /> Sil
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); openModal('add', category.code); }}
-                                                    className="flex items-center text-xs bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 transition-colors"
-                                                >
-                                                    <Plus className="w-4 h-4 mr-1" /> Yeni Ekle
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        {expandedCategory === category.code && (
-                                            <div className="p-4 border-t border-gray-200">
-                                                {category.items.length === 0 ? (
-                                                    <p className="text-gray-500 italic text-sm">Bu kategoride henüz kayıt yok.</p>
-                                                ) : (
-                                                    <div className="space-y-6">
-                                                        {Object.entries(subCategories).map(([subCatName, items], subIdx) => (
-                                                            <div key={`${category.code}-sub-${subIdx}-${subCatName}`} className="border rounded-lg overflow-hidden">
-                                                                <div className="bg-indigo-50 px-4 py-2 flex justify-between items-center">
-                                                                    <span className="font-bold text-indigo-800 text-sm">{subCatName}</span>
-                                                                    <div className="flex space-x-2">
-                                                                        <span className="text-xs text-indigo-600">{items.length} madde</span>
-                                                                        <button
-                                                                            onClick={() => handleDeleteSubCategory(category.code, subCatName)}
-                                                                            className="text-xs text-red-600 hover:text-red-800 flex items-center"
-                                                                            title="Bu başlıktaki tüm maddeleri sil"
-                                                                        >
-                                                                            <Trash2 className="w-3 h-3 mr-1" /> Başlığı Sil
-                                                                        </button>
+                                            {expandedCategory === category.code && (
+                                                <div className="p-4 border-t border-gray-200">
+                                                    {category.items.length === 0 ? (
+                                                        <p className="text-gray-500 italic text-sm">Bu kategoride henüz kayıt yok.</p>
+                                                    ) : (
+                                                        <div className="space-y-6">
+                                                            {Object.entries(subCategories).map(([subCatName, items], subIdx) => (
+                                                                <div key={`${category.code}-sub-${subIdx}-${subCatName}`} className="border rounded-lg overflow-hidden">
+                                                                    <div className="bg-indigo-50 px-4 py-2 flex justify-between items-center">
+                                                                        <span className="font-bold text-indigo-800 text-sm">{subCatName}</span>
+                                                                        <div className="flex space-x-2">
+                                                                            <span className="text-xs text-indigo-600">{items.length} madde</span>
+                                                                            <button
+                                                                                onClick={() => handleDeleteSubCategory(category.code, subCatName)}
+                                                                                className="text-xs text-red-600 hover:text-red-800 flex items-center"
+                                                                                title="Bu başlıktaki tüm maddeleri sil"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3 mr-1" /> Başlığı Sil
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="p-4 grid grid-cols-1 gap-3">
+                                                                        {items.map((item: any, itemIdx: number) => (
+                                                                            <div key={`${category.code}-${subCatName}-item-${item.originalIndex}-${itemIdx}`} className="border rounded p-3 hover:shadow-md transition-shadow bg-white relative group">
+                                                                                <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                    <button
+                                                                                        onClick={() => openMoveModal(category.code, item.originalIndex, item)}
+                                                                                        className="p-1 text-purple-600 bg-purple-50 rounded hover:bg-purple-100"
+                                                                                        title="Başka Kategoriye Taşı"
+                                                                                    >
+                                                                                        <Move className="w-3 h-3" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => openModal('edit', category.code, item, item.originalIndex)}
+                                                                                        className="p-1 text-blue-600 bg-blue-50 rounded hover:bg-blue-100"
+                                                                                        title="Düzenle"
+                                                                                    >
+                                                                                        <Edit className="w-3 h-3" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => handleDeleteItem(category.code, item.originalIndex)}
+                                                                                        className="p-1 text-red-600 bg-red-50 rounded hover:bg-red-100"
+                                                                                        title="Sil"
+                                                                                    >
+                                                                                        <Trash2 className="w-3 h-3" />
+                                                                                    </button>
+                                                                                </div>
+
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                                                                    <div>
+                                                                                        <div className="mb-1">
+                                                                                            <span className="font-bold text-black text-[10px] uppercase">Risk No:</span> <span className="text-blue-700 font-bold">{item.riskNo || '-'}</span>
+                                                                                        </div>
+                                                                                        <div className="mb-1"><span className="font-bold text-black text-[10px] uppercase">Tehlike:</span> <span className="text-black">{item.hazard}</span></div>
+                                                                                        <div className="mb-1"><span className="font-bold text-black text-[10px] uppercase">Risk:</span> <span className="text-black">{item.risk}</span></div>
+                                                                                        <div><span className="font-bold text-black text-[10px] uppercase">Kaynak:</span> <span className="bg-gray-200 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">{item.source}</span></div>
+
+                                                                                        <div className="mt-1 flex flex-wrap gap-1 items-center">
+                                                                                            {(item.sector_tags || []).map((tag: string, i: number) => (
+                                                                                                <span
+                                                                                                    key={i}
+                                                                                                    className={`flex items-center text-[9px] px-1 py-0.5 rounded border group transition-colors ${selectedTag === tag
+                                                                                                        ? 'bg-blue-600 text-white border-blue-700 font-bold ring-1 ring-blue-200'
+                                                                                                        : 'bg-indigo-100 text-indigo-800 border-indigo-200'
+                                                                                                        }`}
+                                                                                                >
+                                                                                                    #{tag}
+                                                                                                    <button
+                                                                                                        onClick={(e) => { e.stopPropagation(); handleRemoveTagFromItem(category.code, itemIdx, item, tag); }}
+                                                                                                        className={`ml-1 hidden group-hover:block transition-colors ${selectedTag === tag ? 'text-blue-200 hover:text-red-200' : 'text-indigo-400 hover:text-red-600'
+                                                                                                            }`}
+                                                                                                        title="Sil"
+                                                                                                    >
+                                                                                                        <X className="w-3 h-3" />
+                                                                                                    </button>
+                                                                                                </span>
+                                                                                            ))}
+                                                                                            <button
+                                                                                                onClick={(e) => { e.stopPropagation(); handleAddTagToItem(category.code, itemIdx, item); }}
+                                                                                                className="text-[9px] bg-transparent text-gray-400 px-1 py-0.5 rounded border border-dashed border-gray-300 hover:text-blue-600 hover:border-blue-300 flex items-center transition-colors opacity-50 hover:opacity-100"
+                                                                                                title="Etiket Ekle"
+                                                                                            >
+                                                                                                <Plus className="w-3 h-3" />
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div className="mb-1"><span className="font-bold text-black text-[10px] uppercase">Önlemler:</span> <p className="text-black mt-1 text-[11px]">{item.measures}</p></div>
+                                                                                        <div className="flex space-x-3 mt-2">
+                                                                                            <div className="bg-red-50 px-2 py-1 rounded border border-red-100">
+                                                                                                <span className="text-[8px] font-bold text-red-800 block">Mevcut</span>
+                                                                                                <span className="font-bold text-red-600 text-xs">{item.p * item.f * item.s}</span>
+                                                                                            </div>
+                                                                                            <div className="bg-green-50 px-2 py-1 rounded border border-green-100">
+                                                                                                <span className="text-[8px] font-bold text-green-800 block">Hedef</span>
+                                                                                                <span className="font-bold text-green-600 text-xs">{item.p2 * item.f2 * item.s2}</span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
                                                                     </div>
                                                                 </div>
-                                                                <div className="p-4 grid grid-cols-1 gap-3">
-                                                                    {items.map((item: any, itemIdx: number) => (
-                                                                        <div key={`${category.code}-${subCatName}-item-${item.originalIndex}-${itemIdx}`} className="border rounded p-3 hover:shadow-md transition-shadow bg-white relative group">
-                                                                            <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <button
-                                                                                    onClick={() => openMoveModal(category.code, item.originalIndex, item)}
-                                                                                    className="p-1 text-purple-600 bg-purple-50 rounded hover:bg-purple-100"
-                                                                                    title="Başka Kategoriye Taşı"
-                                                                                >
-                                                                                    <Move className="w-3 h-3" />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => openModal('edit', category.code, item, item.originalIndex)}
-                                                                                    className="p-1 text-blue-600 bg-blue-50 rounded hover:bg-blue-100"
-                                                                                    title="Düzenle"
-                                                                                >
-                                                                                    <Edit className="w-3 h-3" />
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleDeleteItem(category.code, item.originalIndex)}
-                                                                                    className="p-1 text-red-600 bg-red-50 rounded hover:bg-red-100"
-                                                                                    title="Sil"
-                                                                                >
-                                                                                    <Trash2 className="w-3 h-3" />
-                                                                                </button>
-                                                                            </div>
-
-                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                                                                <div>
-                                                                                    <div className="mb-1">
-                                                                                        <span className="font-bold text-black text-[10px] uppercase">Risk No:</span> <span className="text-blue-700 font-bold">{item.riskNo || '-'}</span>
-                                                                                    </div>
-                                                                                    <div className="mb-1"><span className="font-bold text-black text-[10px] uppercase">Tehlike:</span> <span className="text-black">{item.hazard}</span></div>
-                                                                                    <div className="mb-1"><span className="font-bold text-black text-[10px] uppercase">Risk:</span> <span className="text-black">{item.risk}</span></div>
-                                                                                    <div><span className="font-bold text-black text-[10px] uppercase">Kaynak:</span> <span className="bg-gray-200 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">{item.source}</span></div>
-
-                                                                                    <div className="mt-1 flex flex-wrap gap-1 items-center">
-                                                                                        {(item.sector_tags || []).map((tag: string, i: number) => (
-                                                                                            <span
-                                                                                                key={i}
-                                                                                                className={`flex items-center text-[9px] px-1 py-0.5 rounded border group transition-colors ${selectedTag === tag
-                                                                                                    ? 'bg-blue-600 text-white border-blue-700 font-bold ring-1 ring-blue-200'
-                                                                                                    : 'bg-indigo-100 text-indigo-800 border-indigo-200'
-                                                                                                    }`}
-                                                                                            >
-                                                                                                #{tag}
-                                                                                                <button
-                                                                                                    onClick={(e) => { e.stopPropagation(); handleRemoveTagFromItem(category.code, itemIdx, item, tag); }}
-                                                                                                    className={`ml-1 hidden group-hover:block transition-colors ${selectedTag === tag ? 'text-blue-200 hover:text-red-200' : 'text-indigo-400 hover:text-red-600'
-                                                                                                        }`}
-                                                                                                    title="Sil"
-                                                                                                >
-                                                                                                    <X className="w-3 h-3" />
-                                                                                                </button>
-                                                                                            </span>
-                                                                                        ))}
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); handleAddTagToItem(category.code, itemIdx, item); }}
-                                                                                            className="text-[9px] bg-transparent text-gray-400 px-1 py-0.5 rounded border border-dashed border-gray-300 hover:text-blue-600 hover:border-blue-300 flex items-center transition-colors opacity-50 hover:opacity-100"
-                                                                                            title="Etiket Ekle"
-                                                                                        >
-                                                                                            <Plus className="w-3 h-3" />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div>
-                                                                                    <div className="mb-1"><span className="font-bold text-black text-[10px] uppercase">Önlemler:</span> <p className="text-black mt-1 text-[11px]">{item.measures}</p></div>
-                                                                                    <div className="flex space-x-3 mt-2">
-                                                                                        <div className="bg-red-50 px-2 py-1 rounded border border-red-100">
-                                                                                            <span className="text-[8px] font-bold text-red-800 block">Mevcut</span>
-                                                                                            <span className="font-bold text-red-600 text-xs">{item.p * item.f * item.s}</span>
-                                                                                        </div>
-                                                                                        <div className="bg-green-50 px-2 py-1 rounded border border-green-100">
-                                                                                            <span className="text-[8px] font-bold text-green-800 block">Hedef</span>
-                                                                                            <span className="font-bold text-green-600 text-xs">{item.p2 * item.f2 * item.s2}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            }))}
-                    </div>
-                )}
-            </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }))}
+                        </div>
+                    )
+                }
+            </div >
 
             {/* RISK MADDESI MODAL */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-                            <h3 className="text-lg font-bold text-gray-800">
-                                {modalMode === 'add' ? 'Yeni Risk Maddesi Ekle' : 'Risk Maddesini Düzenle'}
-                            </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleModalSubmit} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Risk No</label>
-                                    <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.riskNo} onChange={e => setFormData({ ...formData, riskNo: e.target.value })} placeholder="Örn: 01.01" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Alt Kategori (Risk Başlığı)</label>
-                                    <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.sub_category} onChange={e => setFormData({ ...formData, sub_category: e.target.value })} required />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kaynak / Ekipman</label>
-                                <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value })} required />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tehlike</label>
-                                <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.hazard} onChange={e => setFormData({ ...formData, hazard: e.target.value })} required />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Risk</label>
-                                <textarea rows={2} className="w-full border rounded p-2 text-sm text-black" value={formData.risk} onChange={e => setFormData({ ...formData, risk: e.target.value })} required />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Önlemler</label>
-                                <textarea rows={3} className="w-full border rounded p-2 text-sm text-black" value={formData.measures} onChange={e => setFormData({ ...formData, measures: e.target.value })} required />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sektör Etiketleri (AI Arama İçin)</label>
-                                <div className="flex space-x-2 mb-2">
-                                    <input
-                                        type="text"
-                                        className="flex-1 border rounded p-2 text-sm text-black"
-                                        value={newTag}
-                                        onChange={e => setNewTag(e.target.value)}
-                                        onKeyDown={handleAddTag}
-                                        placeholder="Etiket yazıp Enter'a basın (örn: kaynak, metal, inşaat)"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleAddTag}
-                                        className="bg-indigo-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-indigo-700"
-                                    >
-                                        Ekle
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2 min-h-[30px] p-2 bg-gray-50 rounded border">
-                                    {formData.sector_tags.map((tag, idx) => (
-                                        <span key={idx} className="bg-white text-indigo-700 border border-indigo-200 px-2 py-1 rounded-full text-xs font-bold flex items-center shadow-sm">
-                                            #{tag}
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveTag(tag)}
-                                                className="ml-1 text-indigo-400 hover:text-red-500"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </span>
-                                    ))}
-                                    {formData.sector_tags.length === 0 && <span className="text-gray-400 text-xs italic">Henüz etiket eklenmemiş.</span>}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded border">
-                                <div>
-                                    <h4 className="text-xs font-bold text-red-800 mb-2 border-b border-red-200 pb-1">Mevcut Durum (Risk Skoru)</h4>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label className="text-[10px] block mb-1">Olasılık</label>
-                                            <select
-                                                className="w-full border rounded p-1 text-xs text-black"
-                                                value={formData.p}
-                                                onChange={e => setFormData({ ...formData, p: parseFloat(e.target.value) })}
-                                            >
-                                                {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] block mb-1">Frekans</label>
-                                            <select
-                                                className="w-full border rounded p-1 text-xs text-black"
-                                                value={formData.f}
-                                                onChange={e => setFormData({ ...formData, f: parseFloat(e.target.value) })}
-                                            >
-                                                {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] block mb-1">Şiddet</label>
-                                            <select
-                                                className="w-full border rounded p-1 text-xs text-black"
-                                                value={formData.s}
-                                                onChange={e => setFormData({ ...formData, s: parseFloat(e.target.value) })}
-                                            >
-                                                {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-bold text-green-800 mb-2 border-b border-green-200 pb-1">Önlem Sonrası (Hedef)</h4>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <div>
-                                            <label className="text-[10px] block mb-1">Olasılık</label>
-                                            <select
-                                                className="w-full border rounded p-1 text-xs text-black"
-                                                value={formData.p2}
-                                                onChange={e => setFormData({ ...formData, p2: parseFloat(e.target.value) })}
-                                            >
-                                                {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] block mb-1">Frekans</label>
-                                            <select
-                                                className="w-full border rounded p-1 text-xs text-black"
-                                                value={formData.f2}
-                                                onChange={e => setFormData({ ...formData, f2: parseFloat(e.target.value) })}
-                                            >
-                                                {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] block mb-1">Şiddet</label>
-                                            <select
-                                                className="w-full border rounded p-1 text-xs text-black"
-                                                value={formData.s2}
-                                                onChange={e => setFormData({ ...formData, s2: parseFloat(e.target.value) })}
-                                            >
-                                                {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end space-x-3 pt-4 border-t">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">İptal</button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-bold flex items-center">
-                                    <Save className="w-4 h-4 mr-2" /> Kaydet
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {modalMode === 'add' ? 'Yeni Risk Maddesi Ekle' : 'Risk Maddesini Düzenle'}
+                                </h3>
+                                <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                                    <X className="w-6 h-6" />
                                 </button>
                             </div>
-                        </form>
+
+                            <form onSubmit={handleModalSubmit} className="p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Risk No</label>
+                                        <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.riskNo} onChange={e => setFormData({ ...formData, riskNo: e.target.value })} placeholder="Örn: 01.01" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Alt Kategori (Risk Başlığı)</label>
+                                        <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.sub_category} onChange={e => setFormData({ ...formData, sub_category: e.target.value })} required />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kaynak / Ekipman</label>
+                                    <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value })} required />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tehlike</label>
+                                    <input type="text" className="w-full border rounded p-2 text-sm text-black" value={formData.hazard} onChange={e => setFormData({ ...formData, hazard: e.target.value })} required />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Risk</label>
+                                    <textarea rows={2} className="w-full border rounded p-2 text-sm text-black" value={formData.risk} onChange={e => setFormData({ ...formData, risk: e.target.value })} required />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Önlemler</label>
+                                    <textarea rows={3} className="w-full border rounded p-2 text-sm text-black" value={formData.measures} onChange={e => setFormData({ ...formData, measures: e.target.value })} required />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sektör Etiketleri (AI Arama İçin)</label>
+                                    <div className="flex space-x-2 mb-2">
+                                        <input
+                                            type="text"
+                                            className="flex-1 border rounded p-2 text-sm text-black"
+                                            value={newTag}
+                                            onChange={e => setNewTag(e.target.value)}
+                                            onKeyDown={handleAddTag}
+                                            placeholder="Etiket yazıp Enter'a basın (örn: kaynak, metal, inşaat)"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddTag}
+                                            className="bg-indigo-600 text-white px-3 py-1 rounded text-sm font-bold hover:bg-indigo-700"
+                                        >
+                                            Ekle
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 min-h-[30px] p-2 bg-gray-50 rounded border">
+                                        {formData.sector_tags.map((tag, idx) => (
+                                            <span key={idx} className="bg-white text-indigo-700 border border-indigo-200 px-2 py-1 rounded-full text-xs font-bold flex items-center shadow-sm">
+                                                #{tag}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveTag(tag)}
+                                                    className="ml-1 text-indigo-400 hover:text-red-500"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                        {formData.sector_tags.length === 0 && <span className="text-gray-400 text-xs italic">Henüz etiket eklenmemiş.</span>}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded border">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-red-800 mb-2 border-b border-red-200 pb-1">Mevcut Durum (Risk Skoru)</h4>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label className="text-[10px] block mb-1">Olasılık</label>
+                                                <select
+                                                    className="w-full border rounded p-1 text-xs text-black"
+                                                    value={formData.p}
+                                                    onChange={e => setFormData({ ...formData, p: parseFloat(e.target.value) })}
+                                                >
+                                                    {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] block mb-1">Frekans</label>
+                                                <select
+                                                    className="w-full border rounded p-1 text-xs text-black"
+                                                    value={formData.f}
+                                                    onChange={e => setFormData({ ...formData, f: parseFloat(e.target.value) })}
+                                                >
+                                                    {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] block mb-1">Şiddet</label>
+                                                <select
+                                                    className="w-full border rounded p-1 text-xs text-black"
+                                                    value={formData.s}
+                                                    onChange={e => setFormData({ ...formData, s: parseFloat(e.target.value) })}
+                                                >
+                                                    {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-green-800 mb-2 border-b border-green-200 pb-1">Önlem Sonrası (Hedef)</h4>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label className="text-[10px] block mb-1">Olasılık</label>
+                                                <select
+                                                    className="w-full border rounded p-1 text-xs text-black"
+                                                    value={formData.p2}
+                                                    onChange={e => setFormData({ ...formData, p2: parseFloat(e.target.value) })}
+                                                >
+                                                    {P_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] block mb-1">Frekans</label>
+                                                <select
+                                                    className="w-full border rounded p-1 text-xs text-black"
+                                                    value={formData.f2}
+                                                    onChange={e => setFormData({ ...formData, f2: parseFloat(e.target.value) })}
+                                                >
+                                                    {F_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] block mb-1">Şiddet</label>
+                                                <select
+                                                    className="w-full border rounded p-1 text-xs text-black"
+                                                    value={formData.s2}
+                                                    onChange={e => setFormData({ ...formData, s2: parseFloat(e.target.value) })}
+                                                >
+                                                    {S_VALUES.map(v => <option key={v.value} value={v.value}>{v.value}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end space-x-3 pt-4 border-t">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">İptal</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-bold flex items-center">
+                                        <Save className="w-4 h-4 mr-2" /> Kaydet
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* KATEGORİ EKLEME/DÜZENLEME MODAL */}
-            {isCategoryModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-                        <div className="p-4 border-b flex justify-between items-center bg-white rounded-t-lg">
-                            <h3 className="text-lg font-bold text-gray-800">
-                                {categoryModalMode === 'add' ? 'Yeni Kategori Ekle' : 'Kategori İsmini Düzenle'}
-                            </h3>
-                            <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                        <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
-                            {categoryModalMode === 'add' && (
+            {
+                isCategoryModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                            <div className="p-4 border-b flex justify-between items-center bg-white rounded-t-lg">
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {categoryModalMode === 'add' ? 'Yeni Kategori Ekle' : 'Kategori İsmini Düzenle'}
+                                </h3>
+                                <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
+                                {categoryModalMode === 'add' && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Kategori Kodu (Örn: 30)</label>
+                                        <input
+                                            type="text"
+                                            className="w-full border rounded p-2 text-black"
+                                            value={newCategoryData.code}
+                                            onChange={e => setNewCategoryData({ ...newCategoryData, code: e.target.value })}
+                                            placeholder="Kodu giriniz..."
+                                            required
+                                        />
+                                    </div>
+                                )}
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Kategori Kodu (Örn: 30)</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Kategori Adı</label>
                                     <input
                                         type="text"
                                         className="w-full border rounded p-2 text-black"
-                                        value={newCategoryData.code}
-                                        onChange={e => setNewCategoryData({ ...newCategoryData, code: e.target.value })}
-                                        placeholder="Kodu giriniz..."
+                                        value={newCategoryData.category}
+                                        onChange={e => setNewCategoryData({ ...newCategoryData, category: e.target.value })}
+                                        placeholder="Kategori adını giriniz..."
                                         required
                                     />
                                 </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Kategori Adı</label>
-                                <input
-                                    type="text"
-                                    className="w-full border rounded p-2 text-black"
-                                    value={newCategoryData.category}
-                                    onChange={e => setNewCategoryData({ ...newCategoryData, category: e.target.value })}
-                                    placeholder="Kategori adını giriniz..."
-                                    required
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">İptal</button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-bold">Kaydet</button>
-                            </div>
-                        </form>
+                                <div className="flex justify-end space-x-3 pt-4">
+                                    <button type="button" onClick={() => setIsCategoryModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">İptal</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-bold">Kaydet</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* TAŞIMA MODAL */}
-            {isMoveModalOpen && moveItem && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-                        <div className="p-4 border-b flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-800">Risk Maddesini Taşı</h3>
-                            <button onClick={() => setIsMoveModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <p className="text-sm text-gray-600">
-                                <span className="font-bold">"{moveItem.item.hazard?.substring(0, 50)}..."</span> maddesini taşımak istediğiniz kategoriyi seçin:
-                            </p>
-                            <select
-                                className="w-full border rounded p-2 text-black"
-                                value={targetCategoryCode}
-                                onChange={e => setTargetCategoryCode(e.target.value)}
-                            >
-                                <option value="">Kategori seçin...</option>
-                                {data.filter(c => c.code !== moveItem.categoryCode).map(cat => (
-                                    <option key={cat.code} value={cat.code}>{cat.code} - {cat.category}</option>
-                                ))}
-                            </select>
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button type="button" onClick={() => setIsMoveModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">İptal</button>
-                                <button
-                                    onClick={handleMoveItem}
-                                    disabled={!targetCategoryCode}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-bold disabled:bg-gray-300 flex items-center"
-                                >
-                                    <Move className="w-4 h-4 mr-2" /> Taşı
+            {
+                isMoveModalOpen && moveItem && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                            <div className="p-4 border-b flex justify-between items-center">
+                                <h3 className="text-lg font-bold text-gray-800">Risk Maddesini Taşı</h3>
+                                <button onClick={() => setIsMoveModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                                    <X className="w-6 h-6" />
                                 </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    <span className="font-bold">"{moveItem.item.hazard?.substring(0, 50)}..."</span> maddesini taşımak istediğiniz kategoriyi seçin:
+                                </p>
+                                <select
+                                    className="w-full border rounded p-2 text-black"
+                                    value={targetCategoryCode}
+                                    onChange={e => setTargetCategoryCode(e.target.value)}
+                                >
+                                    <option value="">Kategori seçin...</option>
+                                    {data.filter(c => c.code !== moveItem.categoryCode).map(cat => (
+                                        <option key={cat.code} value={cat.code}>{cat.code} - {cat.category}</option>
+                                    ))}
+                                </select>
+                                <div className="flex justify-end space-x-3 pt-4">
+                                    <button type="button" onClick={() => setIsMoveModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm font-bold">İptal</button>
+                                    <button
+                                        onClick={handleMoveItem}
+                                        disabled={!targetCategoryCode}
+                                        className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-bold disabled:bg-gray-300 flex items-center"
+                                    >
+                                        <Move className="w-4 h-4 mr-2" /> Taşı
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Öneriler Modal */}
-            {showRiskSuggestions && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-amber-50">
-                            <h2 className="text-lg font-bold text-amber-800">📥 Kullanıcı Risk Önerileri</h2>
+            {
+                showRiskSuggestions && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-amber-50">
+                                <h2 className="text-lg font-bold text-amber-800">📥 Kullanıcı Risk Önerileri</h2>
+                                <button
+                                    onClick={() => setShowRiskSuggestions(false)}
+                                    className="p-2 hover:bg-amber-100 rounded text-amber-700"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 overflow-y-auto max-h-[60vh]">
+                                {loadingRisks ? (
+                                    <div className="text-center py-8">
+                                        <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
+                                        <p className="text-gray-500">Yükleniyor...</p>
+                                    </div>
+                                ) : pendingRisks.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">Bekleyen öneri yok.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingRisks.map((risk) => (
+                                            <div key={risk.id} className="border rounded-lg p-4 bg-gray-50">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{risk.risk_no}</span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {risk.user_email}
+                                                            </span>
+                                                        </div>
+                                                        <p className="font-bold text-gray-800 mb-1">{risk.hazard}</p>
+                                                        <p className="text-sm text-gray-600 mb-2">{risk.risk}</p>
+                                                        {risk.measures && (
+                                                            <p className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                                <strong>Önlemler:</strong> {risk.measures}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col gap-2 ml-4">
+                                                        <button
+                                                            onClick={() => handleApproveRisk(risk.id)}
+                                                            className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                        >
+                                                            <Check className="w-3 h-3 mr-1" /> Onayla
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectRisk(risk.id)}
+                                                            className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                        >
+                                                            <X className="w-3 h-3 mr-1" /> Reddet
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Yorumlar Modal */}
+            {
+                showJobComments && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
+                                <h2 className="text-lg font-bold text-blue-800">💬 Bekleyen İş İlanı Yorumları</h2>
+                                <button
+                                    onClick={() => setShowJobComments(false)}
+                                    className="p-2 hover:bg-blue-100 rounded text-blue-700"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 overflow-y-auto max-h-[60vh]">
+                                {loadingComments ? (
+                                    <div className="text-center py-8">
+                                        <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
+                                        <p className="text-gray-500">Yükleniyor...</p>
+                                    </div>
+                                ) : pendingComments.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">Bekleyen yorum yok.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingComments.map((comment) => (
+                                            <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+                                                                {comment.id.substring(0, 8)}...
+                                                            </span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {new Date(comment.createdAt).toLocaleString('tr-TR')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mb-2">
+                                                            <p className="text-xs text-gray-600 mb-1">
+                                                                <strong>Kullanıcı:</strong> {comment.user.name || 'Bilinmiyor'} ({comment.user.email})
+                                                            </p>
+                                                            <p className="text-xs text-gray-600">
+                                                                <strong>Anonim:</strong> {comment.isAnonymous ? 'Evet' : 'Hayır'}
+                                                            </p>
+                                                        </div>
+                                                        <p className="font-bold text-gray-800 mb-2">{comment.content}</p>
+                                                        <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                            <strong>İlan:</strong> {comment.jobPosting.content.substring(0, 100)}...
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2 ml-4">
+                                                        <button
+                                                            onClick={() => handleApproveComment(comment.id)}
+                                                            className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                        >
+                                                            <Check className="w-3 h-3 mr-1" /> Onayla
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectComment(comment.id)}
+                                                            className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                        >
+                                                            <X className="w-3 h-3 mr-1" /> Reddet
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* İlan Onay Modal */}
+            {showJobPostings && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-t-xl">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                📋 Bekleyen İş İlanları
+                                {pendingJobPostings.length > 0 && (
+                                    <span className="bg-white text-emerald-600 px-2 py-0.5 rounded-full text-xs">
+                                        {pendingJobPostings.length}
+                                    </span>
+                                )}
+                            </h2>
                             <button
-                                onClick={() => setShowRiskSuggestions(false)}
-                                className="p-2 hover:bg-amber-100 rounded text-amber-700"
+                                onClick={() => setShowJobPostings(false)}
+                                className="p-1 hover:bg-white/20 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-
-                        <div className="p-4 overflow-y-auto max-h-[60vh]">
-                            {loadingRisks ? (
-                                <div className="text-center py-8">
-                                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-2" />
-                                    <p className="text-gray-500">Yükleniyor...</p>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {loadingJobPostings ? (
+                                <div className="flex justify-center items-center py-8">
+                                    <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
                                 </div>
-                            ) : pendingRisks.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-gray-500">Bekleyen öneri yok.</p>
+                            ) : pendingJobPostings.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>Bekleyen ilan yok</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {pendingRisks.map((risk) => (
-                                        <div key={risk.id} className="border rounded-lg p-4 bg-gray-50">
-                                            <div className="flex justify-between items-start">
+                                    {pendingJobPostings.map((posting: any) => (
+                                        <div key={posting.id} className="bg-gray-50 border rounded-xl p-4">
+                                            <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">{risk.risk_no}</span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {risk.user_email}
-                                                        </span>
+                                                    <div className="text-xs text-gray-500 mb-2">
+                                                        <strong>Kullanıcı:</strong> {posting.user?.name || posting.user?.email || 'Bilinmiyor'}
+                                                        <span className="mx-2">•</span>
+                                                        <strong>Tarih:</strong> {new Date(posting.createdAt).toLocaleDateString('tr-TR')}
                                                     </div>
-                                                    <p className="font-bold text-gray-800 mb-1">{risk.hazard}</p>
-                                                    <p className="text-sm text-gray-600 mb-2">{risk.risk}</p>
-                                                    {risk.measures && (
-                                                        <p className="text-xs text-gray-500 bg-white p-2 rounded border">
-                                                            <strong>Önlemler:</strong> {risk.measures}
+                                                    {editingJobPostingId === posting.id ? (
+                                                        <textarea
+                                                            value={editedJobPostingContent}
+                                                            onChange={(e) => setEditedJobPostingContent(e.target.value)}
+                                                            className="w-full p-3 border-2 rounded-lg text-sm focus:border-emerald-500 focus:outline-none"
+                                                            rows={6}
+                                                        />
+                                                    ) : (
+                                                        <p className="text-gray-800 whitespace-pre-wrap text-sm bg-white p-3 rounded-lg border">
+                                                            {posting.content}
                                                         </p>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-col gap-2 ml-4">
-                                                    <button
-                                                        onClick={() => handleApproveRisk(risk.id)}
-                                                        className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
-                                                    >
-                                                        <Check className="w-3 h-3 mr-1" /> Onayla
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRejectRisk(risk.id)}
-                                                        className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
-                                                    >
-                                                        <X className="w-3 h-3 mr-1" /> Reddet
-                                                    </button>
+                                                <div className="flex flex-col gap-2">
+                                                    {editingJobPostingId === posting.id ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleApproveJobPosting(posting.id, editedJobPostingContent)}
+                                                                className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                            >
+                                                                <Check className="w-3 h-3 mr-1" /> Kaydet ve Onayla
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setEditingJobPostingId(null); setEditedJobPostingContent(''); }}
+                                                                className="px-3 py-1.5 bg-gray-500 text-white rounded font-bold text-xs hover:bg-gray-600"
+                                                            >
+                                                                İptal
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleApproveJobPosting(posting.id)}
+                                                                className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
+                                                            >
+                                                                <Check className="w-3 h-3 mr-1" /> Onayla
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { setEditingJobPostingId(posting.id); setEditedJobPostingContent(posting.content); }}
+                                                                className="px-3 py-1.5 bg-blue-600 text-white rounded font-bold text-xs hover:bg-blue-700 flex items-center"
+                                                            >
+                                                                <Edit className="w-3 h-3 mr-1" /> Düzenle
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectJobPosting(posting.id)}
+                                                                className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
+                                                            >
+                                                                <X className="w-3 h-3 mr-1" /> Reddet
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1334,81 +1612,6 @@ export default function AdminPage() {
                     </div>
                 </div>
             )}
-
-            {/* Yorumlar Modal */}
-            {showJobComments && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
-                            <h2 className="text-lg font-bold text-blue-800">💬 Bekleyen İş İlanı Yorumları</h2>
-                            <button
-                                onClick={() => setShowJobComments(false)}
-                                className="p-2 hover:bg-blue-100 rounded text-blue-700"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 overflow-y-auto max-h-[60vh]">
-                            {loadingComments ? (
-                                <div className="text-center py-8">
-                                    <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
-                                    <p className="text-gray-500">Yükleniyor...</p>
-                                </div>
-                            ) : pendingComments.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-gray-500">Bekleyen yorum yok.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {pendingComments.map((comment) => (
-                                        <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
-                                                            {comment.id.substring(0, 8)}...
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {new Date(comment.createdAt).toLocaleString('tr-TR')}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mb-2">
-                                                        <p className="text-xs text-gray-600 mb-1">
-                                                            <strong>Kullanıcı:</strong> {comment.user.name || 'Bilinmiyor'} ({comment.user.email})
-                                                        </p>
-                                                        <p className="text-xs text-gray-600">
-                                                            <strong>Anonim:</strong> {comment.isAnonymous ? 'Evet' : 'Hayır'}
-                                                        </p>
-                                                    </div>
-                                                    <p className="font-bold text-gray-800 mb-2">{comment.content}</p>
-                                                    <div className="text-xs text-gray-500 bg-white p-2 rounded border">
-                                                        <strong>İlan:</strong> {comment.jobPosting.content.substring(0, 100)}...
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col gap-2 ml-4">
-                                                    <button
-                                                        onClick={() => handleApproveComment(comment.id)}
-                                                        className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
-                                                    >
-                                                        <Check className="w-3 h-3 mr-1" /> Onayla
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRejectComment(comment.id)}
-                                                        className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
-                                                    >
-                                                        <X className="w-3 h-3 mr-1" /> Reddet
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+        </div >
     );
 }

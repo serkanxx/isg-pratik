@@ -93,6 +93,24 @@ export default function EgitimKatilimPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
+    // Mobile accordion state for category subtopics - tracks which categories are expanded per day
+    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+    // Toggle accordion for a specific day-category combination
+    const toggleCategoryAccordion = (dayIndex: number, category: string) => {
+        const key = `${dayIndex}-${category}`;
+        setExpandedCategories(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    // Check if a category accordion is expanded
+    const isCategoryExpanded = (dayIndex: number, category: string) => {
+        const key = `${dayIndex}-${category}`;
+        return expandedCategories[key] || false;
+    };
+
     // Fetch companies
     const { data: companies = [] } = useQuery<Company[]>({
         queryKey: queryKeys.companies,
@@ -619,31 +637,51 @@ export default function EgitimKatilimPage() {
 
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-black dark:text-slate-500 uppercase tracking-widest block font-bold">BU GÜN VERİLEN EĞİTİM KONU BAŞLIKLARI</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 md:gap-y-6">
                                                 {Object.entries(TRAINING_SUBJECTS).map(([category, subjects]) => {
                                                     const isSelected = day.selectedCategories.includes(category);
+                                                    const isExpanded = isCategoryExpanded(dIdx, category);
                                                     return (
-                                                        <div key={category} className="space-y-3 p-3 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-colors">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => toggleCategory(dIdx, category)}
-                                                                className={`w-full flex items-center gap-3 transition-all p-2 rounded-lg ${isSelected
-                                                                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
-                                                                    : 'text-black dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                                                                    }`}
-                                                            >
-                                                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected
-                                                                    ? 'bg-indigo-600 border-indigo-600'
-                                                                    : 'border-slate-300 dark:border-slate-600'
-                                                                    }`}>
-                                                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
-                                                                </div>
-                                                                <h5 className="text-xs font-black uppercase tracking-wider">{category}</h5>
-                                                            </button>
+                                                        <div key={category} className="space-y-1 md:space-y-3 p-2 md:p-3 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all duration-300 ease-in-out">
+                                                            {/* Category Header with Checkbox */}
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleCategory(dIdx, category)}
+                                                                    className={`flex-1 flex items-center gap-3 transition-all p-2 rounded-lg ${isSelected
+                                                                        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                                                                        : 'text-black dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                                        }`}
+                                                                >
+                                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isSelected
+                                                                        ? 'bg-indigo-600 border-indigo-600'
+                                                                        : 'border-slate-300 dark:border-slate-600'
+                                                                        }`}>
+                                                                        {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                                                    </div>
+                                                                    <h5 className="text-xs font-black uppercase tracking-wider">{category}</h5>
+                                                                </button>
 
-                                                            <div className="pl-8 space-y-1.5 opacity-80 dark:opacity-90">
+                                                                {/* Mobile Accordion Toggle Button */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleCategoryAccordion(dIdx, category)}
+                                                                    className="md:hidden p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                                                                    aria-label={isExpanded ? 'Alt konuları kapat' : 'Alt konuları aç'}
+                                                                >
+                                                                    {isExpanded ? (
+                                                                        <ChevronUp className="w-5 h-5" />
+                                                                    ) : (
+                                                                        <ChevronDown className="w-5 h-5" />
+                                                                    )}
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Subtopics - Always visible on desktop, collapsible on mobile */}
+                                                            <div className={`pl-6 md:pl-8 space-y-1 md:space-y-1.5 opacity-80 dark:opacity-90 overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 pt-2' : 'max-h-0 md:max-h-96 md:pt-0'
+                                                                }`}>
                                                                 {subjects.map((s, idx) => (
-                                                                    <p key={idx} className="text-[10px] leading-tight text-black dark:text-slate-300 font-medium">
+                                                                    <p key={idx} className="text-[9px] md:text-[10px] leading-tight text-black dark:text-slate-300 font-medium">
                                                                         • {s}
                                                                     </p>
                                                                 ))}
@@ -752,10 +790,10 @@ export default function EgitimKatilimPage() {
             </div>
 
             {notification.show && (
-                <div className={`fixed bottom-8 right-8 z-[100] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300 ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+                <div className={`fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[100] px-3 py-2 md:px-6 md:py-4 rounded-xl md:rounded-2xl shadow-lg md:shadow-2xl flex items-center gap-2 md:gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300 max-w-[90vw] md:max-w-none ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
                     }`}>
-                    {notification.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                    <span className="font-bold tracking-tight">{notification.message}</span>
+                    {notification.type === 'error' ? <AlertCircle className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" /> : <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />}
+                    <span className="font-semibold md:font-bold text-xs md:text-sm tracking-tight">{notification.message}</span>
                 </div>
             )}
         </div>

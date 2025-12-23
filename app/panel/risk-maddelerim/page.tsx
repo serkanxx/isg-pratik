@@ -37,9 +37,10 @@ export default function RiskMaddelerimPage() {
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+    const [formError, setFormError] = useState<string>('');
 
     const [form, setForm] = useState({
-        category_name: 'Önerilen',
+        category_name: '',
         sub_category: '',
         source: '',
         hazard: '',
@@ -84,7 +85,7 @@ export default function RiskMaddelerimPage() {
 
     const resetForm = () => {
         setForm({
-            category_name: 'Önerilen',
+            category_name: '',
             sub_category: '',
             source: '',
             hazard: '',
@@ -103,9 +104,18 @@ export default function RiskMaddelerimPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setFormError(''); // Önceki hatayı temizle
 
+        if (!form.category_name.trim()) {
+            setFormError('Kategori alanı zorunludur!');
+            return;
+        }
         if (!form.hazard.trim() || !form.risk.trim()) {
-            showNotif('Tehlike ve Risk alanları zorunludur!', 'error');
+            setFormError('Tehlike ve Risk alanları zorunludur!');
+            return;
+        }
+        if (!form.measures.trim()) {
+            setFormError('Kontrol Tedbirleri alanı zorunludur!');
             return;
         }
 
@@ -124,14 +134,15 @@ export default function RiskMaddelerimPage() {
             if (res.ok) {
                 showNotif(editingId ? 'Risk maddesi güncellendi!' : 'Risk maddesi eklendi ve öneriniz admin\'e iletildi!');
                 resetForm();
+                setFormError('');
                 setShowForm(false);
                 fetchRisks();
             } else {
                 const error = await res.json();
-                showNotif(error.error || 'Bir hata oluştu', 'error');
+                setFormError(error.error || 'Bir hata oluştu');
             }
         } catch (error) {
-            showNotif('Sunucu hatası', 'error');
+            setFormError('Sunucu hatası');
         } finally {
             setSaving(false);
         }
@@ -160,15 +171,22 @@ export default function RiskMaddelerimPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('Bu risk maddesini silmek istediğinize emin misiniz?')) return;
 
+        // Optimistik güncelleme: Önce UI'dan kaldır
+        const previousRisks = [...risks];
+        setRisks(risks.filter(r => r.id !== id));
+
         try {
             const res = await fetch(`/api/user-risks/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 showNotif('Risk maddesi silindi!');
-                fetchRisks();
             } else {
+                // Hata olursa geri al
+                setRisks(previousRisks);
                 showNotif('Risk maddesi silinemedi', 'error');
             }
         } catch (error) {
+            // Hata olursa geri al
+            setRisks(previousRisks);
             showNotif('Sunucu hatası', 'error');
         }
     };
@@ -256,10 +274,10 @@ export default function RiskMaddelerimPage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-slate-800">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-2">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white p-4 border-b border-slate-200 flex items-center justify-between z-10">
+                            <h2 className="text-lg font-bold text-slate-800">
                                 {editingId ? 'Risk Maddesini Düzenle' : 'Yeni Risk Maddesi Ekle'}
                             </h2>
                             <button
@@ -270,184 +288,195 @@ export default function RiskMaddelerimPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            {/* Kategori */}
-                            <div className="grid grid-cols-2 gap-4">
+                        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+                            {/* Form Hata Mesajı */}
+                            {formError && (
+                                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span className="font-medium">{formError}</span>
+                                    <button type="button" onClick={() => setFormError('')} className="ml-auto p-1 hover:bg-red-100 rounded">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                            {/* Kategori + Alt Kategori + Kaynak - Tek satırda */}
+                            <div className="grid grid-cols-3 gap-3">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Kategori</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Kategori *</label>
                                     <input
                                         type="text"
                                         value={form.category_name}
                                         onChange={(e) => setForm({ ...form, category_name: e.target.value })}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                        placeholder="Önerilen"
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                        placeholder="Örn: İnşaat..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Alt Kategori</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Alt Kategori</label>
                                     <input
                                         type="text"
                                         value={form.sub_category}
                                         onChange={(e) => setForm({ ...form, sub_category: e.target.value })}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                                         placeholder="Opsiyonel"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Kaynak / Bölüm</label>
+                                    <input
+                                        type="text"
+                                        value={form.source}
+                                        onChange={(e) => setForm({ ...form, source: e.target.value })}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                        placeholder="Örn: Üretim Alanı"
                                     />
                                 </div>
                             </div>
 
-                            {/* Kaynak */}
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Kaynak / Bölüm</label>
-                                <input
-                                    type="text"
-                                    value={form.source}
-                                    onChange={(e) => setForm({ ...form, source: e.target.value })}
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                    placeholder="Örn: Üretim Alanı"
-                                />
-                            </div>
-
-                            {/* Tehlike ve Risk */}
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Tehlike ve Risk - Yan yana */}
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Tehlike *</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Tehlike *</label>
                                     <textarea
                                         value={form.hazard}
                                         onChange={(e) => setForm({ ...form, hazard: e.target.value })}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                                        rows={3}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                                        rows={2}
                                         placeholder="Tehlike tanımı..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">Risk *</label>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Risk *</label>
                                     <textarea
                                         value={form.risk}
                                         onChange={(e) => setForm({ ...form, risk: e.target.value })}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                                        rows={3}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                                        rows={2}
                                         placeholder="Risk tanımı..."
                                     />
                                 </div>
                             </div>
 
-                            {/* Etkilenen */}
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Etkilenen</label>
-                                <input
-                                    type="text"
-                                    value={form.affected}
-                                    onChange={(e) => setForm({ ...form, affected: e.target.value })}
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                                    placeholder="Çalışanlar"
-                                />
-                            </div>
-
-                            {/* OFS Değerleri */}
-                            <div className="border border-slate-200 rounded-xl p-4">
-                                <h3 className="text-sm font-bold text-slate-700 mb-3">1. Aşama (Mevcut Durum)</h3>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">Olasılık (O)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            value={form.probability}
-                                            onChange={(e) => setForm({ ...form, probability: Number(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">Frekans (F)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            value={form.frequency}
-                                            onChange={(e) => setForm({ ...form, frequency: Number(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">Şiddet (Ş)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="100"
-                                            value={form.severity}
-                                            onChange={(e) => setForm({ ...form, severity: Number(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
-                                        />
-                                    </div>
+                            {/* Etkilenen + Kontrol Tedbirleri - Yan yana */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Etkilenen</label>
+                                    <input
+                                        type="text"
+                                        value={form.affected}
+                                        onChange={(e) => setForm({ ...form, affected: e.target.value })}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                        placeholder="Çalışanlar"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">Kontrol Tedbirleri *</label>
+                                    <textarea
+                                        value={form.measures}
+                                        onChange={(e) => setForm({ ...form, measures: e.target.value })}
+                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                                        rows={1}
+                                        placeholder="Alınacak önlemler..."
+                                    />
                                 </div>
                             </div>
 
-                            {/* Önlemler */}
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Kontrol Tedbirleri</label>
-                                <textarea
-                                    value={form.measures}
-                                    onChange={(e) => setForm({ ...form, measures: e.target.value })}
-                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                                    rows={3}
-                                    placeholder="Alınacak önlemler..."
-                                />
-                            </div>
+                            {/* 1. ve 2. Aşama OFS - Yan yana */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* 1. Aşama */}
+                                <div className="border border-slate-200 rounded-lg p-3">
+                                    <h3 className="text-xs font-bold text-slate-700 mb-2">1. Aşama (Mevcut Durum)</h3>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-slate-500 mb-1">Olasılık (O)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                value={form.probability}
+                                                onChange={(e) => setForm({ ...form, probability: Number(e.target.value) })}
+                                                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-slate-500 mb-1">Frekans (F)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                value={form.frequency}
+                                                onChange={(e) => setForm({ ...form, frequency: Number(e.target.value) })}
+                                                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-slate-500 mb-1">Şiddet (Ş)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="100"
+                                                value={form.severity}
+                                                onChange={(e) => setForm({ ...form, severity: Number(e.target.value) })}
+                                                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                            {/* 2. Aşama OFS */}
-                            <div className="border border-slate-200 rounded-xl p-4">
-                                <h3 className="text-sm font-bold text-slate-700 mb-3">2. Aşama (Tedbir Sonrası)</h3>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">Olasılık (O)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            value={form.probability2}
-                                            onChange={(e) => setForm({ ...form, probability2: Number(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">Frekans (F)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            value={form.frequency2}
-                                            onChange={(e) => setForm({ ...form, frequency2: Number(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 mb-1">Şiddet (Ş)</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="100"
-                                            value={form.severity2}
-                                            onChange={(e) => setForm({ ...form, severity2: Number(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
-                                        />
+                                {/* 2. Aşama */}
+                                <div className="border border-slate-200 rounded-lg p-3">
+                                    <h3 className="text-xs font-bold text-slate-700 mb-2">2. Aşama (Tedbir Sonrası)</h3>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-slate-500 mb-1">Olasılık (O)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                value={form.probability2}
+                                                onChange={(e) => setForm({ ...form, probability2: Number(e.target.value) })}
+                                                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-slate-500 mb-1">Frekans (F)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                value={form.frequency2}
+                                                onChange={(e) => setForm({ ...form, frequency2: Number(e.target.value) })}
+                                                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-slate-500 mb-1">Şiddet (Ş)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="100"
+                                                value={form.severity2}
+                                                onChange={(e) => setForm({ ...form, severity2: Number(e.target.value) })}
+                                                className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-amber-500 focus:border-transparent text-center"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Butonlar */}
-                            <div className="flex gap-3 pt-4">
+                            <div className="flex gap-3 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => { setShowForm(false); resetForm(); }}
-                                    className="flex-1 px-4 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                                    className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                                 >
                                     İptal
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex-1 px-4 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors disabled:opacity-50"
+                                    className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 transition-colors disabled:opacity-50"
                                 >
                                     {saving ? 'Kaydediliyor...' : editingId ? 'Güncelle' : 'Kaydet ve Öner'}
                                 </button>

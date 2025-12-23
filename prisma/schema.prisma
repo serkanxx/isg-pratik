@@ -77,6 +77,7 @@ model User {
   notes         Note[]
   visitPrograms VisitProgram[]
   jobComments   JobComment[]
+  userJobPostings UserJobPosting[]
 }
 
 // Kullanıcı risk tablosu
@@ -269,4 +270,21 @@ model JobComment {
   @@index([jobPostingId, status])
   @@index([status, createdAt])
   @@map("job_comments")
+}
+
+// Kullanıcıların verdiği İş İlanları
+model UserJobPosting {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content         String   @db.Text
+  status          String   @default("pending") // pending, approved, rejected
+  adminNote       String?  @db.Text // Admin düzenlemesi/notu
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  approvedAt      DateTime?
+  approvedBy      String?
+
+  @@index([status, createdAt])
+  @@map("user_job_postings")
 }
