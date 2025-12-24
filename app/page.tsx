@@ -339,11 +339,11 @@ export default function LandingPage() {
                   </Link>
                   {!session && (
                     <Link
-                      href="/risk-degerlendirme"
+                      href="/login"
                       className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-2xl font-semibold text-lg border border-white/10 transition-all"
                     >
-                      <Play className="w-5 h-5" />
-                      Demo Dene
+                      <User className="w-5 h-5" />
+                      Giriş Yap
                     </Link>
                   )}
                 </div>
@@ -590,11 +590,11 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                href="/risk-degerlendirme"
+                href="/login"
                 className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-2xl font-semibold text-lg border border-white/20 hover:bg-white/20 transition-all"
               >
-                <Eye className="w-5 h-5" />
-                Demo Dene
+                <User className="w-5 h-5" />
+                Giriş Yap
               </Link>
             </div>
 

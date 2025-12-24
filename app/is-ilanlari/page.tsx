@@ -969,9 +969,6 @@ export default function IsIlanlariPage() {
                   <Briefcase className="w-8 h-8 text-indigo-600" />
                   İş İlanları
                 </h1>
-                <p className={`mt-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Telegram kanallarından otomatik olarak çekilen güncel iş ilanları
-                </p>
               </div>
               <button
                 onClick={handleRefresh}

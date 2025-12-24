@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    AlertTriangle, Download, Lock, Calendar, User, Briefcase, ChevronDown, LogIn, Building2, CheckCircle, AlertCircle, Loader2, X, FileArchive, ChevronRight
+    AlertTriangle, Download, Lock, Calendar, User, Briefcase, ChevronDown, LogIn, Building2, CheckCircle, AlertCircle, Loader2, X, FileArchive, ChevronRight, FileText
 } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -23,7 +23,7 @@ export default function AcilDurumPage() {
     const [documentNo, setDocumentNo] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [progress, setProgress] = useState<number>(0); // Progress bar için (0-100)
-    
+
     // Toplu rapor indirme state'leri
     const [showBulkModal, setShowBulkModal] = useState<boolean>(false);
     const [showBulkModalStep2, setShowBulkModalStep2] = useState<boolean>(false);
@@ -38,6 +38,11 @@ export default function AcilDurumPage() {
         reportDate: string;
         documentNo: string;
     }>>([]);
+
+    // Toplu indirme format seçimi
+    const [bulkDownloadPDF, setBulkDownloadPDF] = useState<boolean>(true);
+    const [bulkDownloadWord, setBulkDownloadWord] = useState<boolean>(false);
+    const [generatingType, setGeneratingType] = useState<'pdf' | 'word'>('pdf');
 
     // Tümünü seç/seçimi kaldır
     const toggleSelectAllCompanies = () => {
@@ -64,7 +69,7 @@ export default function AcilDurumPage() {
             return;
         }
         setShowBulkModal(false);
-        
+
         // Seçilen firmalar için veri hazırla
         const today = new Date().toISOString().split('T')[0];
         const selectedCompanies = companies.filter(c => selectedCompanyIds.includes(c.id));
@@ -210,10 +215,15 @@ export default function AcilDurumPage() {
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 10 }, (_, i) => currentYear - 2 + i);
 
-    // Toplu PDF indirme
+    // Toplu PDF/Word indirme
     const handleBulkDownload = async () => {
         if (!bulkReportDate) {
             showNotification('Lütfen rapor tarihini girin!', 'error');
+            return;
+        }
+
+        if (!bulkDownloadPDF && !bulkDownloadWord) {
+            showNotification('Lütfen en az bir format seçin (PDF veya Word)!', 'error');
             return;
         }
 
@@ -225,6 +235,7 @@ export default function AcilDurumPage() {
         }
 
         setIsGenerating(true);
+        setGeneratingType(bulkDownloadPDF ? 'pdf' : 'word');
         setProgress(0);
         setShowBulkModalStep2(false);
 
@@ -232,18 +243,35 @@ export default function AcilDurumPage() {
             const JSZip = (await import('jszip')).default;
             const zip = new JSZip();
 
-            // Sadece seçilen firmalar için PDF oluştur
+            // Sadece seçilen firmalar için dosya oluştur
             const selectedCompanies = companies.filter(c => selectedCompanyIds.includes(c.id));
             const totalCompanies = selectedCompanies.length;
+            const formatsCount = (bulkDownloadPDF ? 1 : 0) + (bulkDownloadWord ? 1 : 0);
+            const totalOperations = totalCompanies * formatsCount;
             let completed = 0;
+
+            // Dosya adı oluşturma yardımcı fonksiyonları
+            const getFirstTwoWords = (name: string) => {
+                const words = name.trim().split(/\s+/);
+                return words.slice(0, 2).join(' ');
+            };
+            const sanitizeName = (name: string) => {
+                return name
+                    .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                    .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                    .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+                    .replace(/[^a-zA-Z0-9 -]/g, '');
+            };
 
             for (let i = 0; i < bulkCompanyData.length; i++) {
                 const item = bulkCompanyData[i];
                 // Sadece seçilen firmaları işle
                 if (!selectedCompanyIds.includes(item.companyId)) continue;
-                
+
                 const company = companies.find(c => c.id === item.companyId);
-                
                 if (!company) continue;
 
                 // Geçerlilik tarihini hesapla
@@ -252,7 +280,7 @@ export default function AcilDurumPage() {
                 reportDateObj.setFullYear(reportDateObj.getFullYear() + validityYears);
                 const validityDate = reportDateObj.toISOString().split('T')[0];
 
-                // PDF oluştur
+                // Request data
                 const requestData = {
                     companyName: company.title,
                     companyAddress: company.address,
@@ -266,42 +294,54 @@ export default function AcilDurumPage() {
                     documentNo: item.documentNo || ''
                 };
 
-                const response = await fetch('/api/acil-durum-pdf', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestData)
-                });
-
-                if (!response.ok) {
-                    console.error(`PDF oluşturulamadı: ${company.title}`);
-                    continue;
-                }
-
-                const blob = await response.blob();
-                
-                // Dosya adını oluştur
-                const getFirstTwoWords = (name: string) => {
-                    const words = name.trim().split(/\s+/);
-                    return words.slice(0, 2).join(' ');
-                };
-                const sanitizeName = (name: string) => {
-                    return name
-                        .replace(/İ/g, 'I').replace(/ı/g, 'i')
-                        .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-                        .replace(/Ü/g, 'U').replace(/ü/g, 'u')
-                        .replace(/Ş/g, 'S').replace(/ş/g, 's')
-                        .replace(/Ö/g, 'O').replace(/ö/g, 'o')
-                        .replace(/Ç/g, 'C').replace(/ç/g, 'c')
-                        .replace(/[^a-zA-Z0-9 -]/g, '');
-                };
                 const firstTwo = getFirstTwoWords(company.title);
                 const safeFilename = sanitizeName(firstTwo);
-                const filename = `${safeFilename} - Acil Durum Eylem Planı.pdf`;
 
-                // ZIP'e ekle
-                zip.file(filename, blob);
+                // PDF oluştur
+                if (bulkDownloadPDF) {
+                    try {
+                        const pdfResponse = await fetch('/api/acil-durum-pdf', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestData)
+                        });
 
-                // Raporu veritabanına kaydet
+                        if (pdfResponse.ok) {
+                            const pdfBlob = await pdfResponse.blob();
+                            zip.file(`${safeFilename} - Acil Durum Eylem Planı.pdf`, pdfBlob);
+                        } else {
+                            console.error(`PDF oluşturulamadı: ${company.title}`);
+                        }
+                    } catch (pdfError) {
+                        console.error(`PDF hatası (${company.title}):`, pdfError);
+                    }
+                    completed++;
+                    setProgress(Math.round((completed / totalOperations) * 90));
+                }
+
+                // Word oluştur
+                if (bulkDownloadWord) {
+                    try {
+                        const wordResponse = await fetch('/api/acil-durum-word', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestData)
+                        });
+
+                        if (wordResponse.ok) {
+                            const wordBlob = await wordResponse.blob();
+                            zip.file(`${safeFilename} - Acil Durum Eylem Planı.docx`, wordBlob);
+                        } else {
+                            console.error(`Word oluşturulamadı: ${company.title}`);
+                        }
+                    } catch (wordError) {
+                        console.error(`Word hatası (${company.title}):`, wordError);
+                    }
+                    completed++;
+                    setProgress(Math.round((completed / totalOperations) * 90));
+                }
+
+                // Raporu veritabanına kaydet (sadece bir kez)
                 try {
                     const reportSnapshot = {
                         company: company,
@@ -322,9 +362,6 @@ export default function AcilDurumPage() {
                 } catch (saveError) {
                     console.error('Rapor kaydetme hatası:', saveError);
                 }
-
-                completed++;
-                setProgress(Math.round((completed / totalCompanies) * 90)); // %90'a kadar
             }
 
             // ZIP'i oluştur ve indir
@@ -340,15 +377,16 @@ export default function AcilDurumPage() {
             window.URL.revokeObjectURL(url);
 
             setProgress(100);
-            showNotification(`${completed} adet rapor başarıyla indirildi ve kaydedildi!`, 'success');
-            
+            const formatText = bulkDownloadPDF && bulkDownloadWord ? 'PDF ve Word' : bulkDownloadPDF ? 'PDF' : 'Word';
+            showNotification(`${totalCompanies} firma için ${formatText} raporları başarıyla indirildi!`, 'success');
+
             // Modal'ları kapat ve state'leri temizle
             setShowBulkModalStep2(false);
             setSelectedCompanyIds([]);
             setBulkCompanyData([]);
         } catch (error: any) {
-            console.error('Toplu PDF hatası:', error);
-            showNotification('Toplu PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
+            console.error('Toplu indirme hatası:', error);
+            showNotification('Toplu indirme sırasında hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
             setProgress(0);
         } finally {
             setTimeout(() => {
@@ -516,6 +554,106 @@ export default function AcilDurumPage() {
             setProgress(0);
         } finally {
             // Kısa bir gecikme ile progress'i sıfırla (kullanıcı %100'ü görebilsin)
+            setTimeout(() => {
+                setIsGenerating(false);
+                setProgress(0);
+            }, 500);
+        }
+    };
+
+    // Word oluşturma
+    const generateWord = async () => {
+        if (!session) {
+            showNotification('Word oluşturmak için giriş yapmalısınız!', 'error');
+            return;
+        }
+        if (!selectedCompany) {
+            showNotification('Lütfen bir firma seçin!', 'error');
+            return;
+        }
+        if (!reportDate) {
+            showNotification('Lütfen rapor tarihini girin!', 'error');
+            return;
+        }
+
+        setIsGenerating(true);
+        setGeneratingType('word');
+        setProgress(0);
+
+        try {
+            const requestData = {
+                companyName: selectedCompany.title,
+                companyAddress: selectedCompany.address,
+                registrationNumber: selectedCompany.registration_number,
+                reportDate: formatDate(reportDate),
+                validityDate: formatDate(validityDate),
+                employer: selectedCompany.employer,
+                igu: selectedCompany.igu,
+                doctor: selectedCompany.doctor,
+                support: selectedCompany.support,
+                documentNo: documentNo
+            };
+
+            // Simüle edilmiş progress
+            const progressInterval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev < 90) {
+                        return Math.min(prev + 5, 90);
+                    }
+                    return prev;
+                });
+            }, 200);
+
+            const response = await fetch('/api/acil-durum-word', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData)
+            });
+
+            clearInterval(progressInterval);
+            setProgress(100);
+
+            if (!response.ok) {
+                throw new Error('Word oluşturulamadı');
+            }
+
+            const blob = await response.blob();
+
+            // Firma adının ilk 2 kelimesini al ve dosya ismi oluştur
+            const getFirstTwoWords = (name: string) => {
+                const words = name.trim().split(/\s+/);
+                return words.slice(0, 2).join(' ');
+            };
+            const sanitizeName = (name: string) => {
+                return name
+                    .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                    .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                    .replace(/Ç/g, 'C').replace(/ç/g, 'c')
+                    .replace(/[^a-zA-Z0-9 -]/g, '');
+            };
+            const firstTwo = getFirstTwoWords(selectedCompany.title);
+            const safeFilename = sanitizeName(firstTwo);
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${safeFilename} - Acil Durum Eylem Planı.docx`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            showNotification('Word dosyası başarıyla indirildi!', 'success');
+
+        } catch (error: any) {
+            console.error('Word hatası:', error);
+            showNotification('Word oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
+            setProgress(0);
+        } finally {
             setTimeout(() => {
                 setIsGenerating(false);
                 setProgress(0);
@@ -755,39 +893,48 @@ export default function AcilDurumPage() {
                 </div>
             </div>
 
-            {/* PDF İndir Butonları */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            {/* PDF ve Word İndir Butonları */}
+            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4">
                 <button
                     onClick={generatePDF}
-                    className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl text-lg font-bold shadow-lg shadow-orange-600/30 hover:shadow-xl hover:shadow-orange-600/40 transition-all hover:scale-105"
+                    className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl text-base font-bold shadow-lg shadow-orange-600/30 hover:shadow-xl hover:shadow-orange-600/40 transition-all hover:scale-105"
                 >
-                    <Download className="w-6 h-6 mr-3" />
-                    Acil Durum Eylem Planı PDF İndir
+                    <Download className="w-5 h-5 mr-2" />
+                    PDF İndir
+                </button>
+                <button
+                    onClick={generateWord}
+                    className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl text-base font-bold shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 transition-all hover:scale-105"
+                >
+                    <FileText className="w-5 h-5 mr-2" />
+                    Word İndir
                 </button>
                 {companies.length > 0 && (
                     <button
                         onClick={() => setShowBulkModal(true)}
-                        className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-lg font-bold shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/40 transition-all hover:scale-105"
+                        className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-base font-bold shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:shadow-indigo-600/40 transition-all hover:scale-105"
                     >
-                        <FileArchive className="w-6 h-6 mr-3" />
-                        Toplu Rapor İndir
+                        <FileArchive className="w-5 h-5 mr-2" />
+                        Toplu İndir
                     </button>
                 )}
                 {/* Loading Overlay with Progress Bar */}
                 {isGenerating && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex flex-col items-center justify-center p-4">
                         <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-bounce-in max-w-md w-full text-center">
-                            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-                                <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+                            <div className={`w-16 h-16 ${generatingType === 'word' ? 'bg-blue-100' : 'bg-orange-100'} rounded-full flex items-center justify-center mb-4`}>
+                                <Loader2 className={`w-8 h-8 ${generatingType === 'word' ? 'text-blue-600' : 'text-orange-600'} animate-spin`} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">PDF Hazırlanıyor</h3>
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">
+                                {generatingType === 'word' ? 'Word Dosyası Hazırlanıyor' : 'PDF Hazırlanıyor'}
+                            </h3>
                             <p className="text-slate-500 mb-6">Lütfen bekleyiniz, belgeniz oluşturuluyor...</p>
-                            
+
                             {/* Progress Bar */}
                             <div className="w-full mb-3">
                                 <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
-                                    <div 
-                                        className="bg-gradient-to-r from-orange-500 via-orange-600 to-red-500 h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2 relative"
+                                    <div
+                                        className={`${generatingType === 'word' ? 'bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-500' : 'bg-gradient-to-r from-orange-500 via-orange-600 to-red-500'} h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2 relative`}
                                         style={{ width: `${progress}%` }}
                                     >
                                         {progress > 20 && (
@@ -863,18 +1010,16 @@ export default function AcilDurumPage() {
                                         <div
                                             key={company.id}
                                             onClick={() => toggleCompanySelection(company.id)}
-                                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                                                isSelected
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                            }`}
+                                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${isSelected
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                                }`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                                    isSelected
-                                                        ? 'border-blue-500 bg-blue-500'
-                                                        : 'border-slate-300'
-                                                }`}>
+                                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isSelected
+                                                    ? 'border-blue-500 bg-blue-500'
+                                                    : 'border-slate-300'
+                                                    }`}>
                                                     {isSelected && (
                                                         <CheckCircle className="w-4 h-4 text-white" />
                                                     )}
@@ -1187,13 +1332,33 @@ export default function AcilDurumPage() {
                                 >
                                     İptal
                                 </button>
+                                <div className="flex items-center gap-4 px-4 py-2 bg-slate-100 rounded-lg">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={bulkDownloadPDF}
+                                            onChange={(e) => setBulkDownloadPDF(e.target.checked)}
+                                            className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                        />
+                                        <span className="text-sm font-medium text-slate-700">PDF</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={bulkDownloadWord}
+                                            onChange={(e) => setBulkDownloadWord(e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm font-medium text-slate-700">Word</span>
+                                    </label>
+                                </div>
                                 <button
                                     onClick={handleBulkDownload}
-                                    disabled={!bulkReportDate || selectedCompanyIds.length === 0}
-                                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    disabled={!bulkReportDate || selectedCompanyIds.length === 0 || (!bulkDownloadPDF && !bulkDownloadWord)}
+                                    className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
-                                    <Download className="w-5 h-5" />
-                                    Toplu PDF İndir
+                                    <FileArchive className="w-5 h-5" />
+                                    Toplu İndir (ZIP)
                                 </button>
                             </div>
                         </div>
