@@ -191,6 +191,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const today = new Date();
     const notifications = [
         {
+            id: 'acil-durum-word',
+            title: 'Acil Durum Eylem Planı - Word Desteği',
+            description: 'Acil Durum Eylem Planı raporunu artık ister PDF, ister Word dosyası formatında alabilirsiniz!',
+            date: new Date(today)
+        },
+        {
             id: 'egitim-katilim',
             title: 'Eğitim Katılım Formu Hazırla',
             description: 'Saniyeler içinde profesyonel Eğitim Katılım Formu oluşturun ve PDF olarak indirin.',

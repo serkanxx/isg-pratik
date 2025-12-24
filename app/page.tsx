@@ -616,19 +616,8 @@ export default function LandingPage() {
         <footer className="bg-slate-950 border-t border-white/5 py-12 sm:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-8 text-center md:text-left">
-              {/* Sol: Logo ve Copyright */}
-              <div className="flex flex-col items-center md:items-start gap-4">
-                <div className="flex items-center gap-2 group">
-                  <div className="transition-transform duration-300 group-hover:scale-110">
-                    <img src="/logo.png" alt="Logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
-                  </div>
-                  <span className="text-lg sm:text-xl font-bold text-slate-300 group-hover:text-white transition-colors">İSG Pratik</span>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-500">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
-              </div>
-
-              {/* Orta: Bilgilendirme Linkleri */}
-              <div className="flex flex-col items-center gap-2">
+              {/* Sol: Bilgilendirme Linkleri */}
+              <div className="flex flex-col items-center md:items-start gap-2 order-2 md:order-1">
                 <Link href="/risk-degerlendirme-nedir" className="text-slate-400 hover:text-white text-sm transition-colors">
                   Risk Değerlendirme Nedir?
                 </Link>
@@ -640,12 +629,23 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              {/* Sağ: Gizlilik, Kullanım, KVKK */}
-              <div className="flex flex-row flex-wrap justify-center md:flex-col gap-3 md:gap-2 text-xs sm:text-sm md:text-right">
+              {/* Orta-Sağ: Gizlilik, Kullanım, KVKK, İletişim (Logonun solunda) */}
+              <div className="flex flex-col items-center md:items-start gap-2 order-3 md:order-2 text-xs sm:text-sm">
                 <Link href="/gizlilik-politikasi" className="text-slate-400 hover:text-white transition-colors">Gizlilik Politikası</Link>
                 <Link href="/kullanim-kosullari" className="text-slate-400 hover:text-white transition-colors">Kullanım Koşulları</Link>
                 <Link href="/kvkk" className="text-slate-400 hover:text-white transition-colors">KVKK</Link>
                 <Link href="/iletisim" className="text-slate-400 hover:text-white transition-colors">İletişim</Link>
+              </div>
+
+              {/* Sağ: Logo ve Copyright */}
+              <div className="flex flex-col items-center md:items-end gap-4 order-1 md:order-3">
+                <div className="flex items-center gap-2 group">
+                  <div className="transition-transform duration-300 group-hover:scale-110">
+                    <img src="/logo.png" alt="Logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+                  </div>
+                  <span className="text-lg sm:text-xl font-bold text-slate-300 group-hover:text-white transition-colors">İSG Pratik</span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500">© 2025 İSG Pratik. Tüm hakları saklıdır.</p>
               </div>
             </div>
           </div>
