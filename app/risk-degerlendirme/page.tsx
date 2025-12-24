@@ -94,7 +94,7 @@ function RiskAssessmentContent() {
   // Akıllı sektör filtreleme fonksiyonu
   const filterSectorSuggestions = (query: string): string[] => {
     if (!query || query.length < 1) return [];
-    
+
     const normalizedQuery = query.toLowerCase()
       .replace(/ı/g, 'i').replace(/İ/g, 'i')
       .replace(/ğ/g, 'g').replace(/Ğ/g, 'g')
@@ -307,7 +307,7 @@ function RiskAssessmentContent() {
           const unreadIds = notifications
             .filter(n => !prevIds.has(n.id))
             .map(n => n.id);
-          
+
           if (unreadIds.length > 0) {
             const newReadIds = new Set(prevIds);
             unreadIds.forEach(id => newReadIds.add(id));
@@ -884,15 +884,15 @@ function RiskAssessmentContent() {
           risk: String(item.risk || '').trim(),
           affected: item.affected || "ÇALIŞANLAR",
           responsible: item.responsible || "İŞVEREN / İŞVEREN VEKİLİ",
-          probability: safeP, 
-          frequency: safeF, 
+          probability: safeP,
+          frequency: safeF,
           severity: safeS,
-          probability2: safeP2, 
-          frequency2: safeF2, 
+          probability2: safeP2,
+          frequency2: safeF2,
           severity2: safeS2,
           measures: String(item.measures || '').trim(),
-          score, 
-          level: label, 
+          score,
+          level: label,
           color,
           similarity: item.similarity // Vektör benzerlik skoru
         });
@@ -911,8 +911,8 @@ function RiskAssessmentContent() {
         setShowAIPreview(true);
         showNotification(`${previewList.length} risk maddesi bulundu. Önizleme penceresinden seçim yapabilirsiniz.`, 'success');
       } else {
-        const reason = results.length === 0 
-          ? 'uygun risk bulunamadı' 
+        const reason = results.length === 0
+          ? 'uygun risk bulunamadı'
           : 'tüm riskler zaten tabloda mevcut veya filtre kriterlerinize uymuyor';
         showNotification(`"${sectorSearch}" için ${reason}. Filtre ayarlarınızı kontrol edin veya farklı bir sektör deneyin.`, 'error');
       }
@@ -1026,1462 +1026,1504 @@ function RiskAssessmentContent() {
       ]);
       setProgress(10);
 
-    // Ana belge - önce dikey (portrait) prosedür sayfaları için başlat
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      // Ana belge - önce dikey (portrait) prosedür sayfaları için başlat
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    let prosedurPageCount = 0;
+      let prosedurPageCount = 0;
 
-    // Helper to convert buffer to base64
-    const toBase64 = (buffer: ArrayBuffer) => {
-      let binary = '';
-      const bytes = new Uint8Array(buffer);
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return window.btoa(binary);
-    };
-
-    // Türkçe karakter desteği için Roboto fontunu yüklüyoruz
-    try {
-      const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
-      const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf';
-
-      const [fontRes, fontBoldRes] = await Promise.all([
-        fetch(fontUrl),
-        fetch(fontUrlBold)
-      ]);
-
-      const fontBuffer = await fontRes.arrayBuffer();
-      const fontBoldBuffer = await fontBoldRes.arrayBuffer();
-
-      doc.addFileToVFS('Roboto-Regular.ttf', toBase64(fontBuffer));
-      doc.addFileToVFS('Roboto-Bold.ttf', toBase64(fontBoldBuffer));
-
-      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-      doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
-
-      doc.setFont('Roboto');
-      setProgress(20); // Font yükleme tamamlandı
-    } catch (error) {
-      console.error("Font yüklenirken hata oluştu:", error);
-      setProgress(20);
-    }
-
-    // ============ PROSEDÜR SAYFALARI (DİKEY) ============
-    // 1. SAYFA - KAPAK SAYFASI
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-
-    // Arka plan rengi - Beyaz
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    // Üst turuncu şerit
-    doc.setFillColor(230, 150, 130);
-    doc.rect(0, 0, 15, pageHeight, 'F'); // Sol şerit
-    doc.rect(0, 0, pageWidth, 20, 'F'); // Üst şerit
-
-    // Alt turuncu şerit
-    doc.rect(0, pageHeight - 25, pageWidth, 25, 'F');
-    doc.rect(pageWidth - 15, 0, 15, pageHeight, 'F'); // Sağ şerit
-
-    // Logo (varsa) - Üst orta
-    let startY = 50;
-    if (headerInfo.logo) {
-      try {
-        const logoWidth = 50;
-        const logoHeight = 30;
-        const logoX = (pageWidth - logoWidth) / 2;
-        doc.addImage(headerInfo.logo, 'PNG', logoX, 35, logoWidth, logoHeight);
-        startY = 75;
-      } catch (e) { console.log('Logo eklenemedi'); }
-    }
-
-    // Firma İsmi - Metin kaydırma ile
-    doc.setFont('Roboto', 'bold');
-    doc.setTextColor(0, 0, 0); // Siyah metin
-    const firmaText = headerInfo.title || '[FİRMA İSMİ]';
-    const maxTextWidth = pageWidth - 50; // Sayfa kenarlarından 25mm boşluk
-
-    // Firma ismini büyük fontla yazdır (60pt sabit)
-    const firmaFontSize = 24;
-    doc.setFontSize(firmaFontSize);
-
-    // Metin uzunsa satır sar
-    const splitFirma = doc.splitTextToSize(firmaText, maxTextWidth);
-    doc.text(splitFirma, pageWidth / 2, startY, { align: 'center' });
-
-    // Satır sayısına göre startY'yi ayarla
-    if (splitFirma.length > 1) {
-      startY += splitFirma.length * (firmaFontSize * 0.4) + 5;
-    }
-
-    // Firma Adresi
-    doc.setFont('Roboto', 'normal');
-    doc.setFontSize(11);
-    const adresText = headerInfo.address || '[FİRMA ADRES]';
-    const splitAdres = doc.splitTextToSize(adresText, maxTextWidth);
-    doc.text(splitAdres, pageWidth / 2, startY + 15, { align: 'center' });
-    const adresHeight = splitAdres.length * 5;
-
-    // SGK Sicil No
-    doc.setFontSize(12);
-    const sicilText = headerInfo.registrationNumber || '[SGK SİCİL NO]';
-    doc.text(sicilText, pageWidth / 2, startY + 20 + adresHeight, { align: 'center' });
-
-    // İş Sağlığı ve Güvenliği
-    doc.setFontSize(14);
-    doc.text('İŞ SAĞLIĞI VE GÜVENLİĞİ', pageWidth / 2, startY + 40 + adresHeight, { align: 'center' });
-
-    // Prosedür Başlığı - Altı çizili kısımla
-    doc.setFontSize(12);
-    const prosedurBaslik = 'TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ PROSEDÜRÜ';
-    doc.text(prosedurBaslik, pageWidth / 2, startY + 60 + adresHeight, { align: 'center' });
-
-    // Altı çizili kısım için çizgi
-    const underlineWidth = doc.getTextWidth('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ PROSEDÜRÜ');
-    doc.setDrawColor(0, 0, 0);
-    const lineStartX = (pageWidth / 2) - (doc.getTextWidth(prosedurBaslik) / 2);
-    doc.line(lineStartX, startY + 62 + adresHeight, lineStartX + underlineWidth, startY + 62 + adresHeight);
-
-    // ===== TABLO: RİSK DEĞERLENDİRMESİNİN (sol sütun birleşik) =====
-    // Tabloyu sayfanın alt kısmına al (en altta değil, biraz üstünde)
-    const table1Y = pageHeight - 100; // Sayfanın altından 100mm yukarıda
-    const tableWidth = 160;
-    const tableX = (pageWidth - tableWidth) / 2;
-    const col1Width = 55; // Sol sütun (birleşik)
-    const col2Width = 55; // Orta sütun (etiketler)
-    const col3Width = 50; // Sağ sütun (değerler)
-    const rowHeight = 12;
-
-    // Tablo arka planı beyaz - sadece çerçeve çiz
-
-    // Tablo çerçeveleri
-    doc.setDrawColor(150, 150, 150);
-    doc.rect(tableX, table1Y, tableWidth, rowHeight * 3);
-    doc.line(tableX + col1Width, table1Y, tableX + col1Width, table1Y + rowHeight * 3);
-    doc.line(tableX + col1Width + col2Width, table1Y, tableX + col1Width + col2Width, table1Y + rowHeight * 3);
-    // Yatay çizgiler (sadece orta ve sağ sütunlar için)
-    doc.line(tableX + col1Width, table1Y + rowHeight, tableX + tableWidth, table1Y + rowHeight);
-    doc.line(tableX + col1Width, table1Y + rowHeight * 2, tableX + tableWidth, table1Y + rowHeight * 2);
-
-    // Tablo metinleri - siyah renk (beyaz arka plan için)
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(9);
-    doc.setFont('Roboto', 'bold');
-
-    // Sol sütun - birleşik hücrede ortalanmış "RİSK DEĞERLENDİRMESİNİN"
-    doc.text('RİSK', tableX + col1Width / 2, table1Y + rowHeight * 1.3, { align: 'center' });
-    doc.text('DEĞERLENDİRMESİNİN', tableX + col1Width / 2, table1Y + rowHeight * 1.8, { align: 'center' });
-
-    // Orta sütun - etiketler
-    doc.setFontSize(8);
-    doc.text('YAPILDIĞI TARİH', tableX + col1Width + col2Width / 2, table1Y + rowHeight * 0.65, { align: 'center' });
-    doc.text('GEÇERLİLİK TARİHİ', tableX + col1Width + col2Width / 2, table1Y + rowHeight * 1.65, { align: 'center' });
-    doc.text('REVİZYON NO / TARİHİ', tableX + col1Width + col2Width / 2, table1Y + rowHeight * 2.65, { align: 'center' });
-
-    // Sağ sütun - değerler
-    doc.setFont('Roboto', 'normal');
-    doc.setFontSize(9);
-    doc.text(formatDate(headerInfo.date) || '[YAPILDIĞI TARİH]', tableX + col1Width + col2Width + col3Width / 2, table1Y + rowHeight * 0.65, { align: 'center' });
-    doc.text(formatDate(headerInfo.validityDate) || '[GEÇERLİLİK TARİHİ]', tableX + col1Width + col2Width + col3Width / 2, table1Y + rowHeight * 1.65, { align: 'center' });
-    doc.text(headerInfo.revision || '[REVİZYON NO/TARİH]', tableX + col1Width + col2Width + col3Width / 2, table1Y + rowHeight * 2.65, { align: 'center' });
-
-    prosedurPageCount = 1;
-
-    // ============ 2. PROSEDÜR SAYFASI - İÇERİK SAYFASI ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    const margin = 15;
-    const contentWidth = pageWidth - 2 * margin;
-    let yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (kompakt) =====
-    const headerHeight = 17.5; // Bilgi tablosu yüksekliği ile eşleştirildi (5 satır * 3.5)
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth = 25;
-    doc.rect(margin, yPos, logoWidth, headerHeight); // Logo dikdörtgeni
-
-    if (headerInfo.logo) {
-      try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
-      }
-    }
-
-    // Orta: Başlık bölümü - dikdörtgen çiz
-    const logoEndX = margin + logoWidth; // Logo bitişi
-    const infoTableStartX = pageWidth - margin - 50; // Bilgi tablosu başlangıcı
-    const titleWidth = infoTableStartX - logoEndX; // Başlık alanı genişliği
-    const titleCenterX = logoEndX + titleWidth / 2; // Ortala
-
-    // Başlık alanı dikdörtgeni
-    doc.rect(logoEndX, yPos, titleWidth, headerHeight);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6); // %20 azaltıldı (12 * 0.80)
-    doc.setTextColor(0, 0, 0);
-    // Dikey ortalama için y pozisyonu ayarlandı
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu (kompakt)
-    const infoTableX = pageWidth - margin - 50;
-    const infoRowHeight = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3); // %20 büyütüldü (5.25 * 1.2)
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 2 -']
-    ];
-
-    infoRows.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight);
-      doc.rect(infoTableX, rowY, 25, infoRowHeight);
-      doc.rect(infoTableX + 25, rowY, 25, infoRowHeight);
-      doc.text(row[0], infoTableX + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX + 26, rowY + 2.5);
-    });
-
-    yPos += headerHeight + 5;
-
-    // ===== İÇERİK =====
-    const firmaIsmi = headerInfo.title || '[FİRMA İSMİ]';
-
-    // Yardımcı fonksiyon: Başlık yazma
-    const writeHeading = (num: string, title: string, level: number = 1) => {
-      if (yPos > pageHeight - 15) {
-        doc.addPage('a4', 'portrait');
-        yPos = 15;
-      }
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(level === 1 ? 11.34 : 10.08); // %20 büyütüldü (9.45*1.2, 8.4*1.2)
-      doc.setTextColor(0, 0, 0);
-      const text = `${num}    ${title}`;
-      doc.text(text, margin, yPos);
-      yPos += 5;
-    };
-
-    // Yardımcı fonksiyon: Paragraf yazma (sola yaslı, düzgün satırlar)
-    const writeParagraph = (text: string, indent: number = 0) => {
-      doc.setTextColor(0, 0, 0);
-      const processedText = text.replace(/\[FİRMA İSMİ\]/g, firmaIsmi);
-
-      // Basit ve düzgün satır yazımı - tüm yazılar sola yaslı
-      doc.setFont('Roboto', 'normal');
-      doc.setFontSize(8.82); // %20 büyütüldü (7.35 * 1.2)
-      const lines = doc.splitTextToSize(processedText, contentWidth - indent);
-
-      lines.forEach((line: string) => {
-        if (yPos > pageHeight - 12) {
-          doc.addPage('a4', 'portrait');
-          yPos = 15;
+      // Helper to convert buffer to base64
+      const toBase64 = (buffer: ArrayBuffer) => {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(bytes[i]);
         }
-        doc.text(line, margin + indent, yPos);
-        yPos += 3.7;
-      });
-      yPos += 1;
-    };
+        return window.btoa(binary);
+      };
 
-    // Yardımcı fonksiyon: Tanım yazma
-    const writeDefinition = (term: string, definition: string) => {
-      if (yPos > pageHeight - 15) {
-        doc.addPage('a4', 'portrait');
-        yPos = 15;
-      }
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(8.82); // %20 büyütüldü (7.35 * 1.2)
-      const termWidth = doc.getTextWidth(term + ': ');
-      doc.text(term + ':', margin + 3, yPos);
-      doc.setFont('Roboto', 'normal');
-      const defLines = doc.splitTextToSize(definition, contentWidth - termWidth - 8);
-      doc.text(defLines[0], margin + 3 + termWidth, yPos);
-      yPos += 3.5;
-      for (let i = 1; i < defLines.length; i++) {
-        doc.text(defLines[i], margin + 3, yPos);
-        yPos += 3.5;
-      }
-    };
-
-    // 1. AMAÇ
-    yPos += 5; // Üste bir satır boşluk
-    writeHeading('1.', 'AMAÇ');
-    writeParagraph(`[FİRMA İSMİ]'de var olan çalışma koşullarından kaynaklanan her türlü tehlike ve riskin tespiti, mevcut iş sağlığı ve güvenliği yasa ve yönetmeliklerine uygunluğunun değerlendirilmesi, insan sağlığını etkilemeyen seviyeye düşürmektir. Tehlike Tanımlama ve Risk Değerlendirmesi sonucunda ortaya çıkan risk değerlerinin iyileştirilmesi, önerilerde bulunmak ve İSG yönetim sisteminin disiplin altına alınması ve yönetim metodunun belirlenmesidir.`);
-
-    // 2. KAPSAM
-    yPos += 5; // Bir satır boşluk
-    writeHeading('2.', 'KAPSAM');
-    writeParagraph(`Bu rapor [FİRMA İSMİ]'nde yapılan gözlemlere göre hazırlanmıştır. Bu çalışma;`);
-    writeParagraph(`[FİRMA İSMİ]'da bulunan; İşyerinde kullanılan tüm makine, tesisat, bina, eklenti ve sosyal tesisleri, işyerinde çalışan firma sorumlularını ve işçileri, ziyaretçi ve tedarikçilerini kapsar.`);
-
-    // 3. REFERANSLAR
-    yPos += 5; // Bir satır boşluk
-    writeHeading('3.', 'REFERANSLAR');
-    writeParagraph(`OHSAS 18001, İş Sağlığı ve Güvenliği Risk Değerlendirmesi Yönetmeliği, İş Sağlığı ve Güvenliği Kanunu`);
-
-    // 4. TANIMLAR
-    yPos += 5; // Bir satır boşluk
-    writeHeading('4.', 'TANIMLAR');
-    writeParagraph(`Bu çalışmada yer alan kelimeler ve bu kelimelerin tanımları aşağıda verilmiştir.`);
-
-    writeDefinition('Tehlike', 'İşyerinde var olan ya da dışarıdan gelebilecek, çalışanı veya işyerini etkileyebilecek zarar veya hasar verme potansiyelidir.');
-    writeDefinition('Önleme', 'İşyerinde yürütülen işlerin bütün safhalarında iş sağlığı ve güvenliği ile ilgili riskleri ortadan kaldırmak veya azaltmak için planlanan ve alınan tedbirlerin tümüdür.');
-    writeDefinition('Ramak kala olay', 'İşyerinde meydana gelen; çalışan, işyeri ya da iş ekipmanını zarara uğratma potansiyeli olduğu halde zarara uğratmayan olaydır.');
-    writeDefinition('Risk', 'Tehlikeden kaynaklanacak kayıp, yaralanma ya da başka zararlı sonuç meydana gelme ihtimalidir.');
-    writeDefinition('Risk değerlendirmesi', 'İşyerinde var olan ya da dışarıdan gelebilecek tehlikelerin belirlenmesi, bu tehlikelerin riske dönüşmesine yol açan faktörler ile tehlikelerden kaynaklanan risklerin analiz edilerek derecelendirilmesi ve kontrol tedbirlerinin kararlaştırılması amacıyla yapılması gerekli çalışmalardır.');
-
-    // 5. SORUMLULUKLAR VE PERSONEL
-    yPos += 5; // Bir satır boşluk
-    writeHeading('5.', 'SORUMLULUKLAR VE PERSONEL');
-    writeParagraph(`İş kazalarına karşı gerekli önlemlerin alınmasından İşveren / İşveren vekili, risk değerlendirmesi çalışmalarının yürütülmesinden risk değerlendirmesi ekibi sorumludur. "İSG.PR.016 TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ FORMU" [FİRMA İSMİ] tarafından görevlendirilen "Risk Değerlendirme Ekibi" tarafından hazırlanacaktır. İş Güvenliği Uzmanı konu ile ilgili [FİRMA İSMİ] çalışan tüm personele İş Güvenliği eğitimi kapsamında bilgilendirme yapacak, tehlike bildirim formlarını da göz önüne alarak kontrol edecektir.`);
-
-    // 5.1. İŞ SAĞLIĞI VE GÜVENLİĞİ KONUSUNDA İŞVERENİN GÖREVLERİ
-    yPos += 5; // Bir satır boşluk
-    writeHeading('5.1.', 'İŞ SAĞLIĞI VE GÜVENLİĞİ KONUSUNDA İŞVERENİN GÖREVLERİ', 2);
-    writeParagraph(`İş Sağlığı ve Güvenliği Kanunu kapsamında İşveren'in genel yükümlülüğü aşağıdaki gibidir.`);
-    writeParagraph(`MADDE 4 – (1) İşveren, çalışanların işle ilgili sağlık ve güvenliğini sağlamakla yükümlü olup bu çerçevede;`);
-    writeParagraph(`a) Mesleki risklerin önlenmesi, eğitim ve bilgi verilmesi dâhil her türlü tedbirin alınması, organizasyonun yapılması, gerekli araç ve gereçlerin sağlanması, sağlık ve güvenlik tedbirlerinin değişen şartlara uygun hale getirilmesi ve mevcut durumun iyileştirilmesi için çalışmalar yapar.`, 3);
-    writeParagraph(`b) İşyerinde alınan iş sağlığı ve güvenliği tedbirlerine uyulup uyulmadığını izler, denetler ve uygunsuzlukların giderilmesini sağlar.`, 3);
-    writeParagraph(`c) Risk değerlendirmesi yapar veya yaptırır.`, 3);
-    writeParagraph(`ç) Çalışana görev verirken, çalışanın sağlık ve güvenlik yönünden işe uygunluğunu göz önüne alır.`, 3);
-    writeParagraph(`d) Yeterli bilgi ve talimat verilenler dışındaki çalışanların hayati ve özel tehlike bulunan yerlere girmemesi için gerekli tedbirleri alır.`, 3);
-    writeParagraph(`(2) İşyeri dışındaki uzman kişi ve kuruluşlardan hizmet alınması, işverenin sorumluluklarını ortadan kaldırmaz.`, 0);
-    writeParagraph(`(3) Çalışanların iş sağlığı ve güvenliği alanındaki yükümlülükleri, işverenin sorumluluklarını etkilemez.`, 0);
-    writeParagraph(`(4) İşveren, iş sağlığı ve güvenliği tedbirlerinin maliyetini çalışanlara yansıtamaz.`, 0);
-
-    // ============ 3. PROSEDÜR SAYFASI ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (2. sayfa ile aynı) =====
-    const headerHeight3 = 17.5;
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth3 = 25;
-    doc.rect(margin, yPos, logoWidth3, headerHeight3);
-
-    if (headerInfo.logo) {
+      // Türkçe karakter desteği için Roboto fontunu yüklüyoruz
       try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
+        const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
+        const fontUrlBold = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf';
+
+        const [fontRes, fontBoldRes] = await Promise.all([
+          fetch(fontUrl),
+          fetch(fontUrlBold)
+        ]);
+
+        const fontBuffer = await fontRes.arrayBuffer();
+        const fontBoldBuffer = await fontBoldRes.arrayBuffer();
+
+        doc.addFileToVFS('Roboto-Regular.ttf', toBase64(fontBuffer));
+        doc.addFileToVFS('Roboto-Bold.ttf', toBase64(fontBoldBuffer));
+
+        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+        doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+
+        doc.setFont('Roboto');
+        setProgress(20); // Font yükleme tamamlandı
+      } catch (error) {
+        console.error("Font yüklenirken hata oluştu:", error);
+        setProgress(20);
       }
-    }
 
-    // Orta: Başlık bölümü
-    const logoEndX3 = margin + logoWidth3;
-    const infoTableStartX3 = pageWidth - margin - 50;
-    const titleWidth3 = infoTableStartX3 - logoEndX3;
-    const titleCenterX3 = logoEndX3 + titleWidth3 / 2;
-
-    doc.rect(logoEndX3, yPos, titleWidth3, headerHeight3);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX3, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX3, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu
-    const infoTableX3 = pageWidth - margin - 50;
-    const infoRowHeight3 = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3);
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows3 = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 3 -']
-    ];
-
-    infoRows3.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight3);
-      doc.rect(infoTableX3, rowY, 25, infoRowHeight3);
-      doc.rect(infoTableX3 + 25, rowY, 25, infoRowHeight3);
-      doc.text(row[0], infoTableX3 + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX3 + 26, rowY + 2.5);
-    });
-
-    yPos += headerHeight3 + 5;
-
-    // ===== 3. SAYFA İÇERİĞİ =====
-
-    // 5.2. RİSK DEĞERLENDİRME EKİBİ'NİN GÖREVLERİ
-    yPos += 3;
-    writeHeading('5.2.', 'RİSK DEĞERLENDİRME EKİBİ\'NİN GÖREVLERİ', 2);
-    writeParagraph(`İş Sağlığı ve Güvenliği Risk Değerlendirmesi Yönetmeliği'ne göre yapılacak çalışmalar için ekip oluşturulmalıdır, risk değerlendirmesi ekibinde söz konusu yönetmeliğin 6. Maddesine göre bulunması gereken kişiler aşağıdaki gibi tanımlanmıştır. "İSG.FR.017.RİSK DEĞERLENDİRME EKİBİ"nde görevlendirilen kişiler formu ile kayıt altına alınacak ve "İSG.EGT.002 RİSK DEĞERLENDİRME EKİBİ EĞİTİMİ" ve "İSG.FR.009.RİSK DEĞERLENDİRME EKİBİ EĞİTİM KATILIM FORMU" ile eğitimi tamamlanacaktır.`);
-    writeParagraph(`- İşveren veya işveren vekili.`, 3);
-    writeParagraph(`- İşyerinde sağlık ve güvenlik hizmetini yürüten iş güvenliği uzmanları ile işyeri hekimleri.`, 3);
-    writeParagraph(`- İşyerindeki çalışan temsilcileri.`, 3);
-    writeParagraph(`- İşyerindeki destek elemanları.`, 3);
-    writeParagraph(`- İşyerindeki bütün birimleri temsil edecek şekilde belirlenen ve işyerinde yürütülen çalışmalar, mevcut veya muhtemel tehlike kaynakları ile riskler konusunda bilgi sahibi çalışanlar.`, 3);
-
-    // 6. RİSK DEĞERLENDİRME SÜRECİ
-    yPos += 5;
-    writeHeading('6.', 'RİSK DEĞERLENDİRME SÜRECİ');
-
-    // 6.1. RİSK DEĞERLENDİRMESİ
-    yPos += 3;
-    writeHeading('6.1.', 'RİSK DEĞERLENDİRMESİ', 2);
-    writeParagraph(`Risk değerlendirmesi için "İSG.FR.016.TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ FORMU" kullanılır. Tüm işyerleri için tasarım veya kuruluş aşamasından başlamak üzere tehlikeleri tanımlama, riskleri belirleme ve analiz etme, risk kontrol tedbirlerinin kararlaştırılması, dokümantasyon, yapılan çalışmaların güncellenmesi ve gerektiğinde yenileme aşamaları izlenerek gerçekleştirilir. Çalışanların risk değerlendirmesi çalışması yapılırken ihtiyaç duyulan her aşamada sürece katılarak görüşlerinin alınması sağlanır. Bu süreçte "İSG.FR.018.RAMAK KALA / TEHLİKE BİLDİRİM FORMU" kullanılarak çalışanların görüşü kayıt altına alınır.`);
-
-    // 6.2. TEHLİKELERİN TANIMLANMASI
-    yPos += 5;
-    writeHeading('6.2.', 'TEHLİKELERİN TANIMLANMASI', 2);
-    writeParagraph(`Tehlikeler tanımlanırken çalışma ortamı, çalışanlar ve işyerine ilişkin ilgisine göre asgari olarak aşağıda belirtilen bilgiler toplanır.`);
-    writeParagraph(`a) İşyeri bina ve eklentileri.`, 3);
-    writeParagraph(`b) İşyerinde yürütülen faaliyetler ile iş ve işlemler.`, 3);
-    writeParagraph(`c) Üretim süreç ve teknikleri.`, 3);
-    writeParagraph(`ç) İş ekipmanları.`, 3);
-    writeParagraph(`d) Kullanılan maddeler.`, 3);
-    writeParagraph(`e) Artık ve atıklarla ilgili işlemler.`, 3);
-    writeParagraph(`f) Organizasyon ve hiyerarşik yapı, görev, yetki ve sorumluluklar.`, 3);
-    writeParagraph(`g) Çalışanların tecrübe ve düşünceleri.`, 3);
-    writeParagraph(`ğ) İşe başlamadan önce ilgili mevzuat gereği alınacak çalışma izin belgeleri.`, 3);
-    writeParagraph(`h) Çalışanların eğitim, yaş, cinsiyet ve benzeri özellikleri ile sağlık gözetimi kayıtları.`, 3);
-    writeParagraph(`ı) Genç, yaşlı, engelli, gebe veya emziren çalışanlar gibi özel politika gerektiren gruplar ile kadın çalışanların durumu.`, 3);
-    writeParagraph(`i) İşyerinin teftiş sonuçları.`, 3);
-    writeParagraph(`j) Meslek hastalığı kayıtları.`, 3);
-    writeParagraph(`k) İş kazası kayıtları.`, 3);
-    writeParagraph(`l) İşyerinde meydana gelen ancak yaralanma veya ölüme neden olmadığı halde işyeri ya da iş ekipmanının zarara uğramasına yol açan olaylara ilişkin kayıtlar.`, 3);
-    writeParagraph(`m) Ramak kala olay kayıtları.`, 3);
-    writeParagraph(`n) Malzeme güvenlik bilgi formları.`, 3);
-    writeParagraph(`o) Ortam ve kişisel maruziyet düzeyi ölçüm sonuçları.`, 3);
-    writeParagraph(`ö) Varsa daha önce yapılmış risk değerlendirmesi çalışmaları.`, 3);
-    writeParagraph(`p) Acil durum planları.`, 3);
-    writeParagraph(`r) Sağlık ve güvenlik planı ve patlamadan korunma dokümanı gibi belirli işyerlerinde hazırlanması gereken dokümanlar.`, 3);
-    writeParagraph(`Tehlikelere ilişkin bilgiler toplanırken aynı üretim, yöntem ve teknikleri ile üretim yapan benzer işyerlerinde meydana gelen iş kazaları ve ortaya çıkan meslek hastalıkları da değerlendirilebilir. Toplanan bilgiler ışığında; iş sağlığı ve güvenliği ile ilgili mevzuatta yer alan hükümler de dikkate alınarak, çalışma ortamında bulunan fiziksel, kimyasal, biyolojik, psikososyal, ergonomik ve benzeri`);
-
-    // ============ 4. PROSEDÜR SAYFASI ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (2-3. sayfa ile aynı) =====
-    const headerHeight4 = 17.5;
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth4 = 25;
-    doc.rect(margin, yPos, logoWidth4, headerHeight4);
-
-    if (headerInfo.logo) {
-      try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
-      }
-    }
-
-    // Orta: Başlık bölümü
-    const logoEndX4 = margin + logoWidth4;
-    const infoTableStartX4 = pageWidth - margin - 50;
-    const titleWidth4 = infoTableStartX4 - logoEndX4;
-    const titleCenterX4 = logoEndX4 + titleWidth4 / 2;
-
-    doc.rect(logoEndX4, yPos, titleWidth4, headerHeight4);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX4, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX4, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu
-    const infoTableX4 = pageWidth - margin - 50;
-    const infoRowHeight4 = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3);
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows4 = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 4 -']
-    ];
-
-    infoRows4.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight4);
-      doc.rect(infoTableX4, rowY, 25, infoRowHeight4);
-      doc.rect(infoTableX4 + 25, rowY, 25, infoRowHeight4);
-      doc.text(row[0], infoTableX4 + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX4 + 26, rowY + 2.5);
-    });
-
-    yPos += headerHeight4 + 5;
-
-    // ===== 4. SAYFA İÇERİĞİ =====
-    yPos += 8; // 2 satır boşluk
-    // 6.2 devamı - tehlike kaynakları
-    writeParagraph(`tehlike kaynaklarından oluşan veya bunların etkileşimi sonucu ortaya çıkabilecek tehlikeler belirlenir ve kayda alınır. Bu belirleme yapılırken aşağıdaki hususlar, bu hususlardan etkilenecekler ve ne şekilde etkilenebilecekleri göz önünde bulundurulur.`);
-    writeParagraph(`a) İşletmenin yeri nedeniyle ortaya çıkabilecek tehlikeler.`, 3);
-    writeParagraph(`b) Seçilen alanda, işyeri bina ve eklentilerinin plana uygun yerleştirilmemesi veya planda olmayan ilavelerin yapılmasından kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`c) İşyeri bina ve eklentilerinin yapı ve yapım tarzı ile seçilen yapı malzemelerinden kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`ç) Bakım ve onarım işleri de dahil işyerinde yürütülecek her türlü faaliyet esnasında çalışma usulleri, vardiya düzeni, ekip çalışması, organizasyon, nezaret sistemi, hiyerarşik düzen, ziyaretçi veya işyeri çalışanı olmayan diğer kişiler gibi faktörlerden kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`d) İşin yürütümü, üretim teknikleri, kullanılan maddeler, makine ve ekipman, araç ve gereçler ile bunların çalışanların fiziksel özelliklerine uygun tasarlanmaması veya kullanılmamasından kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`e) Kuvvetli akım, aydınlatma, paratoner, topraklama gibi elektrik tesisatının bileşenleri ile ısıtma, havalandırma, atmosferik ve çevresel şartlardan korunma, drenaj, arıtma, yangın önleme ve mücadele ekipmanı ile benzeri yardımcı tesisat ve donanımlardan kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`f) İşyerinde yanma, parlama veya patlama ihtimali olan maddelerin işlenmesi, kullanılması, taşınması, depolanması ya da imha edilmesinden kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`g) Çalışma ortamına ilişkin hijyen koşulları ile çalışanların kişisel hijyen alışkanlıklarından kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`ğ) Çalışanın, işyeri içerisindeki ulaşım yollarının kullanımından kaynaklanabilecek tehlikeler.`, 3);
-    writeParagraph(`h) Çalışanların iş sağlığı ve güvenliği ile ilgili yeterli eğitim almaması, bilgilendirilmemesi, çalışanlara uygun talimat verilmemesi veya çalışma izni prosedürü gereken durumlarda bu izin olmaksızın çalışılmasından kaynaklanabilecek tehlikeler.`, 3);
-
-    writeParagraph(`Çalışma ortamında bulunan fiziksel, kimyasal, biyolojik, psikososyal, ergonomik ve benzeri tehlike kaynaklarının neden olduğu tehlikeler ile ilgili işyerinde daha önce kontrol, ölçüm, inceleme ve araştırma çalışması yapılmamış ise risk değerlendirmesi çalışmalarında kullanılmak üzere; bu tehlikelerin, nitelik ve niceliklerini ve çalışanların bunlara maruziyet seviyelerini belirlemek amacıyla gerekli bütün kontrol, ölçüm, inceleme ve araştırmalar yapılır.`);
-
-    // 6.3. RİSK DEĞERLENDİRMESİ KONTROL ADIMLARI
-    yPos += 5;
-    writeHeading('6.3.', 'RİSK DEĞERLENDİRMESİ KONTROL ADIMLARI', 2);
-    writeParagraph(`Risk Değerlendirmesi hazırlanırken izlenecek kontrol adımları aşağıdaki maddelerin yapılması ile sürdürülür.`);
-
-    writeParagraph(`a) Planlama: Analiz edilerek etkilerinin büyüklüğüne ve önemine göre sıralı hale getirilen risklerin kontrolü amacıyla bir planlama yapılır.`, 3);
-
-    writeParagraph(`b) Risk kontrol tedbirlerinin kararlaştırılması: Riskin tamamen bertaraf edilmesi, bu mümkün değil ise riskin kabul edilebilir seviyeye indirilmesi için aşağıdaki adımlar uygulanır.`, 3);
-    writeParagraph(`1) Tehlike veya tehlike kaynaklarının ortadan kaldırılması.`, 6);
-    writeParagraph(`2) Tehlikelinin, tehlikeli olmayanla veya daha az tehlikeli olanla değiştirilmesi.`, 6);
-    writeParagraph(`3) Riskler ile kaynağında mücadele edilmesi.`, 6);
-
-    writeParagraph(`c) Risk kontrol tedbirlerinin uygulanması: Kararlaştırılan tedbirlerin iş ve işlem basamakları, işlemi yapacak kişi ya da işyeri bölümü, sorumlu kişi ya da işyeri bölümü, başlama ve bitiş tarihi ile benzeri bilgileri içeren planlar hazırlanır. Bu planlar işverence uygulamaya konulur.`, 3);
-
-    writeParagraph(`ç) Uygulamaların izlenmesi: Hazırlanan planların uygulama adımları düzenli olarak izlenir, denetlenir ve aksayan yönler tespit edilerek gerekli düzeltici ve önleyici işlemler tamamlanır.`, 3);
-
-    writeParagraph(`Risk kontrol adımları uygulanırken toplu korunma önlemlerine, kişisel korunma önlemlerine göre öncelik verilmesi ve uygulanacak önlemlerin yeni risklere neden olmaması sağlanır. Belirlenen risk için kontrol tedbirlerinin hayata geçirilmesinden sonra yeniden risk seviyesi tespiti yapılır. Yeni seviye, kabul edilebilir risk seviyesinin üzerinde ise bu maddedeki adımlar tekrarlanır.`);
-
-    // ============ 5. PROSEDÜR SAYFASI - AKIŞ ŞEMASI ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (diğer sayfalarla aynı) =====
-    const headerHeight5 = 17.5;
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth5 = 25;
-    doc.rect(margin, yPos, logoWidth5, headerHeight5);
-
-    if (headerInfo.logo) {
-      try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
-      }
-    }
-
-    // Orta: Başlık bölümü
-    const logoEndX5 = margin + logoWidth5;
-    const infoTableStartX5 = pageWidth - margin - 50;
-    const titleWidth5 = infoTableStartX5 - logoEndX5;
-    const titleCenterX5 = logoEndX5 + titleWidth5 / 2;
-
-    doc.rect(logoEndX5, yPos, titleWidth5, headerHeight5);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX5, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX5, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu
-    const infoTableX5 = pageWidth - margin - 50;
-    const infoRowHeight5 = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3);
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows5 = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 5 -']
-    ];
-
-    infoRows5.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight5);
-      doc.rect(infoTableX5, rowY, 25, infoRowHeight5);
-      doc.rect(infoTableX5 + 25, rowY, 25, infoRowHeight5);
-      doc.text(row[0], infoTableX5 + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX5 + 26, rowY + 2.5);
-    });
-
-    // Header'ın altından bir satır boşluk bırakarak başla
-    const imgStartY = yPos + headerHeight5 + 4; // 4mm = 1 satır boşluk
-
-    // ===== 5. SAYFA İÇERİĞİ - RİSK DEĞERLENDİRME AKIŞ ŞEMASI =====
-    // Akış şeması resmini yükle - Header'ın hemen altından başla
-    try {
-      const flowChartUrl = '/risk-flow-chart.png';
-      const flowChartRes = await fetch(flowChartUrl);
-      const flowChartBuffer = await flowChartRes.arrayBuffer();
-      const flowChartBase64 = toBase64(flowChartBuffer);
-
-      // Resim boyutları - sayfaya sığdır
-      const imgWidth = pageWidth - 2 * margin; // Sayfa genişliği - kenar boşlukları
-      const imgHeight = pageHeight - imgStartY - 24; // Kalan yükseklik (alt boşluk %50 daha artırıldı: 16 -> 24)
-
-      // Resmi header'ın hemen altından başlat
-      const imgX = margin;
-
-      doc.addImage('data:image/png;base64,' + flowChartBase64, 'PNG', imgX, imgStartY, imgWidth, imgHeight);
-    } catch (e) {
-      console.log('Akış şeması resmi yüklenemedi:', e);
-      // Resim yüklenemezse placeholder metin göster
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(100);
-      doc.text('RİSK DEĞERLENDİRME AKIŞ ŞEMASI', pageWidth / 2, pageHeight / 2, { align: 'center' });
-    }
-
-    // ============ 6. PROSEDÜR SAYFASI ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (diğer sayfalarla aynı) =====
-    const headerHeight6 = 17.5;
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth6 = 25;
-    doc.rect(margin, yPos, logoWidth6, headerHeight6);
-
-    if (headerInfo.logo) {
-      try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
-      }
-    }
-
-    // Orta: Başlık bölümü
-    const logoEndX6 = margin + logoWidth6;
-    const infoTableStartX6 = pageWidth - margin - 50;
-    const titleWidth6 = infoTableStartX6 - logoEndX6;
-    const titleCenterX6 = logoEndX6 + titleWidth6 / 2;
-
-    doc.rect(logoEndX6, yPos, titleWidth6, headerHeight6);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX6, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX6, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu
-    const infoTableX6 = pageWidth - margin - 50;
-    const infoRowHeight6 = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3);
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows6 = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 6 -']
-    ];
-
-    infoRows6.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight6);
-      doc.rect(infoTableX6, rowY, 25, infoRowHeight6);
-      doc.rect(infoTableX6 + 25, rowY, 25, infoRowHeight6);
-      doc.text(row[0], infoTableX6 + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX6 + 26, rowY + 2.5);
-    });
-
-    yPos += headerHeight6 + 5;
-
-    // ===== 6. SAYFA İÇERİĞİ =====
-    yPos += 8; // 2 satır boşluk (4. sayfa gibi)
-
-    // 6.4. RİSK DEĞERLENDİRMESİ AKSİYON PLANI
-    writeHeading('6.4.', 'RİSK DEĞERLENDİRMESİ AKSİYON PLANI', 2);
-    writeParagraph(`[FİRMA İSMİ] risk değerlendirmesi ekibi tarafından risk değerlendirmesi sonrasında "İSG.FR.019.RİSK DEĞERLENDİRMESİ AKSİYON PLANI" oluşturulur ve aşağıdakilerin maddeler yapılır.`);
-    writeParagraph(`a) Belirlenen aksiyonların öncelik derecesine göre aksiyonun kapatılması için planlanan tarih "hedef tarih" kolonuna yazılır.`, 3);
-    writeParagraph(`b) Aksiyonları yerine getirecek sorumlular belirlenerek "sorumlu" kolonuna isimleri yazılır.`, 3);
-    writeParagraph(`c) Aksiyon planını takip edecek ve planın "Durum" ve "Kapatma Tarihi" kolonlarını dolduracak kişi veya kişiler belirlenir.`, 3);
-    writeParagraph(`d) "Durum" kolonuna aşağıdaki girişler yapılarak aksiyon planı ve performans takip edilir:`, 3);
-    writeParagraph(`- Tamamlanan`, 6);
-    writeParagraph(`- Hedef Tarihi Geçen`, 6);
-    writeParagraph(`- Zaman Var`, 6);
-    writeParagraph(`- Hedef Tarih Verilmemiş`, 6);
-    writeParagraph(`e) Aksiyonlar kapatıldığında risk değerlendirmesinde bulunan "Kapatma Tarihi" kolonu doldurulur.`, 3);
-    writeParagraph(`f) Aksiyonların belirlenen hedef tarihler içinde kapatılması sağlanır.`, 3);
-    writeParagraph(`g) Oluşturulan "Risk Değerlendirmesi Aksiyon Planı" aksiyonları kapatacak kişiler ile paylaşılır.`, 3);
-    writeParagraph(`h) Risk Değerlendirme çalışmasının yönetmelik haricinde belirtilen haller dışında yılda bir defa ve uzman değişikliği sonucunda ilk olarak aksiyon planı oluşturularak yıl sonunda risk analizinin revize edilmesi sağlanır.`, 3);
-    writeParagraph(`i) Risk değerlendirmesi bu konuda eğitim almış [FİRMA İSMİ]tarafından görevlendirilmiş personeller tarafından güncellenebilir.`, 3);
-
-    // 6.5. FINE – KINNEY METODU
-    yPos += 5;
-    writeHeading('6.5.', 'FINE – KINNEY METODU', 2);
-    writeParagraph(`Kaza kontrolü için matematiksel değerlendirme anlamına gelir. Bu yöntem G.F. Kinney and A.D Wiruth tarafından 1976 yılında geliştirilmiştir. Çalışma ortamındaki tehlikelerin kazaya sebebiyet vermeden tespit edilmesini ve risk skoruna göre en öncelikli olandan başlayıp iyileştirilmesini sağlayan bir metot dur.`);
-    writeParagraph(`Bu çalışmada; [FİRMA İSMİ]'ait gerçekleştirilen Kinney Risk Analizi yönetiminin konusu ele alınmıştır. Uygulamayla işletmede iş kazası ve meslek hastalığı oluşturabilecek riskler değerlendirilip, bunların en1gellenmesine yönelik iyileştirme önerilerinde bulunulmuştur.`);
-    writeParagraph(`Analiz edilerek belirlenmiş tehlikeler, aşağıda açıklaması yapılan FINE KINNEY risk yöntemine göre değerlendirilir.`);
-    writeParagraph(`RİSK = OLASILIK X FREKANS X ŞİDDET formülü kullanılarak hesaplanır.`);
-    writeParagraph(`Olasılık: Olasılık değerlendirilirken, faaliyet esnasındaki tehlikelerden kaynaklanan zararın gerçekleşme olasılığı sorgulanır ve puanlandırılır.`);
-    writeParagraph(`Frekans: Frekans değerlendirilirken, faaliyet esnasında tehlikeye maruz kalma sıklığı sorgulanır ve puanlandırılır.`);
-    writeParagraph(`Şiddet: Şiddet değerlendirilirken, faaliyet esnasındaki tehlikelerden kaynaklanan zararın çalışan ve veya ekipman üzerinde yaratacağı tahmini etki sorgulanır ve puanlandırılır.`);
-    yPos += 3;
-    writeParagraph(`Risk Skoru;`);
-    writeParagraph(`Olayın Meydana Gelme İhtimali(O) x Tehlike Maruziyet Sıklığı(F) x Şiddet(Ş)`);
-    writeParagraph(`Bu yöntem sıkça uygulanmakta olup, işverenlerinde algılayabileceği bir yöntemdir. Sadece olasılık ya da şiddete bağlı kalmayıp firma içinde zarara maruz kalma sıklığı parametre olarak da değerlendirilmesinden dolayı daha etkin sonuçlar alınmaktadır. Kinney metodunda farklı üç parametre ile tehlike ve doğabilecek şiddetleri hesaplanarak risk skorları belirlenmekte ve ona göre önleyici aksiyon planları oluşturulması planlanmaktadır.`);
-
-    // ============ 7. PROSEDÜR SAYFASI - RİSK TABLOSU ŞEMASI ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (diğer sayfalarla aynı) =====
-    const headerHeight7 = 17.5;
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth7 = 25;
-    doc.rect(margin, yPos, logoWidth7, headerHeight7);
-
-    if (headerInfo.logo) {
-      try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
-      }
-    }
-
-    // Orta: Başlık bölümü
-    const logoEndX7 = margin + logoWidth7;
-    const infoTableStartX7 = pageWidth - margin - 50;
-    const titleWidth7 = infoTableStartX7 - logoEndX7;
-    const titleCenterX7 = logoEndX7 + titleWidth7 / 2;
-
-    doc.rect(logoEndX7, yPos, titleWidth7, headerHeight7);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX7, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX7, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu
-    const infoTableX7 = pageWidth - margin - 50;
-    const infoRowHeight7 = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3);
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows7 = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 7 -']
-    ];
-
-    infoRows7.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight7);
-      doc.rect(infoTableX7, rowY, 25, infoRowHeight7);
-      doc.rect(infoTableX7 + 25, rowY, 25, infoRowHeight7);
-      doc.text(row[0], infoTableX7 + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX7 + 26, rowY + 2.5);
-    });
-
-    // Header'ın altından bir satır boşluk bırakarak başla
-    const imgStartY7 = yPos + headerHeight7 + 4; // 4mm = 1 satır boşluk
-
-    // ===== 7. SAYFA İÇERİĞİ - RİSK TABLOSU ŞEMASI =====
-    // Risk tablosu şeması resmini yükle
-    try {
-      const riskTableUrl = '/risk-table-chart.png';
-      const riskTableRes = await fetch(riskTableUrl);
-      const riskTableBuffer = await riskTableRes.arrayBuffer();
-      const riskTableBase64 = toBase64(riskTableBuffer);
-
-      // Resim boyutları - sayfaya sığdır
-      const imgWidth7 = pageWidth - 2 * margin; // Sayfa genişliği - kenar boşlukları
-      const imgHeight7 = pageHeight - imgStartY7 - 24; // Kalan yükseklik (alt boşluk %20 artırıldı: 20 -> 24)
-
-      // Resmi header'ın altından başlat
-      const imgX7 = margin;
-
-      doc.addImage('data:image/png;base64,' + riskTableBase64, 'PNG', imgX7, imgStartY7, imgWidth7, imgHeight7);
-    } catch (e) {
-      console.log('Risk tablosu şeması resmi yüklenemedi:', e);
-      // Resim yüklenemezse placeholder metin göster
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(100);
-      doc.text('RİSK DEĞERLENDİRME TABLOSU', pageWidth / 2, pageHeight / 2, { align: 'center' });
-    }
-
-    // ============ 8. PROSEDÜR SAYFASI - RİSK DEĞERLENDİRME EKİBİ ============
-    doc.addPage('a4', 'portrait');
-
-    // Beyaz arka plan
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    yPos = 8; // Yukarı yaslandı
-
-    // ===== ÜST HEADER (diğer sayfalarla aynı) =====
-    const headerHeight8 = 17.5;
-
-    // Çizgi rengi ayarla
-    doc.setDrawColor(150);
-
-    // Sol: Logo bölümü - dikdörtgen çiz
-    const logoWidth8 = 25;
-    doc.rect(margin, yPos, logoWidth8, headerHeight8);
-
-    if (headerInfo.logo) {
-      try {
-        doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
-      } catch (e) {
-        // Logo yüklenemezse boş bırak
-      }
-    }
-
-    // Orta: Başlık bölümü
-    const logoEndX8 = margin + logoWidth8;
-    const infoTableStartX8 = pageWidth - margin - 50;
-    const titleWidth8 = infoTableStartX8 - logoEndX8;
-    const titleCenterX8 = logoEndX8 + titleWidth8 / 2;
-
-    doc.rect(logoEndX8, yPos, titleWidth8, headerHeight8);
-
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9.6);
-    doc.setTextColor(0, 0, 0);
-    doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX8, yPos + 6, { align: 'center' });
-    doc.text('PROSEDÜRÜ', titleCenterX8, yPos + 11, { align: 'center' });
-
-    // Sağ: Bilgi Tablosu
-    const infoTableX8 = pageWidth - margin - 50;
-    const infoRowHeight8 = 3.5;
-
-    doc.setDrawColor(150);
-    doc.setFontSize(6.3);
-    doc.setFont('Roboto', 'normal');
-
-    const infoRows8 = [
-      ['Doküman No', 'İSG.PR.002'],
-      ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
-      ['Revizyon Tarihi', '-'],
-      ['Revizyon No', '-'],
-      ['Sayfa No', '- 8 -']
-    ];
-
-    infoRows8.forEach((row, i) => {
-      const rowY = yPos + (i * infoRowHeight8);
-      doc.rect(infoTableX8, rowY, 25, infoRowHeight8);
-      doc.rect(infoTableX8 + 25, rowY, 25, infoRowHeight8);
-      doc.text(row[0], infoTableX8 + 1, rowY + 2.5);
-      doc.text(row[1], infoTableX8 + 26, rowY + 2.5);
-    });
-
-    yPos += headerHeight8 + 5;
-
-    // ===== 8. SAYFA İÇERİĞİ =====
-    yPos += 8; // 2 satır boşluk
-
-    // 7. RİSK DEĞERLENDİRME EKİBİ
-    writeHeading('7.', 'RİSK DEĞERLENDİRME EKİBİ');
-    writeParagraph(`29.12.2012 tarihli ve 28512 sayılı Resmi Gazete'de yayımlanan "İŞ SAĞLIĞI VE GÜVENLİĞİ RİSK DEĞERLENDİRMESİ YÖNETMELİĞİ" Madde 6'ya göre belirlenen Risk Değerlendirme Ekibi aşağıdaki gibidir.`);
-
-    yPos += 5;
-
-    // Risk Değerlendirme Ekibi Tablosu - jsPDF ile çizim
-    const tableStartY = yPos;
-    const tableMargin = margin;
-    const table8Width = pageWidth - 2 * tableMargin;
-
-    // Sütun genişlikleri
-    const col1W = 40; // RİSK DEĞERLENDİRME EKİBİ
-    const col2W = 70; // Unvan
-    const col3W = 50; // Ad-Soyad
-    const col4W = table8Width - col1W - col2W - col3W; // İmza
-
-    const rowH = 8; // Satır yüksekliği
-
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.3);
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
-
-    let currentY = tableStartY;
-
-    // Alt başlık satırı - Beyaz arka plan
-    doc.rect(tableMargin, currentY, col1W, rowH);
-    doc.rect(tableMargin + col1W, currentY, col2W, rowH);
-    doc.setFillColor(255, 255, 255); // Beyaz renk
-    doc.rect(tableMargin + col1W, currentY, col2W, rowH, 'FD');
-    doc.setTextColor(0, 0, 0); // Siyah yazı rengi
-    doc.text('Unvan', tableMargin + col1W + col2W / 2, currentY + 5.5, { align: 'center' });
-
-    doc.rect(tableMargin + col1W + col2W, currentY, col3W, rowH);
-    doc.setFillColor(255, 255, 255);
-    doc.rect(tableMargin + col1W + col2W, currentY, col3W, rowH, 'FD');
-    doc.text('Ad –Soyad', tableMargin + col1W + col2W + col3W / 2, currentY + 5.5, { align: 'center' });
-
-    doc.rect(tableMargin + col1W + col2W + col3W, currentY, col4W, rowH);
-    doc.setFillColor(255, 255, 255);
-    doc.rect(tableMargin + col1W + col2W + col3W, currentY, col4W, rowH, 'FD');
-    doc.text('İmza', tableMargin + col1W + col2W + col3W + col4W / 2, currentY + 5.5, { align: 'center' });
-
-    doc.setTextColor(0, 0, 0);
-    currentY += rowH;
-
-    // Ekip üyeleri verileri (Formen hariç)
-    const teamMembers = [
-      { unvan: 'İŞVEREN / İŞVEREN VEKİLİ', adSoyad: headerInfo.employer || '' },
-      { unvan: 'İŞ GÜVENLİĞİ UZMANI', adSoyad: headerInfo.igu || '' },
-      { unvan: 'İŞ YERİ HEKİMİ', adSoyad: headerInfo.doctor || '' },
-      { unvan: 'ÇALIŞAN TEMSİLCİSİ', adSoyad: headerInfo.representative || '' },
-      { unvan: 'DESTEK ELEMANI', adSoyad: headerInfo.support || '' }
-    ];
-
-    // Sol sütun birleşik hücre yüksekliği
-    const mergedCellHeight = teamMembers.length * rowH;
-
-    // Sol birleşik hücre çerçevesi
-    doc.rect(tableMargin, currentY, col1W, mergedCellHeight);
-
-    // Sol birleşik hücre metni - dikey ortalı
-    doc.setFont('Roboto', 'bold');
-    doc.setFontSize(8);
-    const leftCellCenterY = currentY + mergedCellHeight / 2;
-    doc.text('RİSK', tableMargin + col1W / 2, leftCellCenterY - 6, { align: 'center' });
-    doc.text('DEĞERLENDİRME', tableMargin + col1W / 2, leftCellCenterY, { align: 'center' });
-    doc.text('EKİBİ', tableMargin + col1W / 2, leftCellCenterY + 6, { align: 'center' });
-
-    // Ekip üyeleri satırları
-    doc.setFont('Roboto', 'normal');
-    doc.setFontSize(8);
-
-    teamMembers.forEach((member, index) => {
-      const rowY = currentY + index * rowH;
-
-      // Unvan hücresi
-      doc.rect(tableMargin + col1W, rowY, col2W, rowH);
-      doc.text(member.unvan, tableMargin + col1W + 2, rowY + 5.5);
-
-      // İki nokta üst üste hücresi (küçük)
-      doc.text(':', tableMargin + col1W + col2W - 5, rowY + 5.5);
-
-      // Ad-Soyad hücresi
-      doc.rect(tableMargin + col1W + col2W, rowY, col3W, rowH);
-      doc.text(member.adSoyad, tableMargin + col1W + col2W + 2, rowY + 5.5);
-
-      // İmza hücresi
-      doc.rect(tableMargin + col1W + col2W + col3W, rowY, col4W, rowH);
-    });
-
-    prosedurPageCount = doc.getNumberOfPages();
-
-    setProgress(50); // Prosedür sayfaları tamamlandı
-
-    // ============ TABLO SAYFALARI (YATAY) ============
-    // Yeni yatay sayfa ekle (prosedür varsa)
-    if (prosedurPageCount > 0) {
-      doc.addPage('a4', 'landscape');
-    } else {
-      // Prosedür yoksa ilk sayfayı landscape yap
-      doc.deletePage(1);
-      doc.addPage('a4', 'landscape');
-    }
-
-    // formatDate zaten utils.ts'den import edildi
-
-    const drawHeader = (doc: any) => {
+      // ============ PROSEDÜR SAYFALARI (DİKEY) ============
+      // 1. SAYFA - KAPAK SAYFASI
       const pageWidth = doc.internal.pageSize.width;
-      const margin = 10;
-      const startY = 5; // Üst boşluk azaltıldı
-      const headerHeight = 25;
+      const pageHeight = doc.internal.pageSize.height;
 
-      // Dış Çerçeve
+      // Arka plan rengi - Beyaz
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Üst turuncu şerit
+      doc.setFillColor(230, 150, 130);
+      doc.rect(0, 0, 15, pageHeight, 'F'); // Sol şerit
+      doc.rect(0, 0, pageWidth, 20, 'F'); // Üst şerit
+
+      // Alt turuncu şerit
+      doc.rect(0, pageHeight - 25, pageWidth, 25, 'F');
+      doc.rect(pageWidth - 15, 0, 15, pageHeight, 'F'); // Sağ şerit
+
+      // Logo (varsa) - Üst orta
+      let startY = 50;
+      if (headerInfo.logo) {
+        try {
+          const logoWidth = 50;
+          const logoHeight = 30;
+          const logoX = (pageWidth - logoWidth) / 2;
+          doc.addImage(headerInfo.logo, 'PNG', logoX, 35, logoWidth, logoHeight);
+          startY = 75;
+        } catch (e) { console.log('Logo eklenemedi'); }
+      }
+
+      // Firma İsmi - Metin kaydırma ile
+      doc.setFont('Roboto', 'bold');
+      doc.setTextColor(0, 0, 0); // Siyah metin
+      const firmaText = headerInfo.title || '[FİRMA İSMİ]';
+      const maxTextWidth = pageWidth - 50; // Sayfa kenarlarından 25mm boşluk
+
+      // Firma ismini büyük fontla yazdır (60pt sabit)
+      const firmaFontSize = 24;
+      doc.setFontSize(firmaFontSize);
+
+      // Metin uzunsa satır sar
+      const splitFirma = doc.splitTextToSize(firmaText, maxTextWidth);
+      doc.text(splitFirma, pageWidth / 2, startY, { align: 'center' });
+
+      // Satır sayısına göre startY'yi ayarla
+      if (splitFirma.length > 1) {
+        startY += splitFirma.length * (firmaFontSize * 0.4) + 5;
+      }
+
+      // Firma Adresi
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(11);
+      const adresText = headerInfo.address || '[FİRMA ADRES]';
+      const splitAdres = doc.splitTextToSize(adresText, maxTextWidth);
+      doc.text(splitAdres, pageWidth / 2, startY + 15, { align: 'center' });
+      const adresHeight = splitAdres.length * 5;
+
+      // SGK Sicil No
+      doc.setFontSize(12);
+      const sicilText = headerInfo.registrationNumber || '[SGK SİCİL NO]';
+      doc.text(sicilText, pageWidth / 2, startY + 20 + adresHeight, { align: 'center' });
+
+      // İş Sağlığı ve Güvenliği
+      doc.setFontSize(14);
+      doc.text('İŞ SAĞLIĞI VE GÜVENLİĞİ', pageWidth / 2, startY + 40 + adresHeight, { align: 'center' });
+
+      // Prosedür Başlığı - Altı çizili kısımla
+      doc.setFontSize(12);
+      const prosedurBaslik = 'TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ PROSEDÜRÜ';
+      doc.text(prosedurBaslik, pageWidth / 2, startY + 60 + adresHeight, { align: 'center' });
+
+      // Altı çizili kısım için çizgi
+      const underlineWidth = doc.getTextWidth('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ PROSEDÜRÜ');
+      doc.setDrawColor(0, 0, 0);
+      const lineStartX = (pageWidth / 2) - (doc.getTextWidth(prosedurBaslik) / 2);
+      doc.line(lineStartX, startY + 62 + adresHeight, lineStartX + underlineWidth, startY + 62 + adresHeight);
+
+      // ===== TABLO: RİSK DEĞERLENDİRMESİNİN (sol sütun birleşik) =====
+      // Tabloyu sayfanın alt kısmına al (en altta değil, biraz üstünde)
+      const table1Y = pageHeight - 100; // Sayfanın altından 100mm yukarıda
+      const tableWidth = 160;
+      const tableX = (pageWidth - tableWidth) / 2;
+      const col1Width = 55; // Sol sütun (birleşik)
+      const col2Width = 55; // Orta sütun (etiketler)
+      const col3Width = 50; // Sağ sütun (değerler)
+      const rowHeight = 12;
+
+      // Tablo arka planı beyaz - sadece çerçeve çiz
+
+      // Tablo çerçeveleri
+      doc.setDrawColor(150, 150, 150);
+      doc.rect(tableX, table1Y, tableWidth, rowHeight * 3);
+      doc.line(tableX + col1Width, table1Y, tableX + col1Width, table1Y + rowHeight * 3);
+      doc.line(tableX + col1Width + col2Width, table1Y, tableX + col1Width + col2Width, table1Y + rowHeight * 3);
+      // Yatay çizgiler (sadece orta ve sağ sütunlar için)
+      doc.line(tableX + col1Width, table1Y + rowHeight, tableX + tableWidth, table1Y + rowHeight);
+      doc.line(tableX + col1Width, table1Y + rowHeight * 2, tableX + tableWidth, table1Y + rowHeight * 2);
+
+      // Tablo metinleri - siyah renk (beyaz arka plan için)
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('Roboto', 'bold');
+
+      // Sol sütun - birleşik hücrede ortalanmış "RİSK DEĞERLENDİRMESİNİN"
+      doc.text('RİSK', tableX + col1Width / 2, table1Y + rowHeight * 1.3, { align: 'center' });
+      doc.text('DEĞERLENDİRMESİNİN', tableX + col1Width / 2, table1Y + rowHeight * 1.8, { align: 'center' });
+
+      // Orta sütun - etiketler
+      doc.setFontSize(8);
+      doc.text('YAPILDIĞI TARİH', tableX + col1Width + col2Width / 2, table1Y + rowHeight * 0.65, { align: 'center' });
+      doc.text('GEÇERLİLİK TARİHİ', tableX + col1Width + col2Width / 2, table1Y + rowHeight * 1.65, { align: 'center' });
+      doc.text('REVİZYON NO / TARİHİ', tableX + col1Width + col2Width / 2, table1Y + rowHeight * 2.65, { align: 'center' });
+
+      // Sağ sütun - değerler
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(9);
+      doc.text(formatDate(headerInfo.date) || '[YAPILDIĞI TARİH]', tableX + col1Width + col2Width + col3Width / 2, table1Y + rowHeight * 0.65, { align: 'center' });
+      doc.text(formatDate(headerInfo.validityDate) || '[GEÇERLİLİK TARİHİ]', tableX + col1Width + col2Width + col3Width / 2, table1Y + rowHeight * 1.65, { align: 'center' });
+      doc.text(headerInfo.revision || '[REVİZYON NO/TARİH]', tableX + col1Width + col2Width + col3Width / 2, table1Y + rowHeight * 2.65, { align: 'center' });
+
+      prosedurPageCount = 1;
+
+      // ============ 2. PROSEDÜR SAYFASI - İÇERİK SAYFASI ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      const margin = 15;
+      const contentWidth = pageWidth - 2 * margin;
+      let yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (kompakt) =====
+      const headerHeight = 17.5; // Bilgi tablosu yüksekliği ile eşleştirildi (5 satır * 3.5)
+
+      // Çizgi rengi ayarla
       doc.setDrawColor(150);
-      doc.rect(margin, startY, pageWidth - 2 * margin, headerHeight);
 
-      // 1. Sol Blok: Yöntem & Hazırlayan (Genişlik: 35mm)
-      const col1Width = 35;
-      doc.line(margin + col1Width, startY, margin + col1Width, startY + headerHeight);
-
-      // Yöntem
-      doc.line(margin, startY + 12.5, margin + col1Width, startY + 12.5);
-      doc.setFontSize(6); doc.setTextColor(100);
-      doc.text("YÖNTEM", margin + 2, startY + 4);
-      doc.setFontSize(8); doc.setTextColor(0);
-      doc.text("FINE KINNEY", margin + 2, startY + 9);
-
-      // Hazırlayan
-      doc.setFontSize(6); doc.setTextColor(100);
-      doc.text("HAZIRLAYAN", margin + 2, startY + 16.5);
-      doc.setFontSize(8); doc.setTextColor(0);
-      doc.text("İSG RİSK EKİBİ", margin + 2, startY + 21.5);
-
-      // 2. Orta Blok: Logo & Firma
-      // Firma alanı daha da kısaltıldı, sağ blok genişletildi
-      const col3Width = 100; // Sağ blok genişliği azaltıldı (115 -> 100) - Tarih alanı kısaldı
-      const col2Start = margin + col1Width;
-      const col2Width = pageWidth - 2 * margin - col1Width - col3Width;
-      const col2End = col2Start + col2Width;
-
-      doc.line(col2End, startY, col2End, startY + headerHeight);
-
-      // Logo Alanı (20mm)
-      const logoWidth = 20;
-      doc.line(col2Start + logoWidth, startY, col2Start + logoWidth, startY + headerHeight);
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth = 25;
+      doc.rect(margin, yPos, logoWidth, headerHeight); // Logo dikdörtgeni
 
       if (headerInfo.logo) {
         try {
-          // Logoyu ortala (Max 12x16mm) - Biraz küçültüldü
-          const maxLogoW = 12;
-          const maxLogoH = 16;
-          const logoX = col2Start + (logoWidth - maxLogoW) / 2;
-          const logoY = startY + (headerHeight - maxLogoH) / 2;
-          doc.addImage(headerInfo.logo, 'JPEG', logoX, logoY, maxLogoW, maxLogoH, undefined, 'FAST');
-        } catch (e) { }
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
       }
 
-      // Firma Bilgileri
-      const infoStart = col2Start + logoWidth;
+      // Orta: Başlık bölümü - dikdörtgen çiz
+      const logoEndX = margin + logoWidth; // Logo bitişi
+      const infoTableStartX = pageWidth - margin - 50; // Bilgi tablosu başlangıcı
+      const titleWidth = infoTableStartX - logoEndX; // Başlık alanı genişliği
+      const titleCenterX = logoEndX + titleWidth / 2; // Ortala
 
-      // Başlık - Beyaz Arkaplan, Daha Kısa
-      // doc.setFillColor(245, 245, 245); // Kaldırıldı
-      // doc.rect(infoStart, startY, col2Width - logoWidth, 5, 'F'); // Kaldırıldı
-      doc.setFontSize(5); doc.setTextColor(50); // Font küçültüldü (6->5)
-      doc.text("ANALİZ YAPILAN İŞYERİNİN", infoStart + 2, startY + 2.5); // Y koordinatı ayarlandı (3.5 -> 2.5)
+      // Başlık alanı dikdörtgeni
+      doc.rect(logoEndX, yPos, titleWidth, headerHeight);
 
-      doc.line(infoStart, startY + 3, col2End, startY + 3); // Çizgi yukarı çekildi (5 -> 3)
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6); // %20 azaltıldı (12 * 0.80)
+      doc.setTextColor(0, 0, 0);
+      // Dikey ortalama için y pozisyonu ayarlandı
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX, yPos + 11, { align: 'center' });
 
-      // Bilgiler (Daha kompakt)
-      const rowH = 7.3; // Satır yüksekliği biraz artırıldı (6.6 -> 7.3) çünkü alan açıldı
-      doc.line(infoStart, startY + 3 + rowH, col2End, startY + 3 + rowH);
-      doc.line(infoStart, startY + 3 + rowH * 2, col2End, startY + 3 + rowH * 2);
+      // Sağ: Bilgi Tablosu (kompakt)
+      const infoTableX = pageWidth - margin - 50;
+      const infoRowHeight = 3.5;
 
-      // Satır ortalaması için hesaplama (startY + 3 başlangıç, her satır rowH yüksekliğinde)
-      const maxTextWidth = col2Width - logoWidth - 17;
-      const lineHeight = 2.8; // Satır aralığı
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3); // %20 büyütüldü (5.25 * 1.2)
+      doc.setFont('Roboto', 'normal');
 
-      // Unvan - dikey ortalı (2 satır olabilir)
-      doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
-      const row1Top = startY + 3;
-      doc.text("UNVANI:", infoStart + 2, row1Top + rowH / 2 + 1);
-      doc.setFontSize(7); doc.setTextColor(0); doc.setFont("Roboto", "bold");
-      const titleLines = doc.splitTextToSize(headerInfo.title || "", maxTextWidth);
-      const titleStartY = row1Top + (rowH - titleLines.length * lineHeight) / 2 + lineHeight;
-      titleLines.slice(0, 2).forEach((line: string, i: number) => {
-        doc.text(line, infoStart + 15, titleStartY + i * lineHeight);
-      });
-
-      // Adres - dikey ortalı (2 satır olabilir)
-      doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
-      const row2Top = startY + 3 + rowH;
-      doc.text("ADRESİ:", infoStart + 2, row2Top + rowH / 2 + 1);
-      doc.setFontSize(6); doc.setTextColor(0); doc.setFont("Roboto", "bold");
-      const addressLines = doc.splitTextToSize(headerInfo.address || "", maxTextWidth);
-      const addressStartY = row2Top + (rowH - addressLines.length * lineHeight) / 2 + lineHeight;
-      addressLines.slice(0, 2).forEach((line: string, i: number) => {
-        doc.text(line, infoStart + 15, addressStartY + i * lineHeight);
-      });
-
-      // Sicil - dikey ortalı (tek satır)
-      doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
-      const row3Top = startY + 3 + rowH * 2;
-      doc.text("SİCİL NO:", infoStart + 2, row3Top + rowH / 2 + 1);
-      doc.setFontSize(8); doc.setTextColor(0); doc.setFont("Roboto", "bold");
-      doc.text(headerInfo.registrationNumber || "", infoStart + 15, row3Top + rowH / 2 + 1);
-
-      // 3. Sağ Blok: Tarihler & Ekip (Kompakt)
-      const col3Start = col2End;
-      const subColWidth = 55; // Tarih sütunu kısaltıldı (70 -> 55)
-      doc.line(col3Start + subColWidth, startY, col3Start + subColWidth, startY + headerHeight);
-
-      // Tarihler
-      doc.setFontSize(6); doc.setTextColor(100);
-      doc.text("YAPILIŞ TARİHİ:", col3Start + 2, startY + 5);
-      doc.setFontSize(8); doc.setTextColor(0);
-      doc.text(formatDate(headerInfo.date), col3Start + 22, startY + 5);
-
-      doc.line(col3Start, startY + 8, col3Start + subColWidth, startY + 8);
-
-      doc.setFontSize(6); doc.setTextColor(100);
-      doc.text("GEÇERLİLİK TARİHİ:", col3Start + 2, startY + 13);
-      doc.setFontSize(8); doc.setTextColor(0);
-      doc.text(formatDate(headerInfo.validityDate), col3Start + 22, startY + 13);
-
-      doc.line(col3Start, startY + 17, col3Start + subColWidth, startY + 17);
-
-      doc.setFontSize(6); doc.setTextColor(100);
-      doc.text("REVİZYON:", col3Start + 2, startY + 21);
-      doc.setFontSize(8); doc.setTextColor(0);
-      doc.text(headerInfo.revision || "", col3Start + 20, startY + 21);
-
-      // Ekip
-      const teamStart = col3Start + subColWidth;
-      // doc.setFillColor(245, 245, 245); // Kaldırıldı
-      // doc.rect(teamStart, startY, col3Width - subColWidth, 4, 'F'); // Kaldırıldı
-      doc.setFontSize(5); doc.setTextColor(50); // Font küçültüldü (6->5)
-      doc.text("RİSK DEĞERLENDİRME EKİBİ", teamStart + 2, startY + 2.5); // Y koordinatı ayarlandı (3->2.5)
-      doc.line(teamStart, startY + 3, pageWidth - margin, startY + 3); // Çizgi yukarı çekildi (4->3)
-
-      const teamRows = [
-        { l: "İŞV:", v: headerInfo.employer },
-        { l: "İGU:", v: headerInfo.igu },
-        { l: "DR:", v: headerInfo.doctor },
-        { l: "TEM:", v: headerInfo.representative },
-        { l: "DES:", v: headerInfo.support }
+      const infoRows = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 2 -']
       ];
 
-      let teamY = startY + 6; // Başlangıç Y koordinatı yukarı çekildi (7->6)
-      teamRows.forEach((row, i) => {
-        doc.setFontSize(6); doc.setTextColor(100);
-        doc.text(row.l, teamStart + 2, teamY);
-        doc.setFontSize(7); doc.setTextColor(0);
-        doc.text(row.v || "", teamStart + 10, teamY);
-        teamY += 4.2; // Satır aralığı biraz artırıldı (4->4.2)
+      infoRows.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight);
+        doc.rect(infoTableX, rowY, 25, infoRowHeight);
+        doc.rect(infoTableX + 25, rowY, 25, infoRowHeight);
+        doc.text(row[0], infoTableX + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX + 26, rowY + 2.5);
       });
-    };
 
-    autoTable(doc, {
-      head: [
-        [
-          { content: 'No', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-          { content: 'Bölüm / Ortam', rowSpan: 2, styles: { valign: 'middle' } },
-          { content: 'Foto', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-          { content: 'Tehlike', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-          { content: 'Risk', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-          { content: 'Etkilenen', rowSpan: 2, styles: { valign: 'middle', halign: 'center', cellWidth: 10, fontSize: 6 } }, // Başlık metni normal (yatay), font küçültüldü
-          { content: '1. Aşama (Mevcut Durum)', colSpan: 5, styles: { halign: 'center', fillColor: [153, 27, 27], textColor: 255, fontStyle: 'bold' } },
-          { content: 'Kontrol Tedbirleri', rowSpan: 2, styles: { valign: 'middle', cellWidth: 40, halign: 'center' } },
-          { content: '2. Aşama (Tedbir Sonrası)', colSpan: 5, styles: { halign: 'center', fillColor: [20, 83, 45], textColor: 255, fontStyle: 'bold' } },
-          { content: 'Sorumlu', rowSpan: 2, styles: { valign: 'middle', halign: 'center', cellWidth: 15 } } // Başlık metni normal (yatay)
-        ],
-        [
-          { content: 'O', styles: { halign: 'center', cellWidth: 8, fillColor: [59, 130, 246], textColor: 255 } },
-          { content: 'F', styles: { halign: 'center', cellWidth: 8, fillColor: [34, 197, 94], textColor: 255 } },
-          { content: 'Ş', styles: { halign: 'center', cellWidth: 12, fillColor: [234, 179, 8], textColor: 255 } },
-          { content: 'Skor', styles: { halign: 'center', cellWidth: 10, fillColor: [220, 38, 38], textColor: 255 } },
-          { content: 'Sınıf', styles: { halign: 'center', cellWidth: 15, fillColor: [220, 38, 38], textColor: 255 } },
-          { content: 'O', styles: { halign: 'center', cellWidth: 8, fillColor: [59, 130, 246], textColor: 255 } },
-          { content: 'F', styles: { halign: 'center', cellWidth: 8, fillColor: [34, 197, 94], textColor: 255 } },
-          { content: 'Ş', styles: { halign: 'center', cellWidth: 12, fillColor: [234, 179, 8], textColor: 255 } },
-          { content: 'Skor', styles: { halign: 'center', cellWidth: 10, fillColor: [220, 38, 38], textColor: 255 } },
-          { content: 'Sınıf', styles: { halign: 'center', cellWidth: 15, fillColor: [220, 38, 38], textColor: 255 } },
-        ]
-      ],
-      body: risks.map(r => [
-        r.riskNo,
-        '', // Bölüm / Ortam (didDrawCell ile özel çizilecek)
+      yPos += headerHeight + 5;
 
-        '', // Fotoğraf hücresi (didDrawCell ile doldurulacak)
-        r.hazard,
-        r.risk,
-        r.affected,
-        r.probability, r.frequency, r.severity, Math.round(r.score), r.level.split(' ')[0],
-        r.measures,
-        r.probability2, r.frequency2, r.severity2, Math.round(r.score2), r.level2.split(' ')[0],
-        r.responsible
-      ]),
-      startY: 29.9, // Başlık 25mm + 5mm margin (Boşluk kalmaması için ince ayar)
-      margin: { top: 29.9, left: 10, right: 10 },
-      theme: 'grid',
-      rowPageBreak: 'avoid', // Satırların bölünmesini engelle
-      styles: {
-        font: 'Roboto', // Yüklenen fontu kullan
-        fontSize: 8, // Font boyutu küçültüldü
-        cellPadding: 0.5, // Padding azaltıldı
-        overflow: 'linebreak',
-        lineColor: 200,
-        lineWidth: 0.1
-      },
-      headStyles: {
-        fillColor: [31, 41, 55],
-        textColor: 255,
-        fontSize: 7,
-        fontStyle: 'bold'
-      },
-      columnStyles: {
-        0: { cellWidth: 6, halign: 'center', valign: 'middle' }, // No
-        1: { cellWidth: 22, valign: 'middle', fontSize: 6.5 }, // Bölüm - Font küçüldü, genişlik azaldı (25->22)
-        2: { cellWidth: 15, minCellHeight: 12, valign: 'middle' }, // Foto
-        3: { cellWidth: 33, valign: 'middle' }, // Tehlike - Genişlik azaldı (35->33)
-        4: { cellWidth: 33, valign: 'middle' }, // Risk - Genişlik azaldı (35->33)
-        5: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 3.8, overflow: 'linebreak' }, // Etkilenen
+      // ===== İÇERİK =====
+      const firmaIsmi = headerInfo.title || '[FİRMA İSMİ]';
 
-        // 1. Aşama
-        6: { cellWidth: 7, halign: 'center', valign: 'middle' }, // O
-        7: { cellWidth: 7, halign: 'center', valign: 'middle' }, // F
-        8: { cellWidth: 12, halign: 'center', valign: 'middle' }, // Ş
-        9: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
-        10: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
-
-        11: { cellWidth: 43, valign: 'middle' }, // Önlemler - Genişlik azaldı (45->43)
-
-        // 2. Aşama
-        12: { cellWidth: 7, halign: 'center', valign: 'middle' }, // O
-        13: { cellWidth: 7, halign: 'center', valign: 'middle' }, // F
-        14: { cellWidth: 12, halign: 'center', valign: 'middle' }, // Ş
-        15: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
-        16: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
-
-        17: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 4.1 } // Sorumlu
-      },
-      didDrawPage: (data) => {
-        drawHeader(doc);
-      },
-      willDrawCell: (data) => {
-        // Yatay yazıları gizle (No ve Etkilenen) - Sadece gövde
-        // Ayrıca Bölüm/Ortam (1) sütununu da gizle, çünkü didDrawCell ile kendimiz yazacağız
-        if (data.section === 'body' && (data.column.index === 0 || data.column.index === 1)) {
-          data.cell.text = [];
+      // Yardımcı fonksiyon: Başlık yazma
+      const writeHeading = (num: string, title: string, level: number = 1) => {
+        if (yPos > pageHeight - 15) {
+          doc.addPage('a4', 'portrait');
+          yPos = 15;
         }
-      },
-      didDrawCell: (data) => {
-        // Resim Ekleme
-        if (data.section === 'body' && data.column.index === 2) {
-          const risk = risks[data.row.index];
-          if (risk && risk.image) {
-            try {
-              const imgWidth = 12;
-              const imgHeight = 12;
-              const x = data.cell.x + (data.cell.width - imgWidth) / 2;
-              const y = data.cell.y + (data.cell.height - imgHeight) / 2;
-              doc.addImage(risk.image, 'JPEG', x, y, imgWidth, imgHeight);
-            } catch (err) { }
-          }
-        }
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(level === 1 ? 11.34 : 10.08); // %20 büyütüldü (9.45*1.2, 8.4*1.2)
+        doc.setTextColor(0, 0, 0);
+        const text = `${num}    ${title}`;
+        doc.text(text, margin, yPos);
+        yPos += 5;
+      };
 
-        // Bölüm / Ortam (Index 1) - Özel Çizim
-        if (data.section === 'body' && data.column.index === 1) {
-          const risk = risks[data.row.index];
-          const cellCenterX = data.cell.x + data.cell.width / 2; // Yatay ortala
+      // Yardımcı fonksiyon: Paragraf yazma (sola yaslı, düzgün satırlar)
+      const writeParagraph = (text: string, indent: number = 0) => {
+        doc.setTextColor(0, 0, 0);
+        const processedText = text.replace(/\[FİRMA İSMİ\]/g, firmaIsmi);
 
-          // İçerik Yüksekliğini Hesapla
-          doc.setFontSize(7); doc.setFont("Roboto", "bold");
-          const splitSub = doc.splitTextToSize(risk.sub_category || "", data.cell.width - 2);
-
-          doc.setFontSize(6); doc.setFont("Roboto", "normal");
-          const splitSource = doc.splitTextToSize(risk.source || "", data.cell.width - 2);
-
-          const subHeight = splitSub.length * 3; // Satır yüksekliği approx 3mm
-          const sourceHeight = splitSource.length * 2.5; // Satır yüksekliği approx 2.5mm
-          const totalTextHeight = subHeight + 1 + sourceHeight; // Arada 1mm boşluk
-
-          // Dikey Ortala
-          let y = data.cell.y + (data.cell.height - totalTextHeight) / 2 + 2; // +2mm üst boşluk (font baseline için)
-
-          // Sub Category - Kalın (Ortalı)
-          doc.setFontSize(7);
-          doc.setFont("Roboto", "bold");
-          doc.setTextColor(0);
-          doc.text(splitSub, cellCenterX, y, { align: 'center' });
-
-          y += subHeight + 1;
-
-          // Source - İnce ve Küçük (Ortalı)
-          doc.setFontSize(6);
-          doc.setFont("Roboto", "normal");
-          doc.setTextColor(80);
-          doc.text(splitSource, cellCenterX, y, { align: 'center' });
-        }
-
-        // Dikey Metin (İçerik): Sadece No (0)
-        if (data.section === 'body' && data.column.index === 0) {
-          const text = (data.cell.raw as string || "").trim();
-          let x = data.cell.x + data.cell.width / 2;
-          let y = data.cell.y + data.cell.height / 2;
-          x += 3.1; // 1mm sağa kaydırıldı
-          y += 0.5;
-          doc.setFontSize(3.8);
-          doc.setTextColor(0);
-          doc.text(text, x, y, { angle: 90, align: 'center', baseline: 'middle' });
-        }
-      }
-    });
-
-    // Dosya İsmi Oluşturma
-    const titleWords = (headerInfo.title || "Firma").trim().split(/\s+/);
-    const safeTitle = titleWords.slice(0, 2).join(' ').replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ ]/g, "") || 'Firma';
-    const filename = `${safeTitle} RİSK DEĞERLENDİRME FORMU.pdf`;
-
-    setProgress(80); // Risk tablosu oluşturuldu
-
-    // Risk Prosedürü tikli değilse, prosedür sayfalarını (1-8) sil
-    if (!includeProcedure && prosedurPageCount > 0) {
-      // Prosedür sayfalarını sondan başa doğru sil (sayfa numaraları kaymaması için)
-      for (let p = prosedurPageCount; p >= 1; p--) {
-        doc.deletePage(p);
-      }
-    }
-
-    // Sayfa numaralarını ve prosedür sayfalarına alt bilgi (imza alanı) ekle
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      const pgWidth = doc.internal.pageSize.width;
-      const pgHeight = doc.internal.pageSize.height;
-
-      // Alt bilgi - İmza Alanı
-      // includeProcedure true ise: 2+ sayfalar (1. sayfa kapak)
-      // includeProcedure false ise: Tüm sayfalar (prosedür silindi)
-      const showFooter = includeProcedure ? (i >= 2) : true;
-      if (showFooter) {
-        const footerY = pgHeight - 15;
-        const footerMargin = 15;
-        const footerWidth = pgWidth - 2 * footerMargin;
-        const colWidth = footerWidth / 5;
-
-        // Beyaz arka plan
-        doc.setFillColor(255, 255, 255);
-        doc.rect(footerMargin, footerY - 2, footerWidth, 10, 'F');
-
+        // Basit ve düzgün satır yazımı - tüm yazılar sola yaslı
         doc.setFont('Roboto', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(100);
+        doc.setFontSize(8.82); // %20 büyütüldü (7.35 * 1.2)
+        const lines = doc.splitTextToSize(processedText, contentWidth - indent);
 
-        const footerLabels = [
-          'İŞ GÜVENLİK UZMANI',
-          'İŞYERİ HEKİMİ',
-          'ÇALIŞAN TEM.',
-          'DESTEK ELEMANI',
-          'İŞVEREN/VEKİLİ'
+        lines.forEach((line: string) => {
+          if (yPos > pageHeight - 12) {
+            doc.addPage('a4', 'portrait');
+            yPos = 15;
+          }
+          doc.text(line, margin + indent, yPos);
+          yPos += 3.7;
+        });
+        yPos += 1;
+      };
+
+      // Yardımcı fonksiyon: Tanım yazma
+      const writeDefinition = (term: string, definition: string) => {
+        if (yPos > pageHeight - 15) {
+          doc.addPage('a4', 'portrait');
+          yPos = 15;
+        }
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(8.82); // %20 büyütüldü (7.35 * 1.2)
+        const termWidth = doc.getTextWidth(term + ': ');
+        doc.text(term + ':', margin + 3, yPos);
+        doc.setFont('Roboto', 'normal');
+        const defLines = doc.splitTextToSize(definition, contentWidth - termWidth - 8);
+        doc.text(defLines[0], margin + 3 + termWidth, yPos);
+        yPos += 3.5;
+        for (let i = 1; i < defLines.length; i++) {
+          doc.text(defLines[i], margin + 3, yPos);
+          yPos += 3.5;
+        }
+      };
+
+      // 1. AMAÇ
+      yPos += 5; // Üste bir satır boşluk
+      writeHeading('1.', 'AMAÇ');
+      writeParagraph(`[FİRMA İSMİ]'de var olan çalışma koşullarından kaynaklanan her türlü tehlike ve riskin tespiti, mevcut iş sağlığı ve güvenliği yasa ve yönetmeliklerine uygunluğunun değerlendirilmesi, insan sağlığını etkilemeyen seviyeye düşürmektir. Tehlike Tanımlama ve Risk Değerlendirmesi sonucunda ortaya çıkan risk değerlerinin iyileştirilmesi, önerilerde bulunmak ve İSG yönetim sisteminin disiplin altına alınması ve yönetim metodunun belirlenmesidir.`);
+
+      // 2. KAPSAM
+      yPos += 5; // Bir satır boşluk
+      writeHeading('2.', 'KAPSAM');
+      writeParagraph(`Bu rapor [FİRMA İSMİ]'nde yapılan gözlemlere göre hazırlanmıştır. Bu çalışma;`);
+      writeParagraph(`[FİRMA İSMİ]'da bulunan; İşyerinde kullanılan tüm makine, tesisat, bina, eklenti ve sosyal tesisleri, işyerinde çalışan firma sorumlularını ve işçileri, ziyaretçi ve tedarikçilerini kapsar.`);
+
+      // 3. REFERANSLAR
+      yPos += 5; // Bir satır boşluk
+      writeHeading('3.', 'REFERANSLAR');
+      writeParagraph(`OHSAS 18001, İş Sağlığı ve Güvenliği Risk Değerlendirmesi Yönetmeliği, İş Sağlığı ve Güvenliği Kanunu`);
+
+      // 4. TANIMLAR
+      yPos += 5; // Bir satır boşluk
+      writeHeading('4.', 'TANIMLAR');
+      writeParagraph(`Bu çalışmada yer alan kelimeler ve bu kelimelerin tanımları aşağıda verilmiştir.`);
+
+      writeDefinition('Tehlike', 'İşyerinde var olan ya da dışarıdan gelebilecek, çalışanı veya işyerini etkileyebilecek zarar veya hasar verme potansiyelidir.');
+      writeDefinition('Önleme', 'İşyerinde yürütülen işlerin bütün safhalarında iş sağlığı ve güvenliği ile ilgili riskleri ortadan kaldırmak veya azaltmak için planlanan ve alınan tedbirlerin tümüdür.');
+      writeDefinition('Ramak kala olay', 'İşyerinde meydana gelen; çalışan, işyeri ya da iş ekipmanını zarara uğratma potansiyeli olduğu halde zarara uğratmayan olaydır.');
+      writeDefinition('Risk', 'Tehlikeden kaynaklanacak kayıp, yaralanma ya da başka zararlı sonuç meydana gelme ihtimalidir.');
+      writeDefinition('Risk değerlendirmesi', 'İşyerinde var olan ya da dışarıdan gelebilecek tehlikelerin belirlenmesi, bu tehlikelerin riske dönüşmesine yol açan faktörler ile tehlikelerden kaynaklanan risklerin analiz edilerek derecelendirilmesi ve kontrol tedbirlerinin kararlaştırılması amacıyla yapılması gerekli çalışmalardır.');
+
+      // 5. SORUMLULUKLAR VE PERSONEL
+      yPos += 5; // Bir satır boşluk
+      writeHeading('5.', 'SORUMLULUKLAR VE PERSONEL');
+      writeParagraph(`İş kazalarına karşı gerekli önlemlerin alınmasından İşveren / İşveren vekili, risk değerlendirmesi çalışmalarının yürütülmesinden risk değerlendirmesi ekibi sorumludur. "İSG.PR.016 TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ FORMU" [FİRMA İSMİ] tarafından görevlendirilen "Risk Değerlendirme Ekibi" tarafından hazırlanacaktır. İş Güvenliği Uzmanı konu ile ilgili [FİRMA İSMİ] çalışan tüm personele İş Güvenliği eğitimi kapsamında bilgilendirme yapacak, tehlike bildirim formlarını da göz önüne alarak kontrol edecektir.`);
+
+      // 5.1. İŞ SAĞLIĞI VE GÜVENLİĞİ KONUSUNDA İŞVERENİN GÖREVLERİ
+      yPos += 5; // Bir satır boşluk
+      writeHeading('5.1.', 'İŞ SAĞLIĞI VE GÜVENLİĞİ KONUSUNDA İŞVERENİN GÖREVLERİ', 2);
+      writeParagraph(`İş Sağlığı ve Güvenliği Kanunu kapsamında İşveren'in genel yükümlülüğü aşağıdaki gibidir.`);
+      writeParagraph(`MADDE 4 – (1) İşveren, çalışanların işle ilgili sağlık ve güvenliğini sağlamakla yükümlü olup bu çerçevede;`);
+      writeParagraph(`a) Mesleki risklerin önlenmesi, eğitim ve bilgi verilmesi dâhil her türlü tedbirin alınması, organizasyonun yapılması, gerekli araç ve gereçlerin sağlanması, sağlık ve güvenlik tedbirlerinin değişen şartlara uygun hale getirilmesi ve mevcut durumun iyileştirilmesi için çalışmalar yapar.`, 3);
+      writeParagraph(`b) İşyerinde alınan iş sağlığı ve güvenliği tedbirlerine uyulup uyulmadığını izler, denetler ve uygunsuzlukların giderilmesini sağlar.`, 3);
+      writeParagraph(`c) Risk değerlendirmesi yapar veya yaptırır.`, 3);
+      writeParagraph(`ç) Çalışana görev verirken, çalışanın sağlık ve güvenlik yönünden işe uygunluğunu göz önüne alır.`, 3);
+      writeParagraph(`d) Yeterli bilgi ve talimat verilenler dışındaki çalışanların hayati ve özel tehlike bulunan yerlere girmemesi için gerekli tedbirleri alır.`, 3);
+      writeParagraph(`(2) İşyeri dışındaki uzman kişi ve kuruluşlardan hizmet alınması, işverenin sorumluluklarını ortadan kaldırmaz.`, 0);
+      writeParagraph(`(3) Çalışanların iş sağlığı ve güvenliği alanındaki yükümlülükleri, işverenin sorumluluklarını etkilemez.`, 0);
+      writeParagraph(`(4) İşveren, iş sağlığı ve güvenliği tedbirlerinin maliyetini çalışanlara yansıtamaz.`, 0);
+
+      // ============ 3. PROSEDÜR SAYFASI ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (2. sayfa ile aynı) =====
+      const headerHeight3 = 17.5;
+
+      // Çizgi rengi ayarla
+      doc.setDrawColor(150);
+
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth3 = 25;
+      doc.rect(margin, yPos, logoWidth3, headerHeight3);
+
+      if (headerInfo.logo) {
+        try {
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
+      }
+
+      // Orta: Başlık bölümü
+      const logoEndX3 = margin + logoWidth3;
+      const infoTableStartX3 = pageWidth - margin - 50;
+      const titleWidth3 = infoTableStartX3 - logoEndX3;
+      const titleCenterX3 = logoEndX3 + titleWidth3 / 2;
+
+      doc.rect(logoEndX3, yPos, titleWidth3, headerHeight3);
+
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX3, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX3, yPos + 11, { align: 'center' });
+
+      // Sağ: Bilgi Tablosu
+      const infoTableX3 = pageWidth - margin - 50;
+      const infoRowHeight3 = 3.5;
+
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3);
+      doc.setFont('Roboto', 'normal');
+
+      const infoRows3 = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 3 -']
+      ];
+
+      infoRows3.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight3);
+        doc.rect(infoTableX3, rowY, 25, infoRowHeight3);
+        doc.rect(infoTableX3 + 25, rowY, 25, infoRowHeight3);
+        doc.text(row[0], infoTableX3 + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX3 + 26, rowY + 2.5);
+      });
+
+      yPos += headerHeight3 + 5;
+
+      // ===== 3. SAYFA İÇERİĞİ =====
+
+      // 5.2. RİSK DEĞERLENDİRME EKİBİ'NİN GÖREVLERİ
+      yPos += 3;
+      writeHeading('5.2.', 'RİSK DEĞERLENDİRME EKİBİ\'NİN GÖREVLERİ', 2);
+      writeParagraph(`İş Sağlığı ve Güvenliği Risk Değerlendirmesi Yönetmeliği'ne göre yapılacak çalışmalar için ekip oluşturulmalıdır, risk değerlendirmesi ekibinde söz konusu yönetmeliğin 6. Maddesine göre bulunması gereken kişiler aşağıdaki gibi tanımlanmıştır. "İSG.FR.017.RİSK DEĞERLENDİRME EKİBİ"nde görevlendirilen kişiler formu ile kayıt altına alınacak ve "İSG.EGT.002 RİSK DEĞERLENDİRME EKİBİ EĞİTİMİ" ve "İSG.FR.009.RİSK DEĞERLENDİRME EKİBİ EĞİTİM KATILIM FORMU" ile eğitimi tamamlanacaktır.`);
+      writeParagraph(`- İşveren veya işveren vekili.`, 3);
+      writeParagraph(`- İşyerinde sağlık ve güvenlik hizmetini yürüten iş güvenliği uzmanları ile işyeri hekimleri.`, 3);
+      writeParagraph(`- İşyerindeki çalışan temsilcileri.`, 3);
+      writeParagraph(`- İşyerindeki destek elemanları.`, 3);
+      writeParagraph(`- İşyerindeki bütün birimleri temsil edecek şekilde belirlenen ve işyerinde yürütülen çalışmalar, mevcut veya muhtemel tehlike kaynakları ile riskler konusunda bilgi sahibi çalışanlar.`, 3);
+
+      // 6. RİSK DEĞERLENDİRME SÜRECİ
+      yPos += 5;
+      writeHeading('6.', 'RİSK DEĞERLENDİRME SÜRECİ');
+
+      // 6.1. RİSK DEĞERLENDİRMESİ
+      yPos += 3;
+      writeHeading('6.1.', 'RİSK DEĞERLENDİRMESİ', 2);
+      writeParagraph(`Risk değerlendirmesi için "İSG.FR.016.TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ FORMU" kullanılır. Tüm işyerleri için tasarım veya kuruluş aşamasından başlamak üzere tehlikeleri tanımlama, riskleri belirleme ve analiz etme, risk kontrol tedbirlerinin kararlaştırılması, dokümantasyon, yapılan çalışmaların güncellenmesi ve gerektiğinde yenileme aşamaları izlenerek gerçekleştirilir. Çalışanların risk değerlendirmesi çalışması yapılırken ihtiyaç duyulan her aşamada sürece katılarak görüşlerinin alınması sağlanır. Bu süreçte "İSG.FR.018.RAMAK KALA / TEHLİKE BİLDİRİM FORMU" kullanılarak çalışanların görüşü kayıt altına alınır.`);
+
+      // 6.2. TEHLİKELERİN TANIMLANMASI
+      yPos += 5;
+      writeHeading('6.2.', 'TEHLİKELERİN TANIMLANMASI', 2);
+      writeParagraph(`Tehlikeler tanımlanırken çalışma ortamı, çalışanlar ve işyerine ilişkin ilgisine göre asgari olarak aşağıda belirtilen bilgiler toplanır.`);
+      writeParagraph(`a) İşyeri bina ve eklentileri.`, 3);
+      writeParagraph(`b) İşyerinde yürütülen faaliyetler ile iş ve işlemler.`, 3);
+      writeParagraph(`c) Üretim süreç ve teknikleri.`, 3);
+      writeParagraph(`ç) İş ekipmanları.`, 3);
+      writeParagraph(`d) Kullanılan maddeler.`, 3);
+      writeParagraph(`e) Artık ve atıklarla ilgili işlemler.`, 3);
+      writeParagraph(`f) Organizasyon ve hiyerarşik yapı, görev, yetki ve sorumluluklar.`, 3);
+      writeParagraph(`g) Çalışanların tecrübe ve düşünceleri.`, 3);
+      writeParagraph(`ğ) İşe başlamadan önce ilgili mevzuat gereği alınacak çalışma izin belgeleri.`, 3);
+      writeParagraph(`h) Çalışanların eğitim, yaş, cinsiyet ve benzeri özellikleri ile sağlık gözetimi kayıtları.`, 3);
+      writeParagraph(`ı) Genç, yaşlı, engelli, gebe veya emziren çalışanlar gibi özel politika gerektiren gruplar ile kadın çalışanların durumu.`, 3);
+      writeParagraph(`i) İşyerinin teftiş sonuçları.`, 3);
+      writeParagraph(`j) Meslek hastalığı kayıtları.`, 3);
+      writeParagraph(`k) İş kazası kayıtları.`, 3);
+      writeParagraph(`l) İşyerinde meydana gelen ancak yaralanma veya ölüme neden olmadığı halde işyeri ya da iş ekipmanının zarara uğramasına yol açan olaylara ilişkin kayıtlar.`, 3);
+      writeParagraph(`m) Ramak kala olay kayıtları.`, 3);
+      writeParagraph(`n) Malzeme güvenlik bilgi formları.`, 3);
+      writeParagraph(`o) Ortam ve kişisel maruziyet düzeyi ölçüm sonuçları.`, 3);
+      writeParagraph(`ö) Varsa daha önce yapılmış risk değerlendirmesi çalışmaları.`, 3);
+      writeParagraph(`p) Acil durum planları.`, 3);
+      writeParagraph(`r) Sağlık ve güvenlik planı ve patlamadan korunma dokümanı gibi belirli işyerlerinde hazırlanması gereken dokümanlar.`, 3);
+      writeParagraph(`Tehlikelere ilişkin bilgiler toplanırken aynı üretim, yöntem ve teknikleri ile üretim yapan benzer işyerlerinde meydana gelen iş kazaları ve ortaya çıkan meslek hastalıkları da değerlendirilebilir. Toplanan bilgiler ışığında; iş sağlığı ve güvenliği ile ilgili mevzuatta yer alan hükümler de dikkate alınarak, çalışma ortamında bulunan fiziksel, kimyasal, biyolojik, psikososyal, ergonomik ve benzeri`);
+
+      // ============ 4. PROSEDÜR SAYFASI ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (2-3. sayfa ile aynı) =====
+      const headerHeight4 = 17.5;
+
+      // Çizgi rengi ayarla
+      doc.setDrawColor(150);
+
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth4 = 25;
+      doc.rect(margin, yPos, logoWidth4, headerHeight4);
+
+      if (headerInfo.logo) {
+        try {
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
+      }
+
+      // Orta: Başlık bölümü
+      const logoEndX4 = margin + logoWidth4;
+      const infoTableStartX4 = pageWidth - margin - 50;
+      const titleWidth4 = infoTableStartX4 - logoEndX4;
+      const titleCenterX4 = logoEndX4 + titleWidth4 / 2;
+
+      doc.rect(logoEndX4, yPos, titleWidth4, headerHeight4);
+
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX4, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX4, yPos + 11, { align: 'center' });
+
+      // Sağ: Bilgi Tablosu
+      const infoTableX4 = pageWidth - margin - 50;
+      const infoRowHeight4 = 3.5;
+
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3);
+      doc.setFont('Roboto', 'normal');
+
+      const infoRows4 = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 4 -']
+      ];
+
+      infoRows4.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight4);
+        doc.rect(infoTableX4, rowY, 25, infoRowHeight4);
+        doc.rect(infoTableX4 + 25, rowY, 25, infoRowHeight4);
+        doc.text(row[0], infoTableX4 + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX4 + 26, rowY + 2.5);
+      });
+
+      yPos += headerHeight4 + 5;
+
+      // ===== 4. SAYFA İÇERİĞİ =====
+      yPos += 8; // 2 satır boşluk
+      // 6.2 devamı - tehlike kaynakları
+      writeParagraph(`tehlike kaynaklarından oluşan veya bunların etkileşimi sonucu ortaya çıkabilecek tehlikeler belirlenir ve kayda alınır. Bu belirleme yapılırken aşağıdaki hususlar, bu hususlardan etkilenecekler ve ne şekilde etkilenebilecekleri göz önünde bulundurulur.`);
+      writeParagraph(`a) İşletmenin yeri nedeniyle ortaya çıkabilecek tehlikeler.`, 3);
+      writeParagraph(`b) Seçilen alanda, işyeri bina ve eklentilerinin plana uygun yerleştirilmemesi veya planda olmayan ilavelerin yapılmasından kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`c) İşyeri bina ve eklentilerinin yapı ve yapım tarzı ile seçilen yapı malzemelerinden kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`ç) Bakım ve onarım işleri de dahil işyerinde yürütülecek her türlü faaliyet esnasında çalışma usulleri, vardiya düzeni, ekip çalışması, organizasyon, nezaret sistemi, hiyerarşik düzen, ziyaretçi veya işyeri çalışanı olmayan diğer kişiler gibi faktörlerden kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`d) İşin yürütümü, üretim teknikleri, kullanılan maddeler, makine ve ekipman, araç ve gereçler ile bunların çalışanların fiziksel özelliklerine uygun tasarlanmaması veya kullanılmamasından kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`e) Kuvvetli akım, aydınlatma, paratoner, topraklama gibi elektrik tesisatının bileşenleri ile ısıtma, havalandırma, atmosferik ve çevresel şartlardan korunma, drenaj, arıtma, yangın önleme ve mücadele ekipmanı ile benzeri yardımcı tesisat ve donanımlardan kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`f) İşyerinde yanma, parlama veya patlama ihtimali olan maddelerin işlenmesi, kullanılması, taşınması, depolanması ya da imha edilmesinden kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`g) Çalışma ortamına ilişkin hijyen koşulları ile çalışanların kişisel hijyen alışkanlıklarından kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`ğ) Çalışanın, işyeri içerisindeki ulaşım yollarının kullanımından kaynaklanabilecek tehlikeler.`, 3);
+      writeParagraph(`h) Çalışanların iş sağlığı ve güvenliği ile ilgili yeterli eğitim almaması, bilgilendirilmemesi, çalışanlara uygun talimat verilmemesi veya çalışma izni prosedürü gereken durumlarda bu izin olmaksızın çalışılmasından kaynaklanabilecek tehlikeler.`, 3);
+
+      writeParagraph(`Çalışma ortamında bulunan fiziksel, kimyasal, biyolojik, psikososyal, ergonomik ve benzeri tehlike kaynaklarının neden olduğu tehlikeler ile ilgili işyerinde daha önce kontrol, ölçüm, inceleme ve araştırma çalışması yapılmamış ise risk değerlendirmesi çalışmalarında kullanılmak üzere; bu tehlikelerin, nitelik ve niceliklerini ve çalışanların bunlara maruziyet seviyelerini belirlemek amacıyla gerekli bütün kontrol, ölçüm, inceleme ve araştırmalar yapılır.`);
+
+      // 6.3. RİSK DEĞERLENDİRMESİ KONTROL ADIMLARI
+      yPos += 5;
+      writeHeading('6.3.', 'RİSK DEĞERLENDİRMESİ KONTROL ADIMLARI', 2);
+      writeParagraph(`Risk Değerlendirmesi hazırlanırken izlenecek kontrol adımları aşağıdaki maddelerin yapılması ile sürdürülür.`);
+
+      writeParagraph(`a) Planlama: Analiz edilerek etkilerinin büyüklüğüne ve önemine göre sıralı hale getirilen risklerin kontrolü amacıyla bir planlama yapılır.`, 3);
+
+      writeParagraph(`b) Risk kontrol tedbirlerinin kararlaştırılması: Riskin tamamen bertaraf edilmesi, bu mümkün değil ise riskin kabul edilebilir seviyeye indirilmesi için aşağıdaki adımlar uygulanır.`, 3);
+      writeParagraph(`1) Tehlike veya tehlike kaynaklarının ortadan kaldırılması.`, 6);
+      writeParagraph(`2) Tehlikelinin, tehlikeli olmayanla veya daha az tehlikeli olanla değiştirilmesi.`, 6);
+      writeParagraph(`3) Riskler ile kaynağında mücadele edilmesi.`, 6);
+
+      writeParagraph(`c) Risk kontrol tedbirlerinin uygulanması: Kararlaştırılan tedbirlerin iş ve işlem basamakları, işlemi yapacak kişi ya da işyeri bölümü, sorumlu kişi ya da işyeri bölümü, başlama ve bitiş tarihi ile benzeri bilgileri içeren planlar hazırlanır. Bu planlar işverence uygulamaya konulur.`, 3);
+
+      writeParagraph(`ç) Uygulamaların izlenmesi: Hazırlanan planların uygulama adımları düzenli olarak izlenir, denetlenir ve aksayan yönler tespit edilerek gerekli düzeltici ve önleyici işlemler tamamlanır.`, 3);
+
+      writeParagraph(`Risk kontrol adımları uygulanırken toplu korunma önlemlerine, kişisel korunma önlemlerine göre öncelik verilmesi ve uygulanacak önlemlerin yeni risklere neden olmaması sağlanır. Belirlenen risk için kontrol tedbirlerinin hayata geçirilmesinden sonra yeniden risk seviyesi tespiti yapılır. Yeni seviye, kabul edilebilir risk seviyesinin üzerinde ise bu maddedeki adımlar tekrarlanır.`);
+
+      // ============ 5. PROSEDÜR SAYFASI - AKIŞ ŞEMASI ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (diğer sayfalarla aynı) =====
+      const headerHeight5 = 17.5;
+
+      // Çizgi rengi ayarla
+      doc.setDrawColor(150);
+
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth5 = 25;
+      doc.rect(margin, yPos, logoWidth5, headerHeight5);
+
+      if (headerInfo.logo) {
+        try {
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
+      }
+
+      // Orta: Başlık bölümü
+      const logoEndX5 = margin + logoWidth5;
+      const infoTableStartX5 = pageWidth - margin - 50;
+      const titleWidth5 = infoTableStartX5 - logoEndX5;
+      const titleCenterX5 = logoEndX5 + titleWidth5 / 2;
+
+      doc.rect(logoEndX5, yPos, titleWidth5, headerHeight5);
+
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX5, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX5, yPos + 11, { align: 'center' });
+
+      // Sağ: Bilgi Tablosu
+      const infoTableX5 = pageWidth - margin - 50;
+      const infoRowHeight5 = 3.5;
+
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3);
+      doc.setFont('Roboto', 'normal');
+
+      const infoRows5 = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 5 -']
+      ];
+
+      infoRows5.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight5);
+        doc.rect(infoTableX5, rowY, 25, infoRowHeight5);
+        doc.rect(infoTableX5 + 25, rowY, 25, infoRowHeight5);
+        doc.text(row[0], infoTableX5 + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX5 + 26, rowY + 2.5);
+      });
+
+      // Header'ın altından bir satır boşluk bırakarak başla
+      const imgStartY = yPos + headerHeight5 + 4; // 4mm = 1 satır boşluk
+
+      // ===== 5. SAYFA İÇERİĞİ - RİSK DEĞERLENDİRME AKIŞ ŞEMASI =====
+      // Akış şeması resmini yükle - Header'ın hemen altından başla
+      try {
+        const flowChartUrl = '/risk-flow-chart.png';
+        const flowChartRes = await fetch(flowChartUrl);
+        const flowChartBuffer = await flowChartRes.arrayBuffer();
+        const flowChartBase64 = toBase64(flowChartBuffer);
+
+        // Resim boyutları - sayfaya sığdır
+        const imgWidth = pageWidth - 2 * margin; // Sayfa genişliği - kenar boşlukları
+        const imgHeight = pageHeight - imgStartY - 24; // Kalan yükseklik (alt boşluk %50 daha artırıldı: 16 -> 24)
+
+        // Resmi header'ın hemen altından başlat
+        const imgX = margin;
+
+        doc.addImage('data:image/png;base64,' + flowChartBase64, 'PNG', imgX, imgStartY, imgWidth, imgHeight);
+      } catch (e) {
+        console.log('Akış şeması resmi yüklenemedi:', e);
+        // Resim yüklenemezse placeholder metin göster
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(100);
+        doc.text('RİSK DEĞERLENDİRME AKIŞ ŞEMASI', pageWidth / 2, pageHeight / 2, { align: 'center' });
+      }
+
+      // ============ 6. PROSEDÜR SAYFASI ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (diğer sayfalarla aynı) =====
+      const headerHeight6 = 17.5;
+
+      // Çizgi rengi ayarla
+      doc.setDrawColor(150);
+
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth6 = 25;
+      doc.rect(margin, yPos, logoWidth6, headerHeight6);
+
+      if (headerInfo.logo) {
+        try {
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
+      }
+
+      // Orta: Başlık bölümü
+      const logoEndX6 = margin + logoWidth6;
+      const infoTableStartX6 = pageWidth - margin - 50;
+      const titleWidth6 = infoTableStartX6 - logoEndX6;
+      const titleCenterX6 = logoEndX6 + titleWidth6 / 2;
+
+      doc.rect(logoEndX6, yPos, titleWidth6, headerHeight6);
+
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX6, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX6, yPos + 11, { align: 'center' });
+
+      // Sağ: Bilgi Tablosu
+      const infoTableX6 = pageWidth - margin - 50;
+      const infoRowHeight6 = 3.5;
+
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3);
+      doc.setFont('Roboto', 'normal');
+
+      const infoRows6 = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 6 -']
+      ];
+
+      infoRows6.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight6);
+        doc.rect(infoTableX6, rowY, 25, infoRowHeight6);
+        doc.rect(infoTableX6 + 25, rowY, 25, infoRowHeight6);
+        doc.text(row[0], infoTableX6 + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX6 + 26, rowY + 2.5);
+      });
+
+      yPos += headerHeight6 + 5;
+
+      // ===== 6. SAYFA İÇERİĞİ =====
+      yPos += 8; // 2 satır boşluk (4. sayfa gibi)
+
+      // 6.4. RİSK DEĞERLENDİRMESİ AKSİYON PLANI
+      writeHeading('6.4.', 'RİSK DEĞERLENDİRMESİ AKSİYON PLANI', 2);
+      writeParagraph(`[FİRMA İSMİ] risk değerlendirmesi ekibi tarafından risk değerlendirmesi sonrasında "İSG.FR.019.RİSK DEĞERLENDİRMESİ AKSİYON PLANI" oluşturulur ve aşağıdakilerin maddeler yapılır.`);
+      writeParagraph(`a) Belirlenen aksiyonların öncelik derecesine göre aksiyonun kapatılması için planlanan tarih "hedef tarih" kolonuna yazılır.`, 3);
+      writeParagraph(`b) Aksiyonları yerine getirecek sorumlular belirlenerek "sorumlu" kolonuna isimleri yazılır.`, 3);
+      writeParagraph(`c) Aksiyon planını takip edecek ve planın "Durum" ve "Kapatma Tarihi" kolonlarını dolduracak kişi veya kişiler belirlenir.`, 3);
+      writeParagraph(`d) "Durum" kolonuna aşağıdaki girişler yapılarak aksiyon planı ve performans takip edilir:`, 3);
+      writeParagraph(`- Tamamlanan`, 6);
+      writeParagraph(`- Hedef Tarihi Geçen`, 6);
+      writeParagraph(`- Zaman Var`, 6);
+      writeParagraph(`- Hedef Tarih Verilmemiş`, 6);
+      writeParagraph(`e) Aksiyonlar kapatıldığında risk değerlendirmesinde bulunan "Kapatma Tarihi" kolonu doldurulur.`, 3);
+      writeParagraph(`f) Aksiyonların belirlenen hedef tarihler içinde kapatılması sağlanır.`, 3);
+      writeParagraph(`g) Oluşturulan "Risk Değerlendirmesi Aksiyon Planı" aksiyonları kapatacak kişiler ile paylaşılır.`, 3);
+      writeParagraph(`h) Risk Değerlendirme çalışmasının yönetmelik haricinde belirtilen haller dışında yılda bir defa ve uzman değişikliği sonucunda ilk olarak aksiyon planı oluşturularak yıl sonunda risk analizinin revize edilmesi sağlanır.`, 3);
+      writeParagraph(`i) Risk değerlendirmesi bu konuda eğitim almış [FİRMA İSMİ]tarafından görevlendirilmiş personeller tarafından güncellenebilir.`, 3);
+
+      // 6.5. FINE – KINNEY METODU
+      yPos += 5;
+      writeHeading('6.5.', 'FINE – KINNEY METODU', 2);
+      writeParagraph(`Kaza kontrolü için matematiksel değerlendirme anlamına gelir. Bu yöntem G.F. Kinney and A.D Wiruth tarafından 1976 yılında geliştirilmiştir. Çalışma ortamındaki tehlikelerin kazaya sebebiyet vermeden tespit edilmesini ve risk skoruna göre en öncelikli olandan başlayıp iyileştirilmesini sağlayan bir metot dur.`);
+      writeParagraph(`Bu çalışmada; [FİRMA İSMİ]'ait gerçekleştirilen Kinney Risk Analizi yönetiminin konusu ele alınmıştır. Uygulamayla işletmede iş kazası ve meslek hastalığı oluşturabilecek riskler değerlendirilip, bunların en1gellenmesine yönelik iyileştirme önerilerinde bulunulmuştur.`);
+      writeParagraph(`Analiz edilerek belirlenmiş tehlikeler, aşağıda açıklaması yapılan FINE KINNEY risk yöntemine göre değerlendirilir.`);
+      writeParagraph(`RİSK = OLASILIK X FREKANS X ŞİDDET formülü kullanılarak hesaplanır.`);
+      writeParagraph(`Olasılık: Olasılık değerlendirilirken, faaliyet esnasındaki tehlikelerden kaynaklanan zararın gerçekleşme olasılığı sorgulanır ve puanlandırılır.`);
+      writeParagraph(`Frekans: Frekans değerlendirilirken, faaliyet esnasında tehlikeye maruz kalma sıklığı sorgulanır ve puanlandırılır.`);
+      writeParagraph(`Şiddet: Şiddet değerlendirilirken, faaliyet esnasındaki tehlikelerden kaynaklanan zararın çalışan ve veya ekipman üzerinde yaratacağı tahmini etki sorgulanır ve puanlandırılır.`);
+      yPos += 3;
+      writeParagraph(`Risk Skoru;`);
+      writeParagraph(`Olayın Meydana Gelme İhtimali(O) x Tehlike Maruziyet Sıklığı(F) x Şiddet(Ş)`);
+      writeParagraph(`Bu yöntem sıkça uygulanmakta olup, işverenlerinde algılayabileceği bir yöntemdir. Sadece olasılık ya da şiddete bağlı kalmayıp firma içinde zarara maruz kalma sıklığı parametre olarak da değerlendirilmesinden dolayı daha etkin sonuçlar alınmaktadır. Kinney metodunda farklı üç parametre ile tehlike ve doğabilecek şiddetleri hesaplanarak risk skorları belirlenmekte ve ona göre önleyici aksiyon planları oluşturulması planlanmaktadır.`);
+
+      // ============ 7. PROSEDÜR SAYFASI - RİSK TABLOSU ŞEMASI ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (diğer sayfalarla aynı) =====
+      const headerHeight7 = 17.5;
+
+      // Çizgi rengi ayarla
+      doc.setDrawColor(150);
+
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth7 = 25;
+      doc.rect(margin, yPos, logoWidth7, headerHeight7);
+
+      if (headerInfo.logo) {
+        try {
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
+      }
+
+      // Orta: Başlık bölümü
+      const logoEndX7 = margin + logoWidth7;
+      const infoTableStartX7 = pageWidth - margin - 50;
+      const titleWidth7 = infoTableStartX7 - logoEndX7;
+      const titleCenterX7 = logoEndX7 + titleWidth7 / 2;
+
+      doc.rect(logoEndX7, yPos, titleWidth7, headerHeight7);
+
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX7, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX7, yPos + 11, { align: 'center' });
+
+      // Sağ: Bilgi Tablosu
+      const infoTableX7 = pageWidth - margin - 50;
+      const infoRowHeight7 = 3.5;
+
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3);
+      doc.setFont('Roboto', 'normal');
+
+      const infoRows7 = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 7 -']
+      ];
+
+      infoRows7.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight7);
+        doc.rect(infoTableX7, rowY, 25, infoRowHeight7);
+        doc.rect(infoTableX7 + 25, rowY, 25, infoRowHeight7);
+        doc.text(row[0], infoTableX7 + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX7 + 26, rowY + 2.5);
+      });
+
+      // Header'ın altından bir satır boşluk bırakarak başla
+      const imgStartY7 = yPos + headerHeight7 + 4; // 4mm = 1 satır boşluk
+
+      // ===== 7. SAYFA İÇERİĞİ - RİSK TABLOSU ŞEMASI =====
+      // Risk tablosu şeması resmini yükle
+      try {
+        const riskTableUrl = '/risk-table-chart.png';
+        const riskTableRes = await fetch(riskTableUrl);
+        const riskTableBuffer = await riskTableRes.arrayBuffer();
+        const riskTableBase64 = toBase64(riskTableBuffer);
+
+        // Resim boyutları - sayfaya sığdır
+        const imgWidth7 = pageWidth - 2 * margin; // Sayfa genişliği - kenar boşlukları
+        const imgHeight7 = pageHeight - imgStartY7 - 24; // Kalan yükseklik (alt boşluk %20 artırıldı: 20 -> 24)
+
+        // Resmi header'ın altından başlat
+        const imgX7 = margin;
+
+        doc.addImage('data:image/png;base64,' + riskTableBase64, 'PNG', imgX7, imgStartY7, imgWidth7, imgHeight7);
+      } catch (e) {
+        console.log('Risk tablosu şeması resmi yüklenemedi:', e);
+        // Resim yüklenemezse placeholder metin göster
+        doc.setFont('Roboto', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(100);
+        doc.text('RİSK DEĞERLENDİRME TABLOSU', pageWidth / 2, pageHeight / 2, { align: 'center' });
+      }
+
+      // ============ 8. PROSEDÜR SAYFASI - RİSK DEĞERLENDİRME EKİBİ ============
+      doc.addPage('a4', 'portrait');
+
+      // Beyaz arka plan
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      yPos = 8; // Yukarı yaslandı
+
+      // ===== ÜST HEADER (diğer sayfalarla aynı) =====
+      const headerHeight8 = 17.5;
+
+      // Çizgi rengi ayarla
+      doc.setDrawColor(150);
+
+      // Sol: Logo bölümü - dikdörtgen çiz
+      const logoWidth8 = 25;
+      doc.rect(margin, yPos, logoWidth8, headerHeight8);
+
+      if (headerInfo.logo) {
+        try {
+          doc.addImage(headerInfo.logo, 'PNG', margin + 2.5, yPos + 1.25, 20, 15);
+        } catch (e) {
+          // Logo yüklenemezse boş bırak
+        }
+      }
+
+      // Orta: Başlık bölümü
+      const logoEndX8 = margin + logoWidth8;
+      const infoTableStartX8 = pageWidth - margin - 50;
+      const titleWidth8 = infoTableStartX8 - logoEndX8;
+      const titleCenterX8 = logoEndX8 + titleWidth8 / 2;
+
+      doc.rect(logoEndX8, yPos, titleWidth8, headerHeight8);
+
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(0, 0, 0);
+      doc.text('TEHLİKE TANIMLAMA VE RİSK DEĞERLENDİRMESİ', titleCenterX8, yPos + 6, { align: 'center' });
+      doc.text('PROSEDÜRÜ', titleCenterX8, yPos + 11, { align: 'center' });
+
+      // Sağ: Bilgi Tablosu
+      const infoTableX8 = pageWidth - margin - 50;
+      const infoRowHeight8 = 3.5;
+
+      doc.setDrawColor(150);
+      doc.setFontSize(6.3);
+      doc.setFont('Roboto', 'normal');
+
+      const infoRows8 = [
+        ['Doküman No', 'İSG.PR.002'],
+        ['Yayın Tarihi', formatDate(headerInfo.date) || '25.08.2021'],
+        ['Revizyon Tarihi', '-'],
+        ['Revizyon No', '-'],
+        ['Sayfa No', '- 8 -']
+      ];
+
+      infoRows8.forEach((row, i) => {
+        const rowY = yPos + (i * infoRowHeight8);
+        doc.rect(infoTableX8, rowY, 25, infoRowHeight8);
+        doc.rect(infoTableX8 + 25, rowY, 25, infoRowHeight8);
+        doc.text(row[0], infoTableX8 + 1, rowY + 2.5);
+        doc.text(row[1], infoTableX8 + 26, rowY + 2.5);
+      });
+
+      yPos += headerHeight8 + 5;
+
+      // ===== 8. SAYFA İÇERİĞİ =====
+      yPos += 8; // 2 satır boşluk
+
+      // 7. RİSK DEĞERLENDİRME EKİBİ
+      writeHeading('7.', 'RİSK DEĞERLENDİRME EKİBİ');
+      writeParagraph(`29.12.2012 tarihli ve 28512 sayılı Resmi Gazete'de yayımlanan "İŞ SAĞLIĞI VE GÜVENLİĞİ RİSK DEĞERLENDİRMESİ YÖNETMELİĞİ" Madde 6'ya göre belirlenen Risk Değerlendirme Ekibi aşağıdaki gibidir.`);
+
+      yPos += 5;
+
+      // Risk Değerlendirme Ekibi Tablosu - jsPDF ile çizim
+      const tableStartY = yPos;
+      const tableMargin = margin;
+      const table8Width = pageWidth - 2 * tableMargin;
+
+      // Sütun genişlikleri
+      const col1W = 40; // RİSK DEĞERLENDİRME EKİBİ
+      const col2W = 70; // Unvan
+      const col3W = 50; // Ad-Soyad
+      const col4W = table8Width - col1W - col2W - col3W; // İmza
+
+      const rowH = 8; // Satır yüksekliği
+
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.3);
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+
+      let currentY = tableStartY;
+
+      // Alt başlık satırı - Beyaz arka plan
+      doc.rect(tableMargin, currentY, col1W, rowH);
+      doc.rect(tableMargin + col1W, currentY, col2W, rowH);
+      doc.setFillColor(255, 255, 255); // Beyaz renk
+      doc.rect(tableMargin + col1W, currentY, col2W, rowH, 'FD');
+      doc.setTextColor(0, 0, 0); // Siyah yazı rengi
+      doc.text('Unvan', tableMargin + col1W + col2W / 2, currentY + 5.5, { align: 'center' });
+
+      doc.rect(tableMargin + col1W + col2W, currentY, col3W, rowH);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(tableMargin + col1W + col2W, currentY, col3W, rowH, 'FD');
+      doc.text('Ad –Soyad', tableMargin + col1W + col2W + col3W / 2, currentY + 5.5, { align: 'center' });
+
+      doc.rect(tableMargin + col1W + col2W + col3W, currentY, col4W, rowH);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(tableMargin + col1W + col2W + col3W, currentY, col4W, rowH, 'FD');
+      doc.text('İmza', tableMargin + col1W + col2W + col3W + col4W / 2, currentY + 5.5, { align: 'center' });
+
+      doc.setTextColor(0, 0, 0);
+      currentY += rowH;
+
+      // Ekip üyeleri verileri (Formen hariç)
+      const teamMembers = [
+        { unvan: 'İŞVEREN / İŞVEREN VEKİLİ', adSoyad: headerInfo.employer || '' },
+        { unvan: 'İŞ GÜVENLİĞİ UZMANI', adSoyad: headerInfo.igu || '' },
+        { unvan: 'İŞ YERİ HEKİMİ', adSoyad: headerInfo.doctor || '' },
+        { unvan: 'ÇALIŞAN TEMSİLCİSİ', adSoyad: headerInfo.representative || '' },
+        { unvan: 'DESTEK ELEMANI', adSoyad: headerInfo.support || '' }
+      ];
+
+      // Sol sütun birleşik hücre yüksekliği
+      const mergedCellHeight = teamMembers.length * rowH;
+
+      // Sol birleşik hücre çerçevesi
+      doc.rect(tableMargin, currentY, col1W, mergedCellHeight);
+
+      // Sol birleşik hücre metni - dikey ortalı
+      doc.setFont('Roboto', 'bold');
+      doc.setFontSize(8);
+      const leftCellCenterY = currentY + mergedCellHeight / 2;
+      doc.text('RİSK', tableMargin + col1W / 2, leftCellCenterY - 6, { align: 'center' });
+      doc.text('DEĞERLENDİRME', tableMargin + col1W / 2, leftCellCenterY, { align: 'center' });
+      doc.text('EKİBİ', tableMargin + col1W / 2, leftCellCenterY + 6, { align: 'center' });
+
+      // Ekip üyeleri satırları
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(8);
+
+      teamMembers.forEach((member, index) => {
+        const rowY = currentY + index * rowH;
+
+        // Unvan hücresi
+        doc.rect(tableMargin + col1W, rowY, col2W, rowH);
+        doc.text(member.unvan, tableMargin + col1W + 2, rowY + 5.5);
+
+        // İki nokta üst üste hücresi (küçük)
+        doc.text(':', tableMargin + col1W + col2W - 5, rowY + 5.5);
+
+        // Ad-Soyad hücresi
+        doc.rect(tableMargin + col1W + col2W, rowY, col3W, rowH);
+        doc.text(member.adSoyad, tableMargin + col1W + col2W + 2, rowY + 5.5);
+
+        // İmza hücresi
+        doc.rect(tableMargin + col1W + col2W + col3W, rowY, col4W, rowH);
+      });
+
+      prosedurPageCount = doc.getNumberOfPages();
+
+      setProgress(50); // Prosedür sayfaları tamamlandı
+
+      // ============ TABLO SAYFALARI (YATAY) ============
+      // Yeni yatay sayfa ekle (prosedür varsa)
+      if (prosedurPageCount > 0) {
+        doc.addPage('a4', 'landscape');
+      } else {
+        // Prosedür yoksa ilk sayfayı landscape yap
+        doc.deletePage(1);
+        doc.addPage('a4', 'landscape');
+      }
+
+      // formatDate zaten utils.ts'den import edildi
+
+      const drawHeader = (doc: any) => {
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 10;
+        const startY = 5; // Üst boşluk azaltıldı
+        const headerHeight = 25;
+
+        // Dış Çerçeve
+        doc.setDrawColor(150);
+        doc.rect(margin, startY, pageWidth - 2 * margin, headerHeight);
+
+        // 1. Sol Blok: Yöntem & Hazırlayan (Genişlik: 35mm)
+        const col1Width = 35;
+        doc.line(margin + col1Width, startY, margin + col1Width, startY + headerHeight);
+
+        // Yöntem
+        doc.line(margin, startY + 12.5, margin + col1Width, startY + 12.5);
+        doc.setFontSize(6); doc.setTextColor(100);
+        doc.text("YÖNTEM", margin + 2, startY + 4);
+        doc.setFontSize(8); doc.setTextColor(0);
+        doc.text("FINE KINNEY", margin + 2, startY + 9);
+
+        // Hazırlayan
+        doc.setFontSize(6); doc.setTextColor(100);
+        doc.text("HAZIRLAYAN", margin + 2, startY + 16.5);
+        doc.setFontSize(8); doc.setTextColor(0);
+        doc.text("İSG RİSK EKİBİ", margin + 2, startY + 21.5);
+
+        // 2. Orta Blok: Logo & Firma
+        // Firma alanı daha da kısaltıldı, sağ blok genişletildi
+        const col3Width = 100; // Sağ blok genişliği azaltıldı (115 -> 100) - Tarih alanı kısaldı
+        const col2Start = margin + col1Width;
+        const col2Width = pageWidth - 2 * margin - col1Width - col3Width;
+        const col2End = col2Start + col2Width;
+
+        doc.line(col2End, startY, col2End, startY + headerHeight);
+
+        // Logo Alanı (20mm)
+        const logoWidth = 20;
+        doc.line(col2Start + logoWidth, startY, col2Start + logoWidth, startY + headerHeight);
+
+        if (headerInfo.logo) {
+          try {
+            // Logoyu ortala (Max 12x16mm) - Biraz küçültüldü
+            const maxLogoW = 12;
+            const maxLogoH = 16;
+            const logoX = col2Start + (logoWidth - maxLogoW) / 2;
+            const logoY = startY + (headerHeight - maxLogoH) / 2;
+            doc.addImage(headerInfo.logo, 'JPEG', logoX, logoY, maxLogoW, maxLogoH, undefined, 'FAST');
+          } catch (e) { }
+        }
+
+        // Firma Bilgileri
+        const infoStart = col2Start + logoWidth;
+
+        // Başlık - Beyaz Arkaplan, Daha Kısa
+        // doc.setFillColor(245, 245, 245); // Kaldırıldı
+        // doc.rect(infoStart, startY, col2Width - logoWidth, 5, 'F'); // Kaldırıldı
+        doc.setFontSize(5); doc.setTextColor(50); // Font küçültüldü (6->5)
+        doc.text("ANALİZ YAPILAN İŞYERİNİN", infoStart + 2, startY + 2.5); // Y koordinatı ayarlandı (3.5 -> 2.5)
+
+        doc.line(infoStart, startY + 3, col2End, startY + 3); // Çizgi yukarı çekildi (5 -> 3)
+
+        // Bilgiler (Daha kompakt)
+        const rowH = 7.3; // Satır yüksekliği biraz artırıldı (6.6 -> 7.3) çünkü alan açıldı
+        doc.line(infoStart, startY + 3 + rowH, col2End, startY + 3 + rowH);
+        doc.line(infoStart, startY + 3 + rowH * 2, col2End, startY + 3 + rowH * 2);
+
+        // Satır ortalaması için hesaplama (startY + 3 başlangıç, her satır rowH yüksekliğinde)
+        const maxTextWidth = col2Width - logoWidth - 17;
+        const lineHeight = 2.8; // Satır aralığı
+
+        // Unvan - dikey ortalı (2 satır olabilir)
+        doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
+        const row1Top = startY + 3;
+        doc.text("UNVANI:", infoStart + 2, row1Top + rowH / 2 + 1);
+        doc.setFontSize(7); doc.setTextColor(0); doc.setFont("Roboto", "bold");
+        const titleLines = doc.splitTextToSize(headerInfo.title || "", maxTextWidth);
+        const titleStartY = row1Top + (rowH - titleLines.length * lineHeight) / 2 + lineHeight;
+        titleLines.slice(0, 2).forEach((line: string, i: number) => {
+          doc.text(line, infoStart + 15, titleStartY + i * lineHeight);
+        });
+
+        // Adres - dikey ortalı (2 satır olabilir)
+        doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
+        const row2Top = startY + 3 + rowH;
+        doc.text("ADRESİ:", infoStart + 2, row2Top + rowH / 2 + 1);
+        doc.setFontSize(6); doc.setTextColor(0); doc.setFont("Roboto", "bold");
+        const addressLines = doc.splitTextToSize(headerInfo.address || "", maxTextWidth);
+        const addressStartY = row2Top + (rowH - addressLines.length * lineHeight) / 2 + lineHeight;
+        addressLines.slice(0, 2).forEach((line: string, i: number) => {
+          doc.text(line, infoStart + 15, addressStartY + i * lineHeight);
+        });
+
+        // Sicil - dikey ortalı (tek satır)
+        doc.setFontSize(6); doc.setTextColor(100); doc.setFont("Roboto", "normal");
+        const row3Top = startY + 3 + rowH * 2;
+        doc.text("SİCİL NO:", infoStart + 2, row3Top + rowH / 2 + 1);
+        doc.setFontSize(8); doc.setTextColor(0); doc.setFont("Roboto", "bold");
+        doc.text(headerInfo.registrationNumber || "", infoStart + 15, row3Top + rowH / 2 + 1);
+
+        // 3. Sağ Blok: Tarihler & Ekip (Kompakt)
+        const col3Start = col2End;
+        const subColWidth = 55; // Tarih sütunu kısaltıldı (70 -> 55)
+        doc.line(col3Start + subColWidth, startY, col3Start + subColWidth, startY + headerHeight);
+
+        // Tarihler
+        doc.setFontSize(6); doc.setTextColor(100);
+        doc.text("YAPILIŞ TARİHİ:", col3Start + 2, startY + 5);
+        doc.setFontSize(8); doc.setTextColor(0);
+        doc.text(formatDate(headerInfo.date), col3Start + 22, startY + 5);
+
+        doc.line(col3Start, startY + 8, col3Start + subColWidth, startY + 8);
+
+        doc.setFontSize(6); doc.setTextColor(100);
+        doc.text("GEÇERLİLİK TARİHİ:", col3Start + 2, startY + 13);
+        doc.setFontSize(8); doc.setTextColor(0);
+        doc.text(formatDate(headerInfo.validityDate), col3Start + 22, startY + 13);
+
+        doc.line(col3Start, startY + 17, col3Start + subColWidth, startY + 17);
+
+        doc.setFontSize(6); doc.setTextColor(100);
+        doc.text("REVİZYON:", col3Start + 2, startY + 21);
+        doc.setFontSize(8); doc.setTextColor(0);
+        doc.text(headerInfo.revision || "", col3Start + 20, startY + 21);
+
+        // Ekip
+        const teamStart = col3Start + subColWidth;
+        // doc.setFillColor(245, 245, 245); // Kaldırıldı
+        // doc.rect(teamStart, startY, col3Width - subColWidth, 4, 'F'); // Kaldırıldı
+        doc.setFontSize(5); doc.setTextColor(50); // Font küçültüldü (6->5)
+        doc.text("RİSK DEĞERLENDİRME EKİBİ", teamStart + 2, startY + 2.5); // Y koordinatı ayarlandı (3->2.5)
+        doc.line(teamStart, startY + 3, pageWidth - margin, startY + 3); // Çizgi yukarı çekildi (4->3)
+
+        const teamRows = [
+          { l: "İŞV:", v: headerInfo.employer },
+          { l: "İGU:", v: headerInfo.igu },
+          { l: "DR:", v: headerInfo.doctor },
+          { l: "TEM:", v: headerInfo.representative },
+          { l: "DES:", v: headerInfo.support }
         ];
 
-        footerLabels.forEach((label, idx) => {
-          const x = footerMargin + idx * colWidth + colWidth / 2;
-          doc.text(label, x, footerY + 3, { align: 'center' });
+        let teamY = startY + 6; // Başlangıç Y koordinatı yukarı çekildi (7->6)
+        teamRows.forEach((row, i) => {
+          doc.setFontSize(6); doc.setTextColor(100);
+          doc.text(row.l, teamStart + 2, teamY);
+          doc.setFontSize(7); doc.setTextColor(0);
+          doc.text(row.v || "", teamStart + 10, teamY);
+          teamY += 4.2; // Satır aralığı biraz artırıldı (4->4.2)
         });
+      };
+
+      autoTable(doc, {
+        head: [
+          [
+            { content: 'No', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+            { content: 'Bölüm / Ortam', rowSpan: 2, styles: { valign: 'middle' } },
+            { content: 'Foto', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+            { content: 'Tehlike', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+            { content: 'Risk', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+            { content: 'Etkilenen', rowSpan: 2, styles: { valign: 'middle', halign: 'center', cellWidth: 10, fontSize: 6 } }, // Başlık metni normal (yatay), font küçültüldü
+            { content: '1. Aşama (Mevcut Durum)', colSpan: 5, styles: { halign: 'center', fillColor: [153, 27, 27], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Kontrol Tedbirleri', rowSpan: 2, styles: { valign: 'middle', cellWidth: 40, halign: 'center' } },
+            { content: '2. Aşama (Tedbir Sonrası)', colSpan: 5, styles: { halign: 'center', fillColor: [20, 83, 45], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Sorumlu', rowSpan: 2, styles: { valign: 'middle', halign: 'center', cellWidth: 15 } } // Başlık metni normal (yatay)
+          ],
+          [
+            { content: 'O', styles: { halign: 'center', cellWidth: 8, fillColor: [59, 130, 246], textColor: 255 } },
+            { content: 'F', styles: { halign: 'center', cellWidth: 8, fillColor: [34, 197, 94], textColor: 255 } },
+            { content: 'Ş', styles: { halign: 'center', cellWidth: 12, fillColor: [234, 179, 8], textColor: 255 } },
+            { content: 'Skor', styles: { halign: 'center', cellWidth: 10, fillColor: [220, 38, 38], textColor: 255 } },
+            { content: 'Sınıf', styles: { halign: 'center', cellWidth: 15, fillColor: [220, 38, 38], textColor: 255 } },
+            { content: 'O', styles: { halign: 'center', cellWidth: 8, fillColor: [59, 130, 246], textColor: 255 } },
+            { content: 'F', styles: { halign: 'center', cellWidth: 8, fillColor: [34, 197, 94], textColor: 255 } },
+            { content: 'Ş', styles: { halign: 'center', cellWidth: 12, fillColor: [234, 179, 8], textColor: 255 } },
+            { content: 'Skor', styles: { halign: 'center', cellWidth: 10, fillColor: [220, 38, 38], textColor: 255 } },
+            { content: 'Sınıf', styles: { halign: 'center', cellWidth: 15, fillColor: [220, 38, 38], textColor: 255 } },
+          ]
+        ],
+        body: risks.map(r => [
+          r.riskNo,
+          '', // Bölüm / Ortam (didDrawCell ile özel çizilecek)
+
+          '', // Fotoğraf hücresi (didDrawCell ile doldurulacak)
+          r.hazard,
+          r.risk,
+          r.affected,
+          r.probability, r.frequency, r.severity, Math.round(r.score), r.level.split(' ')[0],
+          r.measures,
+          r.probability2, r.frequency2, r.severity2, Math.round(r.score2), r.level2.split(' ')[0],
+          r.responsible
+        ]),
+        startY: 29.9, // Başlık 25mm + 5mm margin (Boşluk kalmaması için ince ayar)
+        margin: { top: 29.9, left: 10, right: 10 },
+        theme: 'grid',
+        rowPageBreak: 'avoid', // Satırların bölünmesini engelle
+        styles: {
+          font: 'Roboto', // Yüklenen fontu kullan
+          fontSize: 8, // Font boyutu küçültüldü
+          cellPadding: 0.5, // Padding azaltıldı
+          overflow: 'linebreak',
+          lineColor: 200,
+          lineWidth: 0.1
+        },
+        headStyles: {
+          fillColor: [31, 41, 55],
+          textColor: 255,
+          fontSize: 7,
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          0: { cellWidth: 6, halign: 'center', valign: 'middle' }, // No
+          1: { cellWidth: 22, valign: 'middle', fontSize: 6.5 }, // Bölüm - Font küçüldü, genişlik azaldı (25->22)
+          2: { cellWidth: 15, minCellHeight: 12, valign: 'middle' }, // Foto
+          3: { cellWidth: 33, valign: 'middle' }, // Tehlike - Genişlik azaldı (35->33)
+          4: { cellWidth: 33, valign: 'middle' }, // Risk - Genişlik azaldı (35->33)
+          5: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 3.8, overflow: 'linebreak' }, // Etkilenen
+
+          // 1. Aşama
+          6: { cellWidth: 7, halign: 'center', valign: 'middle' }, // O
+          7: { cellWidth: 7, halign: 'center', valign: 'middle' }, // F
+          8: { cellWidth: 12, halign: 'center', valign: 'middle' }, // Ş
+          9: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
+          10: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
+
+          11: { cellWidth: 43, valign: 'middle' }, // Önlemler - Genişlik azaldı (45->43)
+
+          // 2. Aşama
+          12: { cellWidth: 7, halign: 'center', valign: 'middle' }, // O
+          13: { cellWidth: 7, halign: 'center', valign: 'middle' }, // F
+          14: { cellWidth: 12, halign: 'center', valign: 'middle' }, // Ş
+          15: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' }, // Skor
+          16: { cellWidth: 12, halign: 'center', valign: 'middle', fontSize: 7 }, // Sınıf
+
+          17: { cellWidth: 10, halign: 'center', valign: 'middle', fontSize: 4.1 } // Sorumlu
+        },
+        didDrawPage: (data) => {
+          drawHeader(doc);
+        },
+        willDrawCell: (data) => {
+          // Yatay yazıları gizle (No ve Etkilenen) - Sadece gövde
+          // Ayrıca Bölüm/Ortam (1) sütununu da gizle, çünkü didDrawCell ile kendimiz yazacağız
+          if (data.section === 'body' && (data.column.index === 0 || data.column.index === 1)) {
+            data.cell.text = [];
+          }
+          // Skor ve Sınıf sütunlarını da gizle (1. Aşama: 9, 10 / 2. Aşama: 15, 16)
+          // çünkü didDrawCell ile renkli olarak kendimiz yazacağız
+          if (data.section === 'body' && (data.column.index === 9 || data.column.index === 10 || data.column.index === 15 || data.column.index === 16)) {
+            data.cell.text = [];
+          }
+        },
+        didDrawCell: (data) => {
+          // Resim Ekleme
+          if (data.section === 'body' && data.column.index === 2) {
+            const risk = risks[data.row.index];
+            if (risk && risk.image) {
+              try {
+                const imgWidth = 12;
+                const imgHeight = 12;
+                const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                doc.addImage(risk.image, 'JPEG', x, y, imgWidth, imgHeight);
+              } catch (err) { }
+            }
+          }
+
+          // Bölüm / Ortam (Index 1) - Özel Çizim
+          if (data.section === 'body' && data.column.index === 1) {
+            const risk = risks[data.row.index];
+            const cellCenterX = data.cell.x + data.cell.width / 2; // Yatay ortala
+
+            // İçerik Yüksekliğini Hesapla
+            doc.setFontSize(7); doc.setFont("Roboto", "bold");
+            const splitSub = doc.splitTextToSize(risk.sub_category || "", data.cell.width - 2);
+
+            doc.setFontSize(6); doc.setFont("Roboto", "normal");
+            const splitSource = doc.splitTextToSize(risk.source || "", data.cell.width - 2);
+
+            const subHeight = splitSub.length * 3; // Satır yüksekliği approx 3mm
+            const sourceHeight = splitSource.length * 2.5; // Satır yüksekliği approx 2.5mm
+            const totalTextHeight = subHeight + 1 + sourceHeight; // Arada 1mm boşluk
+
+            // Dikey Ortala
+            let y = data.cell.y + (data.cell.height - totalTextHeight) / 2 + 2; // +2mm üst boşluk (font baseline için)
+
+            // Sub Category - Kalın (Ortalı)
+            doc.setFontSize(7);
+            doc.setFont("Roboto", "bold");
+            doc.setTextColor(0);
+            doc.text(splitSub, cellCenterX, y, { align: 'center' });
+
+            y += subHeight + 1;
+
+            // Source - İnce ve Küçük (Ortalı)
+            doc.setFontSize(6);
+            doc.setFont("Roboto", "normal");
+            doc.setTextColor(80);
+            doc.text(splitSource, cellCenterX, y, { align: 'center' });
+          }
+
+          // Dikey Metin (İçerik): Sadece No (0)
+          if (data.section === 'body' && data.column.index === 0) {
+            const text = (data.cell.raw as string || "").trim();
+            let x = data.cell.x + data.cell.width / 2;
+            let y = data.cell.y + data.cell.height / 2;
+            x += 3.1; // 1mm sağa kaydırıldı
+            y += 0.5;
+            doc.setFontSize(3.8);
+            doc.setTextColor(0);
+            doc.text(text, x, y, { angle: 90, align: 'center', baseline: 'middle' });
+          }
+
+          // Risk skoruna göre PDF metin renkleri (arka plan beyaz kalacak)
+          const getPdfRiskColor = (score: number): { r: number, g: number, b: number } => {
+            if (score >= 400) return { r: 127, g: 29, b: 29 };   // Tolerans Gösterilemez - Koyu Kırmızı
+            if (score >= 200) return { r: 185, g: 28, b: 28 };   // Esaslı Risk - Kırmızı
+            if (score >= 70) return { r: 194, g: 65, b: 12 };    // Önemli Risk - Turuncu
+            if (score >= 20) return { r: 133, g: 77, b: 14 };    // Olası Risk - Hardal
+            return { r: 22, g: 101, b: 52 };                      // Kabul Edilebilir - Yeşil
+          };
+
+          // 1. Aşama Skor ve Sınıf sütunları (index 9, 10) - Sadece metin renkli
+          if (data.section === 'body' && (data.column.index === 9 || data.column.index === 10)) {
+            const risk = risks[data.row.index];
+            if (risk) {
+              const color = getPdfRiskColor(risk.score);
+              // Metni risk renginde yaz
+              doc.setTextColor(color.r, color.g, color.b);
+              doc.setFontSize(data.column.index === 9 ? 8 : 7);
+              doc.setFont('Roboto', 'bold');
+              const text = String(data.cell.raw || '');
+              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: 'center', baseline: 'middle' });
+            }
+          }
+
+          // 2. Aşama Skor ve Sınıf sütunları (index 15, 16) - Sadece metin renkli
+          if (data.section === 'body' && (data.column.index === 15 || data.column.index === 16)) {
+            const risk = risks[data.row.index];
+            if (risk) {
+              const color = getPdfRiskColor(risk.score2);
+              // Metni risk renginde yaz
+              doc.setTextColor(color.r, color.g, color.b);
+              doc.setFontSize(data.column.index === 15 ? 8 : 7);
+              doc.setFont('Roboto', 'bold');
+              const text = String(data.cell.raw || '');
+              doc.text(text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, { align: 'center', baseline: 'middle' });
+            }
+          }
+        }
+      });
+
+      // Dosya İsmi Oluşturma
+      const titleWords = (headerInfo.title || "Firma").trim().split(/\s+/);
+      const safeTitle = titleWords.slice(0, 2).join(' ').replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ ]/g, "") || 'Firma';
+      const filename = `${safeTitle} RİSK DEĞERLENDİRME FORMU.pdf`;
+
+      setProgress(80); // Risk tablosu oluşturuldu
+
+      // Risk Prosedürü tikli değilse, prosedür sayfalarını (1-8) sil
+      if (!includeProcedure && prosedurPageCount > 0) {
+        // Prosedür sayfalarını sondan başa doğru sil (sayfa numaraları kaymaması için)
+        for (let p = prosedurPageCount; p >= 1; p--) {
+          doc.deletePage(p);
+        }
       }
 
-      // Sayfa numarası (sadece includeProcedure tikli ise göster, 1. sayfa kapak hariç)
-      if (includeProcedure && i >= 2) {
-        doc.setFontSize(6); // %25 küçültüldü (8 -> 6)
-        doc.setTextColor(100);
-        doc.text(`Sayfa ${i} / ${totalPages}`, pgWidth - 25, pgHeight - 8);
-      }
-    }
-
-    // Free kullanıcı için filigran ekle
-    if (isFreeUser) {
-      const totalPdfPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPdfPages; i++) {
+      // Sayfa numaralarını ve prosedür sayfalarına alt bilgi (imza alanı) ekle
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         const pgWidth = doc.internal.pageSize.width;
         const pgHeight = doc.internal.pageSize.height;
 
-        doc.setFont('Roboto', 'bold');
-        doc.setFontSize(40);
-        doc.setTextColor(200, 200, 200); // Açık gri
+        // Alt bilgi - İmza Alanı
+        // includeProcedure true ise: 2+ sayfalar (1. sayfa kapak)
+        // includeProcedure false ise: Tüm sayfalar (prosedür silindi)
+        const showFooter = includeProcedure ? (i >= 2) : true;
+        if (showFooter) {
+          const footerY = pgHeight - 15;
+          const footerMargin = 15;
+          const footerWidth = pgWidth - 2 * footerMargin;
+          const colWidth = footerWidth / 5;
 
-        // Köşegen filigran
-        doc.text('www.isgpratik.com', pgWidth / 2, pgHeight / 2, {
-          angle: 45,
-          align: 'center',
-          baseline: 'middle'
-        });
+          // Beyaz arka plan
+          doc.setFillColor(255, 255, 255);
+          doc.rect(footerMargin, footerY - 2, footerWidth, 10, 'F');
+
+          doc.setFont('Roboto', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(100);
+
+          const footerLabels = [
+            'İŞ GÜVENLİK UZMANI',
+            'İŞYERİ HEKİMİ',
+            'ÇALIŞAN TEM.',
+            'DESTEK ELEMANI',
+            'İŞVEREN/VEKİLİ'
+          ];
+
+          footerLabels.forEach((label, idx) => {
+            const x = footerMargin + idx * colWidth + colWidth / 2;
+            doc.text(label, x, footerY + 3, { align: 'center' });
+          });
+        }
+
+        // Sayfa numarası (sadece includeProcedure tikli ise göster, 1. sayfa kapak hariç)
+        if (includeProcedure && i >= 2) {
+          doc.setFontSize(6); // %25 küçültüldü (8 -> 6)
+          doc.setTextColor(100);
+          doc.text(`Sayfa ${i} / ${totalPages}`, pgWidth - 25, pgHeight - 8);
+        }
       }
-    }
 
-    setProgress(90); // Sayfa numaraları ve footer'lar eklendi
+      // Free kullanıcı için filigran ekle
+      if (isFreeUser) {
+        const totalPdfPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPdfPages; i++) {
+          doc.setPage(i);
+          const pgWidth = doc.internal.pageSize.width;
+          const pgHeight = doc.internal.pageSize.height;
 
-    // Veritabanına kaydet
-    try {
-      if (headerInfo.title) {
-        // Tüm riskleri ve header bilgisini kaydet
-        const reportData = {
-          risks,
-          headerInfo,
-          activeRiskCategories: filteredCategories.map(c => c.code)
-        };
+          doc.setFont('Roboto', 'bold');
+          doc.setFontSize(40);
+          doc.setTextColor(200, 200, 200); // Açık gri
 
-        // Asenkron kaydet (await etmeye gerek yok, UI bloklanmasın)
-        fetch('/api/reports', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'RISK_ASSESSMENT',
-            title: headerInfo.title,
-            data: reportData
-          })
-        }).catch(err => console.error('Risk raporu kaydedilemedi:', err));
+          // Köşegen filigran
+          doc.text('www.isgpratik.com', pgWidth / 2, pgHeight / 2, {
+            angle: 45,
+            align: 'center',
+            baseline: 'middle'
+          });
+        }
       }
-    } catch (e) {
-      console.error('Rapor kayıt hatası:', e);
-    }
 
-    setProgress(95); // Veritabanı kaydı başlatıldı
-    doc.save(filename);
-    setProgress(100); // PDF kaydedildi
-    showNotification('PDF başarıyla indirildi!', 'success');
-  } catch (error: any) {
-    console.error('PDF hatası:', error);
-    showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
-    setProgress(0);
-  } finally {
-    // Kısa bir gecikme ile progress'i sıfırla (kullanıcı %100'ü görebilsin)
-    setTimeout(() => {
-      setIsGenerating(false);
+      setProgress(90); // Sayfa numaraları ve footer'lar eklendi
+
+      // Veritabanına kaydet
+      try {
+        if (headerInfo.title) {
+          // Tüm riskleri ve header bilgisini kaydet
+          const reportData = {
+            risks,
+            headerInfo,
+            activeRiskCategories: filteredCategories.map(c => c.code)
+          };
+
+          // Asenkron kaydet (await etmeye gerek yok, UI bloklanmasın)
+          fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'RISK_ASSESSMENT',
+              title: headerInfo.title,
+              data: reportData
+            })
+          }).catch(err => console.error('Risk raporu kaydedilemedi:', err));
+        }
+      } catch (e) {
+        console.error('Rapor kayıt hatası:', e);
+      }
+
+      setProgress(95); // Veritabanı kaydı başlatıldı
+      doc.save(filename);
+      setProgress(100); // PDF kaydedildi
+      showNotification('PDF başarıyla indirildi!', 'success');
+    } catch (error: any) {
+      console.error('PDF hatası:', error);
+      showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
       setProgress(0);
-    }, 500);
-  }
+    } finally {
+      // Kısa bir gecikme ile progress'i sıfırla (kullanıcı %100'ü görebilsin)
+      setTimeout(() => {
+        setIsGenerating(false);
+        setProgress(0);
+      }, 500);
+    }
   };
 
   const handleSelectPreset = (item: any, categoryCode: any) => {
@@ -2513,8 +2555,8 @@ function RiskAssessmentContent() {
     <div className={`min-h-screen text-gray-800 font-sans flex flex-col relative ${isDark ? 'dark-content bg-slate-900' : 'bg-gray-100'}`}>
 
       {/* Mobil Tour */}
-      <MobileRiskTour 
-        onComplete={() => {}}
+      <MobileRiskTour
+        onComplete={() => { }}
         isSidebarOpen={isMobileSidebarOpen}
         onSidebarOpen={() => setIsMobileSidebarOpen(true)}
       />
@@ -2691,7 +2733,7 @@ function RiskAssessmentContent() {
                 onChange={(e) => {
                   const value = e.target.value;
                   setSectorSearch(value);
-                  
+
                   // 1 karakterden itibaren önerileri göster
                   if (value.length >= 1) {
                     const filtered = filterSectorSuggestions(value);
@@ -2717,17 +2759,17 @@ function RiskAssessmentContent() {
                   } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
                     if (showSectorSuggestions && filteredSuggestions.length > 0) {
-                      setSelectedSuggestionIndex(prev => 
+                      setSelectedSuggestionIndex(prev =>
                         prev < filteredSuggestions.length - 1 ? prev + 1 : 0
                       );
                     }
                   } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     if (showSectorSuggestions && filteredSuggestions.length > 0) {
-                      setSelectedSuggestionIndex(prev => 
+                      setSelectedSuggestionIndex(prev =>
                         prev > 0 ? prev - 1 : filteredSuggestions.length - 1
                       );
-                  }
+                    }
                   } else if (e.key === 'Escape') {
                     setShowSectorSuggestions(false);
                     setSelectedSuggestionIndex(-1);
@@ -2765,15 +2807,14 @@ function RiskAssessmentContent() {
                     return (
                       <button
                         key={idx}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b last:border-0 ${
-                          isSelected
-                            ? isDark 
-                              ? 'bg-indigo-600 text-white border-indigo-500' 
-                              : 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                            : isDark 
-                              ? 'text-slate-200 hover:bg-slate-600 hover:text-indigo-300 border-slate-600' 
-                              : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 border-slate-50'
-                        }`}
+                        className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b last:border-0 ${isSelected
+                          ? isDark
+                            ? 'bg-indigo-600 text-white border-indigo-500'
+                            : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                          : isDark
+                            ? 'text-slate-200 hover:bg-slate-600 hover:text-indigo-300 border-slate-600'
+                            : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 border-slate-50'
+                          }`}
                         onClick={() => {
                           setSectorSearch(suggestion);
                           setShowSectorSuggestions(false);
@@ -2872,15 +2913,15 @@ function RiskAssessmentContent() {
                     onClick={() => setSelectedCategory(cat)}
                     className="flex-1 text-left flex items-center"
                   >
-                    <span className={`inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-md mr-2 ${risks.some((r: any) => r.categoryCode === cat.code) 
+                    <span className={`inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-md mr-2 ${risks.some((r: any) => r.categoryCode === cat.code)
                       ? isDark ? 'bg-green-800 text-green-300' : 'bg-green-100 text-green-700'
                       : isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'
-                    }`}>{cat.code}</span>
+                      }`}>{cat.code}</span>
                     <div className="flex flex-col">
-                      <span className={`text-xs font-bold uppercase line-clamp-1 ${risks.some((r: any) => r.categoryCode === cat.code) 
+                      <span className={`text-xs font-bold uppercase line-clamp-1 ${risks.some((r: any) => r.categoryCode === cat.code)
                         ? isDark ? 'text-green-300' : 'text-green-800'
                         : isDark ? 'text-slate-200' : 'text-slate-700'
-                      }`}>{cat.category}</span>
+                        }`}>{cat.category}</span>
                       <span className={`text-[9px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{cat.items.length} Risk Maddesi</span>
                     </div>
                   </button>
@@ -2890,10 +2931,10 @@ function RiskAssessmentContent() {
                       <button
                         onClick={(e) => handleRemoveAllFromCategory(e, cat)}
                         title="Tümünü Çıkar"
-                        className={`p-1.5 rounded-lg transition-all ${isDark 
-                          ? 'text-slate-400 hover:text-red-400 hover:bg-red-900/30' 
+                        className={`p-1.5 rounded-lg transition-all ${isDark
+                          ? 'text-slate-400 hover:text-red-400 hover:bg-red-900/30'
                           : 'text-slate-400 hover:text-red-600 hover:bg-red-100'
-                        }`}
+                          }`}
                       >
                         <MinusCircle className="w-4 h-4" />
                       </button>
@@ -2903,10 +2944,10 @@ function RiskAssessmentContent() {
                       <button
                         onClick={(e) => handleAddAllFromCategory(e, cat)}
                         title="Tümünü Ekle"
-                        className={`p-1.5 rounded-lg transition-all ${isDark 
-                          ? 'text-slate-400 hover:text-green-400 hover:bg-green-900/30' 
+                        className={`p-1.5 rounded-lg transition-all ${isDark
+                          ? 'text-slate-400 hover:text-green-400 hover:bg-green-900/30'
                           : 'text-slate-400 hover:text-green-600 hover:bg-green-100'
-                        }`}
+                          }`}
                       >
                         <PlusCircle className="w-4 h-4" />
                       </button>
@@ -3258,10 +3299,10 @@ function RiskAssessmentContent() {
                       <span className={`font-bold text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Risklerim</span>
                     </div>
                     <select
-                      className={`flex-1 border rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[44px] ${isDark 
-                        ? 'border-amber-700 bg-slate-700 text-slate-100' 
+                      className={`flex-1 border rounded-lg px-3 py-3 md:py-2 text-base md:text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent min-h-[44px] ${isDark
+                        ? 'border-amber-700 bg-slate-700 text-slate-100'
                         : 'border-amber-200 bg-white'
-                      }`}
+                        }`}
                       id="userRiskSelect"
                       defaultValue=""
                       onChange={() => {
@@ -3300,10 +3341,10 @@ function RiskAssessmentContent() {
                     </button>
                     <Link
                       href="/panel/risk-maddelerim"
-                      className={`text-xs hover:underline ${isDark 
-                        ? 'text-amber-400 hover:text-amber-300' 
+                      className={`text-xs hover:underline ${isDark
+                        ? 'text-amber-400 hover:text-amber-300'
                         : 'text-amber-700 hover:text-amber-900'
-                      }`}
+                        }`}
                     >
                       Düzenle
                     </Link>
@@ -3817,10 +3858,10 @@ function RiskAssessmentContent() {
       {
         deleteConfirmStep > 0 && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className={`rounded-xl shadow-2xl p-6 max-w-md w-full border transform transition-all scale-100 ${isDark 
-              ? 'bg-slate-800 border-slate-700' 
+            <div className={`rounded-xl shadow-2xl p-6 max-w-md w-full border transform transition-all scale-100 ${isDark
+              ? 'bg-slate-800 border-slate-700'
               : 'bg-white border-gray-200'
-            }`}>
+              }`}>
               <div className="flex flex-col items-center text-center">
                 <div className={`p-3 rounded-full mb-4 ${isDark ? 'bg-red-900/30' : 'bg-red-100'}`}>
                   <AlertTriangle className={`w-8 h-8 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
@@ -3833,10 +3874,10 @@ function RiskAssessmentContent() {
                 <div className="flex space-x-3 w-full">
                   <button
                     onClick={() => setDeleteConfirmStep(0)}
-                    className={`flex-1 px-4 py-2 font-bold rounded-lg transition-colors ${isDark 
-                      ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' 
+                    className={`flex-1 px-4 py-2 font-bold rounded-lg transition-colors ${isDark
+                      ? 'bg-slate-700 hover:bg-slate-600 text-slate-200'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                    }`}
+                      }`}
                   >
                     İptal
                   </button>
@@ -4028,11 +4069,11 @@ function RiskAssessmentContent() {
             </div>
             <h3 className="text-xl font-bold text-slate-800 mb-2">PDF Hazırlanıyor</h3>
             <p className="text-slate-500 mb-6">Lütfen bekleyiniz, belgeniz oluşturuluyor...</p>
-            
+
             {/* Progress Bar */}
             <div className="w-full mb-3">
               <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden shadow-inner">
-                <div 
+                <div
                   className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-500 h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2 relative"
                   style={{ width: `${progress}%` }}
                 >
