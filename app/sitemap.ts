@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://isgpratik.com';
+    const baseUrl = 'https://www.isgpratik.com';
 
     return [
         {
@@ -41,7 +41,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/acil-durum`,
+            url: `${baseUrl}/panel/acil-durum`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,
@@ -90,12 +90,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
         {
             url: `${baseUrl}/panel/raporlarim`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/panel/acil-durum`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.8,

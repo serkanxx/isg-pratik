@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     "iş güvenliği raporu",
     "isg dokümantasyon"
   ],
-  authors: [{ name: "İSG Pratik", url: "https://isgpratik.com" }],
+  authors: [{ name: "İSG Pratik", url: "https://www.isgpratik.com" }],
   creator: "İSG Pratik",
   publisher: "İSG Pratik",
   robots: {
@@ -72,13 +72,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "tr_TR",
-    url: "https://isgpratik.com",
+    url: "https://www.isgpratik.com",
     siteName: "İSG Pratik",
     title: "İSG Pratik - İş Güvenliği için Pratik Dijital Çözümler",
     description: "İSG'de pratik dijital çözümler. Risk değerlendirme, acil durum eylem planı otomatik indir, iş izin formları, NACE kod sorgulama ve daha fazlası. Ücretsiz İSG yönetim platformu.",
     images: [
       {
-        url: "https://isgpratik.com/logo.png",
+        url: "https://www.isgpratik.com/logo.png",
         width: 1200,
         height: 630,
         alt: "İSG Pratik - İş Güvenliği için Pratik Dijital Çözümler",
@@ -101,12 +101,12 @@ export const metadata: Metadata = {
   category: "İş Güvenliği",
   icons: {
     icon: [
-      { url: 'https://isgpratik.com/favicon.ico', sizes: 'any' },
-      { url: 'https://isgpratik.com/favicon.svg', type: 'image/svg+xml' },
-      { url: 'https://isgpratik.com/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: 'https://www.isgpratik.com/favicon.ico', sizes: 'any' },
+      { url: 'https://www.isgpratik.com/favicon.svg', type: 'image/svg+xml' },
+      { url: 'https://www.isgpratik.com/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
     ],
-    shortcut: 'https://isgpratik.com/favicon.ico',
-    apple: 'https://isgpratik.com/apple-touch-icon.png',
+    shortcut: 'https://www.isgpratik.com/favicon.ico',
+    apple: 'https://www.isgpratik.com/apple-touch-icon.png',
   },
 };
 
@@ -128,12 +128,12 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://isgpratik.com/#organization",
+        "@id": "https://www.isgpratik.com/#organization",
         "name": "İSG Pratik",
-        "url": "https://isgpratik.com",
+        "url": "https://www.isgpratik.com",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://isgpratik.com/logo.png",
+          "url": "https://www.isgpratik.com/logo.png",
           "width": 512,
           "height": 512
         },
@@ -148,11 +148,11 @@ export default function RootLayout({
       },
       {
         "@type": "WebApplication",
-        "@id": "https://isgpratik.com/#webapp",
+        "@id": "https://www.isgpratik.com/#webapp",
         "name": "İSG Pratik",
         "alternateName": "İSG Pratik Risk Değerlendirme Sistemi",
         "description": "İş Sağlığı ve Güvenliği Risk Değerlendirme Sistemi. Fine-Kinney metoduyla profesyonel risk analizi yapın.",
-        "url": "https://isgpratik.com",
+        "url": "https://www.isgpratik.com",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
         "offers": {
@@ -162,7 +162,7 @@ export default function RootLayout({
           "description": "Ücretsiz risk değerlendirme aracı"
         },
         "provider": {
-          "@id": "https://isgpratik.com/#organization"
+          "@id": "https://www.isgpratik.com/#organization"
         },
         "featureList": [
           "Fine-Kinney risk değerlendirme metodu",
@@ -183,16 +183,16 @@ export default function RootLayout({
       },
       {
         "@type": "WebSite",
-        "@id": "https://isgpratik.com/#website",
-        "url": "https://isgpratik.com",
+        "@id": "https://www.isgpratik.com/#website",
+        "url": "https://www.isgpratik.com",
         "name": "İSG Pratik",
         "description": "İş Güvenliği Risk Değerlendirme ve Yönetim Sistemi",
         "publisher": {
-          "@id": "https://isgpratik.com/#organization"
+          "@id": "https://www.isgpratik.com/#organization"
         },
         "potentialAction": {
           "@type": "SearchAction",
-          "target": "https://isgpratik.com/search?q={search_term_string}",
+          "target": "https://www.isgpratik.com/search?q={search_term_string}",
           "query-input": "required name=search_term_string"
         },
         "inLanguage": "tr"
@@ -207,12 +207,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <link rel="canonical" href="https://isgpratik.com" />
-        <link rel="icon" href="https://isgpratik.com/favicon.ico" sizes="any" />
-        <link rel="icon" href="https://isgpratik.com/favicon.svg" type="image/svg+xml" />
-        <link rel="icon" href="https://isgpratik.com/favicon-96x96.png" type="image/png" sizes="96x96" />
-        <link rel="shortcut icon" href="https://isgpratik.com/favicon.ico" />
-        <link rel="apple-touch-icon" href="https://isgpratik.com/apple-touch-icon.png" />
+        <link rel="canonical" href="https://www.isgpratik.com" />
+        <link rel="icon" href="https://www.isgpratik.com/favicon.ico" sizes="any" />
+        <link rel="icon" href="https://www.isgpratik.com/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="https://www.isgpratik.com/favicon-96x96.png" type="image/png" sizes="96x96" />
+        <link rel="shortcut icon" href="https://www.isgpratik.com/favicon.ico" />
+        <link rel="apple-touch-icon" href="https://www.isgpratik.com/apple-touch-icon.png" />
         <meta name="google-site-verification" content="j4rFgnURFww2H9HH7z5kWXtedMvdalOyefFAJqPlsr8" />
         <meta name="geo.region" content="TR" />
         <meta name="geo.placename" content="Türkiye" />

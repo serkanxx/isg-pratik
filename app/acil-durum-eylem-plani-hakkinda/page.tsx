@@ -10,11 +10,11 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Acil Durum Eylem Planı Hakkında | İSG Pratik',
         description: 'Acil durum eylem planı nedir, nasıl hazırlanır? İEYEP yasal zorunluluğu ve önemi hakkında detaylı bilgi.',
-        url: 'https://isgpratik.com/acil-durum-eylem-plani-hakkinda',
+        url: 'https://www.isgpratik.com/acil-durum-eylem-plani-hakkinda',
         type: 'article',
     },
     alternates: {
-        canonical: 'https://isgpratik.com/acil-durum-eylem-plani-hakkinda',
+        canonical: 'https://www.isgpratik.com/acil-durum-eylem-plani-hakkinda',
     },
 };
 
@@ -297,14 +297,14 @@ export default function AcilDurumEylemPlaniHakkinda() {
                         "@type": "Article",
                         "headline": "Acil Durum Eylem Planı Nedir? Neden Önemlidir?",
                         "image": [
-                            "https://isgpratik.com/logo.png"
+                            "https://www.isgpratik.com/logo.png"
                         ],
                         "datePublished": "2025-01-01T08:00:00+08:00",
                         "dateModified": "2025-01-01T09:20:00+08:00",
                         "author": [{
                             "@type": "Organization",
                             "name": "İSG Pratik",
-                            "url": "https://isgpratik.com"
+                            "url": "https://www.isgpratik.com"
                         }]
                     })
                 }}

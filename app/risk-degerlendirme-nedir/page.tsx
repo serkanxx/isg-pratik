@@ -10,11 +10,11 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Risk Değerlendirmesi Nedir? | İSG Pratik',
         description: 'Risk değerlendirmesi nedir, nasıl yapılır? 6331 sayılı kanuna göre risk analizi zorunluluğu ve Fine-Kinney metodu hakkında detaylı bilgi.',
-        url: 'https://isgpratik.com/risk-degerlendirme-nedir',
+        url: 'https://www.isgpratik.com/risk-degerlendirme-nedir',
         type: 'article',
     },
     alternates: {
-        canonical: 'https://isgpratik.com/risk-degerlendirme-nedir',
+        canonical: 'https://www.isgpratik.com/risk-degerlendirme-nedir',
     },
 };
 
@@ -181,14 +181,14 @@ export default function RiskDegerlendirmeNedir() {
                         "@type": "Article",
                         "headline": "Risk Değerlendirmesi Nedir? Neden Zorunludur?",
                         "image": [
-                            "https://isgpratik.com/risk-process.png"
+                            "https://www.isgpratik.com/risk-process.png"
                         ],
                         "datePublished": "2025-01-01T08:00:00+08:00",
                         "dateModified": "2025-01-01T09:20:00+08:00",
                         "author": [{
                             "@type": "Organization",
                             "name": "İSG Pratik",
-                            "url": "https://isgpratik.com"
+                            "url": "https://www.isgpratik.com"
                         }]
                     })
                 }}
