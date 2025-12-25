@@ -10,9 +10,11 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries';
 import { Company, VALIDITY_YEARS, DANGER_CLASS_LABELS } from '@/app/types';
 import { formatDate } from '@/app/utils';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 export default function AcilDurumPage() {
     const { data: session, status } = useSession();
+    const { requireAuth } = useRequireAuth();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
@@ -227,6 +229,9 @@ export default function AcilDurumPage() {
             return;
         }
 
+        // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+        if (!requireAuth()) return;
+
         // Validasyon
         const invalidCompanies = bulkCompanyData.filter(item => !item.reportDate);
         if (invalidCompanies.length > 0) {
@@ -398,10 +403,9 @@ export default function AcilDurumPage() {
 
     // PDF oluşturma
     const generatePDF = async () => {
-        if (!session) {
-            showNotification('PDF oluşturmak için giriş yapmalısınız!', 'error');
-            return;
-        }
+        // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+        if (!requireAuth()) return;
+
         if (!selectedCompany) {
             showNotification('Lütfen bir firma seçin!', 'error');
             return;
@@ -563,10 +567,9 @@ export default function AcilDurumPage() {
 
     // Word oluşturma
     const generateWord = async () => {
-        if (!session) {
-            showNotification('Word oluşturmak için giriş yapmalısınız!', 'error');
-            return;
-        }
+        // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+        if (!requireAuth()) return;
+
         if (!selectedCompany) {
             showNotification('Lütfen bir firma seçin!', 'error');
             return;

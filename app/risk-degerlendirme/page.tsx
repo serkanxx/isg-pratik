@@ -14,6 +14,7 @@ import { useSearchParams } from 'next/navigation';
 import { SECTOR_SUGGESTIONS } from '../data/constants';
 import { useTheme } from '@/app/context/ThemeContext';
 import MobileRiskTour from '@/components/MobileRiskTour';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 // --- 1. RİSK KÜTÜPHANESİ ---
 // --- 1. RİSK KÜTÜPHANESİ ---
@@ -24,6 +25,7 @@ function RiskAssessmentContent() {
   const searchParams = useSearchParams();
   const reportId = searchParams.get('reportId');
   const { isDark, toggleTheme } = useTheme();
+  const { requireAuth } = useRequireAuth();
 
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [riskCategories, setRiskCategories] = useState<RiskCategory[]>([]); // API'den gelen veriler için state
@@ -1008,6 +1010,9 @@ function RiskAssessmentContent() {
   };
 
   const generatePDF = async () => {
+    // Giriş kontrolü - giriş yapmamış kullanıcıyı kayıt sayfasına yönlendir
+    if (!requireAuth()) return;
+
     // Rapor tarihi kontrolü
     if (!headerInfo.date) {
       showNotification('Rapor tarihi girilmesi zorunludur!', 'error');

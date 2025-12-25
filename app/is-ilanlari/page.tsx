@@ -16,6 +16,7 @@ import {
   Plus, User as UserIcon
 } from 'lucide-react';
 import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 const ADMIN_EMAIL = 'serkanxx@gmail.com';
 
@@ -341,6 +342,7 @@ const parseContent = (content: string) => {
 export default function IsIlanlariPage() {
   const { data: session } = useSession();
   const { isDark, toggleTheme } = useTheme();
+  const { requireAuth } = useRequireAuth();
   const pathname = usePathname();
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -603,10 +605,8 @@ export default function IsIlanlariPage() {
       return;
     }
 
-    if (!session) {
-      showNotification('İlan vermek için giriş yapmalısınız', 'error');
-      return;
-    }
+    // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+    if (!requireAuth()) return;
 
     try {
       setSubmittingJobPosting(true);
@@ -671,10 +671,9 @@ export default function IsIlanlariPage() {
   };
 
   const handleOpenCommentModal = (jobPostingId: string) => {
-    if (!session) {
-      alert('Yorum yapmak için giriş yapmalısınız');
-      return;
-    }
+    // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+    if (!requireAuth()) return;
+
     setShowCommentModal(jobPostingId);
     setCommentContent('');
     setIsAnonymous(false);

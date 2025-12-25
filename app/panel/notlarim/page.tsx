@@ -10,6 +10,7 @@ import {
     Calendar, ChevronRight, Filter, Edit, Save
 } from 'lucide-react';
 import { Company } from '../../types';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 interface Note {
     id: string;
@@ -47,6 +48,7 @@ export default function NotlarimPage() {
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('all');
 
     const queryClient = useQueryClient();
+    const { requireAuth } = useRequireAuth();
 
     const { data: notesData, isLoading: notesLoading } = useQuery({
         queryKey: queryKeys.notes,
@@ -77,6 +79,9 @@ export default function NotlarimPage() {
     }, [notesData, companiesData, notesLoading, companiesLoading]);
 
     const handleAddNote = async () => {
+        // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+        if (!requireAuth()) return;
+
         if (!newNote.trim()) {
             alert('Not içeriği gerekli');
             return;
@@ -144,7 +149,7 @@ export default function NotlarimPage() {
         setEditingNoteId(note.id);
         setEditNoteContent(note.content);
         setEditNoteCompanyId(note.companyId || '');
-        
+
         // Tarihi parse et
         if (note.dueDate) {
             const date = new Date(note.dueDate);
@@ -378,8 +383,8 @@ export default function NotlarimPage() {
                             key={opt.value}
                             onClick={() => setFilterStatus(opt.value as any)}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterStatus === opt.value
-                                    ? 'bg-white text-slate-800 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                ? 'bg-white text-slate-800 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             {opt.label}
@@ -414,10 +419,10 @@ export default function NotlarimPage() {
                         <div
                             key={note.id}
                             className={`bg-white rounded-xl border p-4 transition-all ${note.isCompleted
-                                    ? 'border-slate-200 opacity-60'
-                                    : isOverdue(note.dueDate)
-                                        ? 'border-red-200 bg-red-50'
-                                        : 'border-slate-200 hover:border-amber-300 hover:shadow-md'
+                                ? 'border-slate-200 opacity-60'
+                                : isOverdue(note.dueDate)
+                                    ? 'border-red-200 bg-red-50'
+                                    : 'border-slate-200 hover:border-amber-300 hover:shadow-md'
                                 }`}
                         >
                             {editingNoteId === note.id ? (
@@ -508,8 +513,8 @@ export default function NotlarimPage() {
                                     <button
                                         onClick={() => toggleNoteComplete(note.id, note.isCompleted)}
                                         className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${note.isCompleted
-                                                ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                : 'border-slate-300 hover:border-emerald-500'
+                                            ? 'bg-emerald-500 border-emerald-500 text-white'
+                                            : 'border-slate-300 hover:border-emerald-500'
                                             }`}
                                     >
                                         {note.isCompleted && <Check className="w-4 h-4" />}
@@ -526,8 +531,8 @@ export default function NotlarimPage() {
                                             </span>
                                             {note.dueDate && (
                                                 <span className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded ${isOverdue(note.dueDate) && !note.isCompleted
-                                                        ? 'bg-red-100 text-red-700 font-medium'
-                                                        : 'bg-amber-100 text-amber-700'
+                                                    ? 'bg-red-100 text-red-700 font-medium'
+                                                    : 'bg-amber-100 text-amber-700'
                                                     }`}>
                                                     <Calendar className="w-3 h-3" />
                                                     {formatDate(note.dueDate)}

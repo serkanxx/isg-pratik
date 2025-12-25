@@ -133,12 +133,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
 
     const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
-    // Giriş yapmamış kullanıcıları yönlendir
-    useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/login');
-        }
-    }, [status, router]);
+    // Misafir kullanıcılar da sayfaları görüntüleyebilir
+    // Aksiyon butonlarında auth kontrolü yapılıyor
 
     // Query param ile Risk Önerileri modal'ını aç
     useEffect(() => {
@@ -429,9 +425,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (!session) {
-        return null;
-    }
+    // Session yoksa da layout render edilecek (misafir erişimi)
 
     return (
         <div className="min-h-screen bg-slate-100 flex">

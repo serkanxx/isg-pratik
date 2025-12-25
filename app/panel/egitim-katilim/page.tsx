@@ -14,6 +14,7 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 // Eğitim Konuları
 const TRAINING_SUBJECTS = {
@@ -76,6 +77,7 @@ const YEARS = Array.from({ length: 11 }, (_, i) => (new Date().getFullYear() - 5
 export default function EgitimKatilimPage() {
     const { data: session } = useSession();
     const { isDark } = useTheme();
+    const { requireAuth } = useRequireAuth();
 
     // State management
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -235,6 +237,9 @@ export default function EgitimKatilimPage() {
 
     // PDF Generation
     const generatePDF = async () => {
+        // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+        if (!requireAuth()) return;
+
         if (!selectedCompany || (isManualCompany && !manualCompanyTitle)) {
             showNotification('Lütfen bir firma seçin veya adını girin!', 'error');
             return;

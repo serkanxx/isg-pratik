@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Company, DangerClass, DANGER_CLASS_LABELS } from '../../types';
 import * as XLSX from 'xlsx';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 export default function FirmalarPage() {
     const { data: session } = useSession();
@@ -20,6 +21,7 @@ export default function FirmalarPage() {
     const searchParams = useSearchParams();
     const showNewForm = searchParams.get('new') === 'true';
     const editId = searchParams.get('edit');
+    const { requireAuth } = useRequireAuth();
 
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,12 +36,12 @@ export default function FirmalarPage() {
     const [bulkData, setBulkData] = useState<{ title: string; address: string; registration_number: string; danger_class: string }[]>([]);
     const [bulkUploading, setBulkUploading] = useState(false);
     const [bulkResult, setBulkResult] = useState<{ success: boolean; successCount: number; errorCount: number; errors: { row: number; message: string }[] } | null>(null);
-    
+
     // Adres düzenleme modal state'leri
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(null);
     const [tempAddress, setTempAddress] = useState('');
-    
+
     // Otomatik adres bulma state'leri
     const [findingAddresses, setFindingAddresses] = useState(false);
     const [addressFindProgress, setAddressFindProgress] = useState({ current: 0, total: 0 });
@@ -65,7 +67,7 @@ export default function FirmalarPage() {
     });
 
     const queryClient = useQueryClient();
-    
+
     const { data: companiesData, isLoading: companiesLoading, refetch } = useQuery({
         queryKey: queryKeys.companies,
         queryFn: apiFetchers.companies,
@@ -201,12 +203,12 @@ export default function FirmalarPage() {
                     const row = jsonData[i] || [];
                     for (let j = 0; j < row.length; j++) {
                         const cellValue = (row[j] || '').toString().trim();
-                        
+
                         // "Hizmet Veren" ile başlayan sütunları göz ardı et
                         if (cellValue.startsWith('Hizmet Veren')) {
                             continue;
                         }
-                        
+
                         // "Hizmet Alan İşyeri Unvanı" veya benzeri
                         if (titleColIndex === -1 && (
                             cellValue.includes('Hizmet Alan İşyeri Unvanı') ||
@@ -217,7 +219,7 @@ export default function FirmalarPage() {
                             titleColIndex = j;
                             headerRowIndex = i;
                         }
-                        
+
                         // "Hizmet Alan İşyeri SGK/DETSİS No" veya benzeri
                         if (registrationColIndex === -1 && (
                             cellValue.includes('Hizmet Alan İşyeri SGK/DETSİS No') ||
@@ -228,7 +230,7 @@ export default function FirmalarPage() {
                             registrationColIndex = j;
                             if (headerRowIndex === -1) headerRowIndex = i;
                         }
-                        
+
                         // "Hizmet Alan İşyeri Tehlike Sınıfı" veya benzeri
                         if (dangerClassColIndex === -1 && (
                             cellValue.includes('Hizmet Alan İşyeri Tehlike Sınıfı') ||
@@ -238,7 +240,7 @@ export default function FirmalarPage() {
                             dangerClassColIndex = j;
                             if (headerRowIndex === -1) headerRowIndex = i;
                         }
-                        
+
                         // Adres için genel arama (sadece "Hizmet Veren" ile başlamayanlar)
                         if (addressColIndex === -1 && (
                             cellValue.includes('Adres') ||
@@ -248,7 +250,7 @@ export default function FirmalarPage() {
                             if (headerRowIndex === -1) headerRowIndex = i;
                         }
                     }
-                    
+
                     // Eğer en az bir başlık bulunduysa, bu satır başlık satırıdır
                     if (titleColIndex !== -1 || registrationColIndex !== -1 || dangerClassColIndex !== -1) {
                         break;
@@ -284,7 +286,7 @@ export default function FirmalarPage() {
                         const address = addressColIndex !== -1 ? (row[addressColIndex] || '').toString().trim() : '';
                         const registrationNumber = (row[registrationColIndex] || '').toString().trim();
                         const dangerClassValue = (row[dangerClassColIndex] || '').toString();
-                        
+
                         parsedData.push({
                             title: title,
                             address: address,
@@ -337,7 +339,7 @@ export default function FirmalarPage() {
         }
 
         setFindingAddresses(true);
-        
+
         try {
             // Adresi olmayan firmaları filtrele
             const companiesToSearch = bulkData.map((company, index) => ({
@@ -367,11 +369,11 @@ export default function FirmalarPage() {
             const res = await fetch('/api/companies/find-address', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    companies: companiesToSearch.map(c => ({ 
-                        title: c.title, 
+                body: JSON.stringify({
+                    companies: companiesToSearch.map(c => ({
+                        title: c.title,
                         address: c.address,
-                        registration_number: c.registration_number 
+                        registration_number: c.registration_number
                     }))
                 })
             });
@@ -384,7 +386,7 @@ export default function FirmalarPage() {
             }
 
             const result = await res.json();
-            
+
             if (result.success && result.results) {
                 // Sonuçları güncelle
                 const updatedData = [...bulkData];
@@ -406,7 +408,7 @@ export default function FirmalarPage() {
                 });
 
                 setBulkData(updatedData);
-                
+
                 if (foundCount > 0) {
                     showNotif(`${foundCount} firma için adres bulundu${notFoundCount > 0 ? `, ${notFoundCount} firma için adres bulunamadı` : ''}!`, 'success');
                 } else {
@@ -484,6 +486,9 @@ export default function FirmalarPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Yeni firma ekleme için giriş kontrolü
+        if (!editingId && !requireAuth()) return;
 
         if (!form.title.trim()) {
             showNotif('Firma unvanı zorunludur!', 'error');
@@ -668,7 +673,7 @@ export default function FirmalarPage() {
                                     {findingAddresses && addressFindProgress.total > 0 && (
                                         <div className="w-40">
                                             <div className="w-full bg-slate-200 rounded-full h-2">
-                                                <div 
+                                                <div
                                                     className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
                                                     style={{ width: `${(addressFindProgress.current / addressFindProgress.total) * 100}%` }}
                                                 ></div>

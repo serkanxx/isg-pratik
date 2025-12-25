@@ -13,12 +13,7 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // Panel rotaları koruması
-    if (pathname.startsWith('/panel')) {
-        if (!token) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
-    }
+    // Panel rotaları artık misafirlere açık - aksiyon butonlarında kontrol yapılıyor
 
     // Admin rotaları koruması
     if (pathname.startsWith('/admin')) {

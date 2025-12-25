@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 // İzin Türleri
 const PERMIT_TYPES = [
@@ -59,6 +60,7 @@ interface Company {
 
 export default function IsIzinFormuPage() {
     const { data: session } = useSession();
+    const { requireAuth } = useRequireAuth();
 
     // Firmalar state
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -148,6 +150,9 @@ export default function IsIzinFormuPage() {
     };
 
     const handleSubmit = async () => {
+        // Giriş kontrolü - giriş yapmamışsa kayıt sayfasına yönlendir
+        if (!requireAuth()) return;
+
         if (!formData.companyName) {
             showNotification('Lütfen firma adını girin!', 'error');
             return;

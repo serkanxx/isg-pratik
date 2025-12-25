@@ -6,6 +6,7 @@ import {
     PlusCircle, Search, Edit2, Trash2, X, AlertCircle, CheckCircle,
     ChevronDown, ChevronUp, Save, FolderPlus
 } from 'lucide-react';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 interface UserRisk {
     id: string;
@@ -38,6 +39,7 @@ export default function RiskMaddelerimPage() {
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
     const [formError, setFormError] = useState<string>('');
+    const { requireAuth } = useRequireAuth();
 
     const [form, setForm] = useState({
         category_name: '',
@@ -105,6 +107,9 @@ export default function RiskMaddelerimPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError(''); // Önceki hatayı temizle
+
+        // Yeni risk ekleme için giriş kontrolü
+        if (!editingId && !requireAuth()) return;
 
         if (!form.category_name.trim()) {
             setFormError('Kategori alanı zorunludur!');

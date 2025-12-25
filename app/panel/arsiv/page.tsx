@@ -11,6 +11,7 @@ import {
     ListChecks, Shield, FileCheck, ClipboardList, BookOpen,
     Presentation, FileCode2, StickyNote, MoreHorizontal, Scale, ScrollText
 } from 'lucide-react';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 interface ArchiveFile {
     fileName: string;
@@ -318,8 +319,15 @@ export default function ArsivPage() {
     const [errorDescription, setErrorDescription] = useState('');
     const [submittingError, setSubmittingError] = useState(false);
     const [errorNotification, setErrorNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+    const { requireAuth } = useRequireAuth();
 
     const FILES_PER_PAGE = 100;
+
+    // Dosya indirme işlemi - giriş kontrolü ile
+    const handleDownload = (downloadLink: string) => {
+        if (!requireAuth()) return;
+        window.location.href = downloadLink;
+    };
 
     // R2 bucket'tan dosyaları yükle
     useEffect(() => {
@@ -817,10 +825,8 @@ export default function ArsivPage() {
 
                                             {/* Action buttons - larger on mobile and beside filename */}
                                             <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
-                                                <a
-                                                    href={downloadLink}
-                                                    rel="noopener noreferrer"
-                                                    download
+                                                <button
+                                                    onClick={() => handleDownload(downloadLink)}
                                                     className={`inline-flex items-center justify-center gap-1.5 md:gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm transition-all duration-300 shadow-sm hover:shadow-lg active:scale-95 whitespace-nowrap ${isDark
                                                         ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/20'
                                                         : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
@@ -828,7 +834,7 @@ export default function ArsivPage() {
                                                 >
                                                     <Download className="w-4 h-4 md:w-4 md:h-4 flex-shrink-0" />
                                                     <span className="hidden sm:inline">İndir</span>
-                                                </a>
+                                                </button>
                                                 <button
                                                     onClick={() => {
                                                         setSelectedFile(file);
