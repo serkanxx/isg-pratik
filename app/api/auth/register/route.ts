@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationEmail, sendNewUserNotificationEmail } from "@/lib/email";
-import crypto from "crypto";
+import { sendNewUserNotificationEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
     try {
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
         const trialEndsAt = new Date();
         trialEndsAt.setMonth(trialEndsAt.getMonth() + 3);
 
-        // Kullanıcı oluştur (emailVerified = null, phone opsiyonel)
+        // Kullanıcı oluştur (emailVerified otomatik onaylanmış)
         const user = await prisma.user.create({
             data: {
                 name,
@@ -63,32 +62,11 @@ export async function POST(request: NextRequest) {
                 phoneCode: phone ? phoneCode : null,
                 phoneCodeExp: phone ? phoneCodeExp : null,
                 phoneVerified: true, // SMS doğrulama devre dışı
-                emailVerified: null, // Email doğrulanmamış
+                emailVerified: new Date(), // Email otomatik onaylı
                 plan: "premium_trial",
                 trialEndsAt,
             },
         });
-
-        // Email doğrulama token'ı oluştur
-        const verificationToken = crypto.randomBytes(32).toString("hex");
-        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 saat
-
-        // Token'ı veritabanına kaydet
-        await prisma.verificationToken.create({
-            data: {
-                identifier: email,
-                token: verificationToken,
-                expires: tokenExpires,
-            },
-        });
-
-        // Doğrulama emaili gönder
-        const emailResult = await sendVerificationEmail(email, verificationToken);
-
-        if (!emailResult.success) {
-            console.error("Email gönderilemedi:", emailResult.error);
-            // Email gönderilemese bile kayıt başarılı sayılsın
-        }
 
         // Yeni üyelik bildirimi emaili gönder (arka planda, hata olsa bile kayıt başarılı sayılsın)
         sendNewUserNotificationEmail(name, email, phone).catch((error) => {
@@ -101,9 +79,9 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-            message: "Kayıt başarılı! Email adresinize doğrulama linki gönderildi.",
+            message: "Kayıt başarılı! Şimdi giriş yapabilirsiniz.",
             userId: user.id,
-            requiresEmailVerification: true,
+            requiresEmailVerification: false,
         });
     } catch (error: any) {
         console.error("Register error:", error);

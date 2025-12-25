@@ -37,10 +37,8 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Şifre hatalı");
                 }
 
-                // Email doğrulaması kontrolü
-                if (!user.emailVerified) {
-                    throw new Error("EMAIL_NOT_VERIFIED");
-                }
+                // Email doğrulaması kontrolü devre dışı bırakıldı
+                // Kullanıcılar artık email onayı olmadan giriş yapabilir
 
                 return {
                     id: user.id,

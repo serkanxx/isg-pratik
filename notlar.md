@@ -7,8 +7,7 @@
 Buraya istediğiniz metni yazın...
 
 - ilan onay sayfası çalışmıyor
-- iş ilanları sayfasındaki sidebar değişecek
-- risk değerlendirme sayfasında bulunan risklerin skorunun derecelendirmesini resim olarak yükledim. bu derecelendirmeye göre sayfadan alınacak pdf çıktısında bulunan skor ve sınıf sutunlarında yazan yazıları risk derecesine göre renklendir.
+
 - sitemap güncelle
 - GİTHUB PUSH
 
