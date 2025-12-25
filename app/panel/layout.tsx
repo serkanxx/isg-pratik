@@ -191,6 +191,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const today = new Date();
     const notifications = [
         {
+            id: 'ucretsiz-ilan-ver',
+            title: 'Ücretsiz İş İlanı Verin!',
+            description: 'İSG iş ilanları bölümünden ücretsiz ilan yayınlayabilirsiniz. İş arayanlar ve işverenler için ideal platform!',
+            date: new Date(today)
+        },
+        {
             id: 'acil-durum-word',
             title: 'Acil Durum Eylem Planı - Word Desteği',
             description: 'Acil Durum Eylem Planı raporunu artık ister PDF, ister Word dosyası formatında alabilirsiniz!',

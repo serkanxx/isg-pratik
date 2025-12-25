@@ -277,6 +277,7 @@ model UserJobPosting {
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content         String   @db.Text
+  city            String?  // "Tüm Türkiye" veya il adı
   status          String   @default("pending") // pending, approved, rejected
   adminNote       String?  @db.Text // Admin düzenlemesi/notu
   createdAt       DateTime @default(now())

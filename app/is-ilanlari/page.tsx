@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -12,7 +12,8 @@ import {
   Trash2, Menu, Moon, Sun, Home, LayoutDashboard, LogOut,
   Building2, FileText, Shield, AlertTriangle, Eye, FileCheck,
   ChevronRight as ChevronRightIcon, StickyNote, Headphones as HeadphonesIcon, MapPin,
-  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen, Bell, Info, GraduationCap
+  Send, MessageCircle, AlertCircle, CheckCircle, FolderOpen, Bell, Info, GraduationCap,
+  Plus, User as UserIcon
 } from 'lucide-react';
 import { TURKIYE_ILLERI, findIlsInText } from '@/lib/turkiye-illeri';
 
@@ -361,6 +362,13 @@ export default function IsIlanlariPage() {
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [archiveFileCount, setArchiveFileCount] = useState<number | null>(null);
 
+  // Kullanıcı ilanı state'leri
+  const [showJobPostingModal, setShowJobPostingModal] = useState(false);
+  const [jobPostingContent, setJobPostingContent] = useState('');
+  const [jobPostingCity, setJobPostingCity] = useState('Tüm Türkiye');
+  const [submittingJobPosting, setSubmittingJobPosting] = useState(false);
+  const [userJobPostings, setUserJobPostings] = useState<any[]>([]);
+
   // Notification state
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
     show: false,
@@ -373,6 +381,23 @@ export default function IsIlanlariPage() {
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
 
   const isAdmin = session?.user?.email === ADMIN_EMAIL || (session?.user as any)?.role === 'ADMIN';
+
+  // Tüm ilanları birleştir ve tarihe göre sırala (en yeni en üstte)
+  const allPostings = useMemo(() => {
+    const telegramPosts = jobPostings.map(p => ({
+      ...p,
+      _type: 'telegram' as const,
+      _sortDate: new Date(p.postedAt || p.createdAt).getTime()
+    }));
+
+    const userPosts = userJobPostings.map(p => ({
+      ...p,
+      _type: 'user' as const,
+      _sortDate: new Date(p.createdAt).getTime()
+    }));
+
+    return [...telegramPosts, ...userPosts].sort((a, b) => b._sortDate - a._sortDate);
+  }, [jobPostings, userJobPostings]);
 
   // Notification göster
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
@@ -412,9 +437,18 @@ export default function IsIlanlariPage() {
     }
   }, []);
 
-  // İş ilanlarını çek - filtreler değiştiğinde
+  // Tüm ilanları çek - filtreler değiştiğinde (paralel)
   useEffect(() => {
-    fetchJobPostings();
+    const fetchAllPostings = async () => {
+      setLoading(true);
+      try {
+        // Her iki API çağrısını paralel yap
+        await Promise.all([fetchJobPostings(), fetchUserJobPostings()]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllPostings();
   }, [page, searchTerm, selectedCity]);
 
   // Bildirim verileri
@@ -494,7 +528,6 @@ export default function IsIlanlariPage() {
 
   const fetchJobPostings = async () => {
     try {
-      setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '15'
@@ -524,16 +557,90 @@ export default function IsIlanlariPage() {
       console.error('İş ilanları yüklenemedi:', error);
       setJobPostings([]);
       setTotalPages(1);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchJobPostings();
-    setRefreshing(false);
+    try {
+      await Promise.all([fetchJobPostings(), fetchUserJobPostings()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
+
+  // Kullanıcı ilanlarını çek
+  const fetchUserJobPostings = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '50'
+      });
+
+      if (selectedCity) {
+        params.append('city', selectedCity);
+      }
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      const response = await fetch(`/api/user-job-postings?${params}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setUserJobPostings(data.data || []);
+      }
+    } catch (error) {
+      console.error('Kullanıcı ilanları yüklenemedi:', error);
+    }
+  };
+
+  // İlan gönder
+  const handleSubmitJobPosting = async () => {
+    if (!jobPostingContent.trim()) {
+      showNotification('Lütfen ilan içeriği yazın', 'error');
+      return;
+    }
+
+    if (!session) {
+      showNotification('İlan vermek için giriş yapmalısınız', 'error');
+      return;
+    }
+
+    try {
+      setSubmittingJobPosting(true);
+      const response = await fetch('/api/user-job-postings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: jobPostingContent.trim(),
+          city: jobPostingCity
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showNotification(data.message || 'İlanınız başarıyla gönderildi. Admin onayından sonra yayınlanacaktır.', 'success');
+        setShowJobPostingModal(false);
+        setJobPostingContent('');
+        setJobPostingCity('Tüm Türkiye');
+      } else {
+        showNotification(data.error || 'İlan gönderilirken bir hata oluştu', 'error');
+      }
+    } catch (error: any) {
+      console.error('İlan gönderme hatası:', error);
+      showNotification('İlan gönderilirken bir hata oluştu', 'error');
+    } finally {
+      setSubmittingJobPosting(false);
+    }
+  };
+
+  // fetchUserJobPostings yukarıdaki useEffect'te çağrılıyor (Promise.all ile paralel)
+
 
   const fetchComments = async (jobPostingId: string) => {
     if (loadingComments[jobPostingId]) return;
@@ -624,7 +731,7 @@ export default function IsIlanlariPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, isUserPosting: boolean = false) => {
     if (!isAdmin) return;
 
     if (!confirm('Bu iş ilanını silmek istediğinizden emin misiniz?')) {
@@ -633,22 +740,34 @@ export default function IsIlanlariPage() {
 
     try {
       setDeletingId(id);
-      const response = await fetch(`/api/job-postings/${id}`, {
+
+      // İlan türüne göre farklı API endpoint kullan
+      const endpoint = isUserPosting
+        ? `/api/admin/user-job-postings/${id}`
+        : `/api/job-postings/${id}`;
+
+      const response = await fetch(endpoint, {
         method: 'DELETE'
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.error || 'İlan silinirken bir hata oluştu');
+        showNotification(data.error || 'İlan silinirken bir hata oluştu', 'error');
         return;
       }
 
-      // Listeden kaldır
-      setJobPostings(prev => prev.filter(p => p.id !== id));
+      // İlan türüne göre doğru state'i güncelle
+      if (isUserPosting) {
+        setUserJobPostings(prev => prev.filter(p => p.id !== id));
+      } else {
+        setJobPostings(prev => prev.filter(p => p.id !== id));
+      }
+
+      showNotification('İlan başarıyla silindi', 'success');
     } catch (error) {
       console.error('Silme hatası:', error);
-      alert('İlan silinirken bir hata oluştu');
+      showNotification('İlan silinirken bir hata oluştu', 'error');
     } finally {
       setDeletingId(null);
     }
@@ -970,21 +1089,40 @@ export default function IsIlanlariPage() {
                   İş İlanları
                 </h1>
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${isDark
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                  }`}
-              >
-                {refreshing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                <span className="hidden sm:inline">Yenile</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (!session) {
+                      showNotification('İlan vermek için giriş yapmalısınız', 'error');
+                      return;
+                    }
+                    setShowJobPostingModal(true);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-bold ${isDark
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/20'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/20'
+                    }`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Ücretsiz İlan Ver</span>
+                  <span className="sm:hidden">İlan Ver</span>
+                </button>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${isDark
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
+                >
+                  {refreshing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">Yenile</span>
+                </button>
+              </div>
             </div>
 
             {/* Filters */}
@@ -1062,7 +1200,7 @@ export default function IsIlanlariPage() {
                 İlanlar Hazırlanıyor
               </p>
             </div>
-          ) : jobPostings.length === 0 ? (
+          ) : allPostings.length === 0 ? (
             <div className={`text-center py-20 rounded-lg shadow-sm ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'
               }`}>
               <Briefcase className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
@@ -1078,8 +1216,9 @@ export default function IsIlanlariPage() {
           ) : (
             <>
               <div className="space-y-4 mb-8">
-                {jobPostings.map((posting) => {
+                {allPostings.map((posting) => {
                   const contentParts = parseContent(posting.content);
+                  const isUserPosting = posting._type === 'user';
 
                   return (
                     <div
@@ -1091,18 +1230,38 @@ export default function IsIlanlariPage() {
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <MessageSquare className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
-                            <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                              @{posting.channelUsername}
-                            </span>
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {isUserPosting ? (
+                              <>
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white">
+                                  <UserIcon className="w-3 h-3" />
+                                  Kullanıcı ilanı
+                                </span>
+                                {posting.city && (
+                                  <>
+                                    <span className={isDark ? 'text-slate-600' : 'text-gray-300'}>•</span>
+                                    <span className={`text-sm flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                                      <MapPin className="w-4 h-4" />
+                                      {posting.city}
+                                    </span>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className={`w-4 h-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+                                <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                                  @{posting.channelUsername}
+                                </span>
+                              </>
+                            )}
                             <span className={isDark ? 'text-slate-600' : 'text-gray-300'}>•</span>
                             <span className={`text-sm flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
                               <Calendar className="w-4 h-4" />
-                              {formatRelativeTime(posting.postedAt)}
+                              {formatRelativeTime(isUserPosting ? posting.createdAt : posting.postedAt)}
                             </span>
                           </div>
-                          {posting.hasMedia && (
+                          {!isUserPosting && posting.hasMedia && (
                             <div className={`flex items-center gap-2 text-sm mb-2 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
                               <ImageIcon className="w-4 h-4" />
                               <span>Fotoğraf/Video içeriyor</span>
@@ -1111,7 +1270,7 @@ export default function IsIlanlariPage() {
                         </div>
                         {isAdmin && (
                           <button
-                            onClick={() => handleDelete(posting.id)}
+                            onClick={() => handleDelete(posting.id, isUserPosting)}
                             disabled={deletingId === posting.id}
                             className={`p-2 rounded-lg transition-colors ${isDark
                               ? 'text-red-400 hover:bg-red-500/20 hover:text-red-300'
@@ -1190,95 +1349,97 @@ export default function IsIlanlariPage() {
                         </p>
                       </div>
 
-                      <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-100'
-                        }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                            {formatDate(posting.postedAt)}
+                      {!isUserPosting && (
+                        <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-100'
+                          }`}>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                              {formatDate(posting.postedAt)}
+                            </div>
+                            <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+                              {posting.viewCount} görüntülenme
+                            </div>
                           </div>
-                          <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
-                            {posting.viewCount} görüntülenme
-                          </div>
-                        </div>
 
-                        {/* Yorum Butonu */}
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={() => handleToggleComments(posting.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDark
-                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                              }`}
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            <span>Yorumlar</span>
-                            {comments[posting.id] && comments[posting.id].length > 0 && (
-                              <span className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-indigo-500' : 'bg-indigo-500'
-                                }`}>
-                                {comments[posting.id].length}
-                              </span>
-                            )}
-                          </button>
-                          {session && (
+                          {/* Yorum Butonu */}
+                          <div className="flex items-center gap-4">
                             <button
-                              onClick={() => handleOpenCommentModal(posting.id)}
+                              onClick={() => handleToggleComments(posting.id)}
                               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDark
-                                ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
-                                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
+                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                                 }`}
                             >
-                              <Send className="w-4 h-4" />
-                              <span>Yorum Yap</span>
+                              <MessageCircle className="w-4 h-4" />
+                              <span>Yorumlar</span>
+                              {comments[posting.id] && comments[posting.id].length > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-indigo-500' : 'bg-indigo-500'
+                                  }`}>
+                                  {comments[posting.id].length}
+                                </span>
+                              )}
                             </button>
-                          )}
-                        </div>
-
-                        {/* Yorumlar Bölümü */}
-                        {expandedComments[posting.id] && (
-                          <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'
-                            }`}>
-                            {loadingComments[posting.id] ? (
-                              <div className="flex items-center justify-center py-8">
-                                <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                              </div>
-                            ) : comments[posting.id] && comments[posting.id].length > 0 ? (
-                              <div className="space-y-3">
-                                {comments[posting.id].map((comment) => (
-                                  <div
-                                    key={comment.id}
-                                    className={`p-3 rounded-lg ${isDark
-                                      ? 'bg-slate-700/50 border border-slate-600'
-                                      : 'bg-gray-50 border border-gray-200'
-                                      }`}
-                                  >
-                                    <div className="flex items-start justify-between mb-2">
-                                      <div className="flex items-center gap-2">
-                                        <span className={`font-semibold text-sm ${isDark ? 'text-slate-200' : 'text-gray-800'
-                                          }`}>
-                                          {comment.userName || 'Anonim'}
-                                        </span>
-                                        <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'
-                                          }`}>
-                                          {formatRelativeTime(comment.createdAt)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'
-                                      }`}>
-                                      {comment.content}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className={`text-center py-4 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'
-                                }`}>
-                                Henüz yorum yok
-                              </p>
+                            {session && (
+                              <button
+                                onClick={() => handleOpenCommentModal(posting.id)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isDark
+                                  ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+                                  : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
+                                  }`}
+                              >
+                                <Send className="w-4 h-4" />
+                                <span>Yorum Yap</span>
+                              </button>
                             )}
                           </div>
-                        )}
-                      </div>
+
+                          {/* Yorumlar Bölümü */}
+                          {expandedComments[posting.id] && (
+                            <div className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'
+                              }`}>
+                              {loadingComments[posting.id] ? (
+                                <div className="flex items-center justify-center py-8">
+                                  <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                                </div>
+                              ) : comments[posting.id] && comments[posting.id].length > 0 ? (
+                                <div className="space-y-3">
+                                  {comments[posting.id].map((comment) => (
+                                    <div
+                                      key={comment.id}
+                                      className={`p-3 rounded-lg ${isDark
+                                        ? 'bg-slate-700/50 border border-slate-600'
+                                        : 'bg-gray-50 border border-gray-200'
+                                        }`}
+                                    >
+                                      <div className="flex items-start justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <span className={`font-semibold text-sm ${isDark ? 'text-slate-200' : 'text-gray-800'
+                                            }`}>
+                                            {comment.userName || 'Anonim'}
+                                          </span>
+                                          <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'
+                                            }`}>
+                                            {formatRelativeTime(comment.createdAt)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'
+                                        }`}>
+                                        {comment.content}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className={`text-center py-4 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'
+                                  }`}>
+                                  Henüz yorum yok
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1531,6 +1692,112 @@ export default function IsIlanlariPage() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Ücretsiz İlan Ver Modal */}
+      {showJobPostingModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-[60]"
+            onClick={() => setShowJobPostingModal(false)}
+          />
+          <div className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-[70] rounded-2xl shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'
+            }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Ücretsiz İlan Ver
+              </h2>
+              <button
+                onClick={() => setShowJobPostingModal(false)}
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* İl Seçimi */}
+              <div>
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                  İl Seçimi
+                </label>
+                <div className="relative">
+                  <MapPin className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+                  <select
+                    value={jobPostingCity}
+                    onChange={(e) => setJobPostingCity(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none ${isDark
+                      ? 'bg-slate-700 border-slate-600 text-white'
+                      : 'bg-white border-gray-300 text-slate-900'
+                      }`}
+                  >
+                    <option value="Tüm Türkiye">Tüm Türkiye</option>
+                    {(() => {
+                      const priorityIls = ['İstanbul', 'Ankara', 'İzmir'];
+                      const otherIls = TURKIYE_ILLERI
+                        .filter(il => !priorityIls.includes(il))
+                        .sort();
+                      const sortedIls = [...priorityIls, ...otherIls];
+                      return sortedIls.map((il) => (
+                        <option key={il} value={il}>
+                          {il}
+                        </option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+              </div>
+
+              {/* İlan Metni */}
+              <div>
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                  İlan Metni
+                </label>
+                <textarea
+                  value={jobPostingContent}
+                  onChange={(e) => setJobPostingContent(e.target.value)}
+                  placeholder="İlanınızı buraya yazın... (İletişim bilgilerinizi eklemeyi unutmayın)"
+                  className={`w-full p-4 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none ${isDark
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400'
+                    : 'bg-white border-gray-300 text-slate-900 placeholder-gray-400'
+                    }`}
+                  rows={8}
+                />
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  İstediğiniz uzunlukta yazabilirsiniz. İlan admin onayından sonra yayınlanacaktır.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={`flex justify-end gap-3 p-4 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+              <button
+                onClick={() => setShowJobPostingModal(false)}
+                className={`px-4 py-2 rounded-lg font-bold transition-colors ${isDark
+                  ? 'text-slate-300 hover:bg-slate-700'
+                  : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleSubmitJobPosting}
+                disabled={submittingJobPosting || !jobPostingContent.trim()}
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg font-bold hover:from-emerald-500 hover:to-teal-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingJobPosting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Gönder
+              </button>
             </div>
           </div>
         </>
