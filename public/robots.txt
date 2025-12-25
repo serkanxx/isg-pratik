@@ -1,0 +1,17 @@
+# İSG Pratik - robots.txt
+# https://www.isgpratik.com
+
+User-agent: *
+
+# Statik varlıkları engelle (dizine eklenmesi gerekmiyor)
+Disallow: /_next/static/
+Disallow: /favicon.ico
+Disallow: /favicon.svg
+Disallow: /favicon-96x96.png
+Disallow: /apple-touch-icon.png
+
+# API rotalarını engelle
+Disallow: /api/
+
+# Sitemap konumu
+Sitemap: https://www.isgpratik.com/sitemap.xml
