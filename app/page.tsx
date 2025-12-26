@@ -143,6 +143,26 @@ export default function LandingPage() {
       badge: null
     },
     {
+      icon: Award,
+      title: "İSG Sertifikası Oluştur",
+      description: "Profesyonel İSG eğitim sertifikaları oluşturun. Katılımcı listesi, sertifika numarası ve toplu PDF çıktısı.",
+      color: "from-emerald-500 to-green-600",
+      bgColor: "bg-emerald-500/10",
+      iconBg: "bg-emerald-500",
+      href: "/panel/sertifika",
+      badge: "Yeni"
+    },
+    {
+      icon: Users,
+      title: "Eğitim Katılım Formu",
+      description: "Eğitim katılım formları oluşturun. Excel ile toplu katılımcı ekleyin ve profesyonel PDF çıktısı alın.",
+      color: "from-cyan-500 to-blue-600",
+      bgColor: "bg-cyan-500/10",
+      iconBg: "bg-cyan-500",
+      href: "/panel/egitim-katilim",
+      badge: "Yeni"
+    },
+    {
       icon: Flame,
       title: "İş İzin Formları",
       description: "Sıcak çalışma, yüksekte çalışma, kapalı alan ve elektrik izin formları. Tek tıkla PDF çıktısı.",
@@ -176,9 +196,9 @@ export default function LandingPage() {
       icon: Folder,
       title: "İSG Dosya Arşivi",
       description: "Binlerce hazır İSG dokümanı. Talimatlar, prosedürler, formlar ve eğitim materyalleri.",
-      color: "from-emerald-500 to-teal-600",
-      bgColor: "bg-emerald-500/10",
-      iconBg: "bg-emerald-500",
+      color: "from-amber-500 to-orange-600",
+      bgColor: "bg-amber-500/10",
+      iconBg: "bg-amber-500",
       href: "/panel/arsiv",
       badge: "Yeni",
       highlight: "2000'den Fazla Dosya"

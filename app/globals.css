@@ -65,6 +65,44 @@ html.dark .egitim-katilim-page.bg-white {
   /* slate-950 - dark mode */
 }
 
+/* ==================== SERTİFİKA SAYFASI OVERRIDE'LARI ==================== */
+/* Aydınlık modda (HTML'de dark class yokken) - her zaman beyaz */
+html:not(.dark) .sertifika-page .bg-white,
+html:not(.dark) .dark-content .sertifika-page .bg-white {
+  background-color: #ffffff !important;
+}
+
+/* Karanlık modda - koyu arka plan */
+html.dark .sertifika-page .bg-white,
+html.dark .dark-content .sertifika-page .bg-white {
+  background-color: #0f172a !important;
+}
+
+/* Sertifika sayfası aydınlık mod metin renkleri */
+html:not(.dark) .sertifika-page label,
+html:not(.dark) .sertifika-page h1,
+html:not(.dark) .sertifika-page h3,
+html:not(.dark) .sertifika-page h5,
+html:not(.dark) .sertifika-page p:not(.text-emerald-600):not(.text-emerald-700):not(.text-amber-700),
+html:not(.dark) .sertifika-page span:not(.text-emerald-600):not(.text-white):not(.text-amber-700),
+html:not(.dark) .sertifika-page select,
+html:not(.dark) .sertifika-page input:not([type="checkbox"]) {
+  color: #000000 !important;
+}
+
+html:not(.dark) .sertifika-page .text-black {
+  color: #000000 !important;
+}
+
+/* Ana container için */
+html:not(.dark) .sertifika-page.bg-white {
+  background-color: #ffffff !important;
+}
+
+html.dark .sertifika-page.bg-white {
+  background-color: #020617 !important;
+}
+
 /* Ziyaret olan takvim günleri - Aydınlık modda beyaz arka plan korunmalı */
 .visit-day-light {
   background-color: #ffffff !important;
@@ -179,6 +217,65 @@ html.dark .egitim-katilim-page.bg-white {
 
 .dark-content .egitim-katilim-page input::placeholder,
 .dark-content .egitim-katilim-page textarea::placeholder {
+  color: unset !important;
+}
+
+/* ==================== SERTİFİKA SAYFASI - Border, Background, Input Override'ları ==================== */
+/* Border override'ları */
+.dark-content .sertifika-page .border-slate-200,
+.dark-content .sertifika-page .border-slate-100,
+.dark-content .sertifika-page .border-slate-700,
+.dark-content .sertifika-page .border-slate-800 {
+  border-color: unset !important;
+}
+
+/* Arka plan override'ları */
+html:not(.dark) .sertifika-page .bg-slate-50,
+html:not(.dark) .dark-content .sertifika-page .bg-slate-50 {
+  background-color: #f8fafc !important;
+  /* slate-50 */
+}
+
+html:not(.dark) .sertifika-page .bg-slate-100,
+html:not(.dark) .dark-content .sertifika-page .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+  /* slate-100 */
+}
+
+.dark-content .sertifika-page .bg-slate-100,
+.dark-content .sertifika-page .bg-slate-50,
+.dark-content .sertifika-page .bg-gray-50,
+.dark-content .sertifika-page .bg-slate-800,
+.dark-content .sertifika-page .bg-slate-900 {
+  background-color: unset !important;
+}
+
+/* Input override'ları */
+html:not(.dark) .sertifika-page input,
+html:not(.dark) .sertifika-page textarea,
+html:not(.dark) .sertifika-page select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  /* slate-300 */
+  color: #000000 !important;
+}
+
+html:not(.dark) .sertifika-page input::placeholder,
+html:not(.dark) .sertifika-page textarea::placeholder {
+  color: #64748b !important;
+  /* slate-500 */
+}
+
+.dark-content .sertifika-page input,
+.dark-content .sertifika-page textarea,
+.dark-content .sertifika-page select {
+  background-color: unset !important;
+  border-color: unset !important;
+  color: unset !important;
+}
+
+.dark-content .sertifika-page input::placeholder,
+.dark-content .sertifika-page textarea::placeholder {
   color: unset !important;
 }
 

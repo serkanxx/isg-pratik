@@ -70,6 +70,13 @@ const menuItems = [
         dataTour: 'egitim-katilim'
     },
     {
+        name: 'İSG Sertifikası Oluştur',
+        href: '/panel/sertifika',
+        icon: FileCheck,
+        active: true,
+        dataTour: 'sertifika'
+    },
+    {
         name: 'İş İzin Formu',
         href: '/panel/is-izin-formu',
         icon: FileCheck,
@@ -130,6 +137,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const [archiveFileCount, setArchiveFileCount] = useState<number | null>(null);
     const [showNotifications, setShowNotifications] = useState(false);
     const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
+    const [notificationPage, setNotificationPage] = useState(0); // 0 = ilk sayfa, 1 = sonraki sayfa
 
     const isAdmin = session?.user?.email === ADMIN_EMAIL;
 
@@ -186,6 +194,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     // Bildirim verileri
     const today = new Date();
     const notifications = [
+        {
+            id: 'isg-sertifika',
+            title: 'İSG Sertifikası Oluşturucu Eklendi!',
+            description: 'Profesyonel İSG eğitim sertifikaları oluşturabilir, katılımcı listesi ekleyebilir ve PDF olarak indirebilirsiniz.',
+            date: new Date(today)
+        },
         {
             id: 'ucretsiz-ilan-ver',
             title: 'Ücretsiz İş İlanı Verin!',
@@ -937,64 +951,95 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                         </div>
 
                         {/* Bildirim Listesi */}
-                        <div className="overflow-y-auto max-h-[calc(80vh-80px)]">
+                        <div className="overflow-y-auto max-h-[calc(80vh-120px)]">
                             {notifications.length === 0 ? (
                                 <div className={`p-8 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                     <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
                                     <p>Henüz bildirim yok</p>
                                 </div>
                             ) : (
-                                <div className="divide-y divide-slate-200 dark:divide-white/10">
-                                    {notifications.map((notification) => {
-                                        const isRead = readNotificationIds.has(notification.id);
-                                        return (
-                                            <div
-                                                key={notification.id}
-                                                onClick={() => markAsRead(notification.id)}
-                                                className={`p-4 cursor-pointer transition-colors ${isRead
-                                                    ? isDark
-                                                        ? 'bg-slate-800/50 hover:bg-slate-800'
-                                                        : 'bg-slate-50 hover:bg-slate-100'
-                                                    : isDark
-                                                        ? 'bg-blue-500/10 hover:bg-blue-500/15 border-l-4 border-blue-500'
-                                                        : 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500'
-                                                    }`}
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div className={`mt-1 flex-shrink-0 ${isRead
-                                                        ? isDark ? 'text-slate-500' : 'text-slate-400'
-                                                        : isDark ? 'text-blue-400' : 'text-blue-600'
-                                                        }`}>
-                                                        <Info className="w-5 h-5" />
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-start justify-between gap-2 mb-1">
-                                                            <h4 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                                                {notification.title}
-                                                            </h4>
-                                                            {!isRead && (
-                                                                <span className={`flex-shrink-0 w-2 h-2 rounded-full ${isDark
-                                                                    ? 'bg-blue-400'
-                                                                    : 'bg-blue-500'
-                                                                    }`} />
-                                                            )}
+                                <>
+                                    <div className="divide-y divide-slate-200 dark:divide-white/10">
+                                        {notifications.slice(notificationPage * 4, (notificationPage + 1) * 4).map((notification) => {
+                                            const isRead = readNotificationIds.has(notification.id);
+                                            return (
+                                                <div
+                                                    key={notification.id}
+                                                    onClick={() => markAsRead(notification.id)}
+                                                    className={`p-4 cursor-pointer transition-colors ${isRead
+                                                        ? isDark
+                                                            ? 'bg-slate-800/50 hover:bg-slate-800'
+                                                            : 'bg-slate-50 hover:bg-slate-100'
+                                                        : isDark
+                                                            ? 'bg-blue-500/10 hover:bg-blue-500/15 border-l-4 border-blue-500'
+                                                            : 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-500'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`mt-1 flex-shrink-0 ${isRead
+                                                            ? isDark ? 'text-slate-500' : 'text-slate-400'
+                                                            : isDark ? 'text-blue-400' : 'text-blue-600'
+                                                            }`}>
+                                                            <Info className="w-5 h-5" />
                                                         </div>
-                                                        <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                                                            {notification.description}
-                                                        </p>
-                                                        <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                                            {notification.date.toLocaleDateString('tr-TR', {
-                                                                day: 'numeric',
-                                                                month: 'long',
-                                                                year: 'numeric'
-                                                            })}
-                                                        </p>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between gap-2 mb-1">
+                                                                <h4 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                                    {notification.title}
+                                                                </h4>
+                                                                {!isRead && (
+                                                                    <span className={`flex-shrink-0 w-2 h-2 rounded-full ${isDark
+                                                                        ? 'bg-blue-400'
+                                                                        : 'bg-blue-500'
+                                                                        }`} />
+                                                                )}
+                                                            </div>
+                                                            <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                                {notification.description}
+                                                            </p>
+                                                            <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                {notification.date.toLocaleDateString('tr-TR', {
+                                                                    day: 'numeric',
+                                                                    month: 'long',
+                                                                    year: 'numeric'
+                                                                })}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Sayfalama */}
+                                    {notifications.length > 4 && (
+                                        <div className={`flex items-center justify-between px-4 py-3 border-t ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+                                            <button
+                                                onClick={() => setNotificationPage(p => Math.max(0, p - 1))}
+                                                disabled={notificationPage === 0}
+                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isDark
+                                                        ? 'bg-slate-700 text-white hover:bg-slate-600'
+                                                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                    }`}
+                                            >
+                                                ← Önceki
+                                            </button>
+                                            <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                {notificationPage + 1} / {Math.ceil(notifications.length / 4)}
+                                            </span>
+                                            <button
+                                                onClick={() => setNotificationPage(p => Math.min(Math.ceil(notifications.length / 4) - 1, p + 1))}
+                                                disabled={notificationPage >= Math.ceil(notifications.length / 4) - 1}
+                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isDark
+                                                        ? 'bg-slate-700 text-white hover:bg-slate-600'
+                                                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                    }`}
+                                            >
+                                                Sonraki →
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

@@ -57,6 +57,18 @@ const TOUR_STEPS: TourStep[] = [
         position: 'right'
     },
     {
+        target: '[data-tour="egitim-katilim"]',
+        title: '📋 Eğitim Katılım Formu',
+        description: 'Profesyonel eğitim katılım formu oluşturun, katılımcıları Excel ile ekleyin ve PDF olarak indirin.',
+        position: 'right'
+    },
+    {
+        target: '[data-tour="sertifika"]',
+        title: '🏆 İSG Sertifikası Oluştur',
+        description: 'İSG temel eğitim sertifikaları oluşturun. Katılımcı listesi, sertifika numarası ve PDF çıktısı alın.',
+        position: 'right'
+    },
+    {
         target: '[data-tour="is-izin"]',
         title: '📋 İş İzin Formu',
         description: 'Tehlikeli işler için iş izin formu oluşturun ve PDF olarak indirin.',
