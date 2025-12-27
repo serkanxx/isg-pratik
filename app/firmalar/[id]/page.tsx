@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -8,10 +8,11 @@ import {
     Building2, ArrowLeft, MapPin, Phone, FileText, Edit2,
     Calendar, Shield, Users, Navigation, ExternalLink,
     BarChart3, TrendingUp, Clock, AlertTriangle, StickyNote,
-    Plus, Check, Trash2, X
+    Plus, Check, Trash2, X, Info, UserPlus, GraduationCap, Upload, FileSpreadsheet, Loader2
 } from 'lucide-react';
 import { Company, DANGER_CLASS_LABELS, DangerClass } from '../../types';
 import { useTheme } from '@/app/context/ThemeContext';
+import * as XLSX from 'xlsx';
 
 // Not tipi
 interface Note {
@@ -20,6 +21,19 @@ interface Note {
     companyId: string | null;
     dueDate: string | null;
     isCompleted: boolean;
+    createdAt: string;
+}
+
+// Çalışan tipi
+interface Employee {
+    id: string;
+    companyId: string;
+    userId: string;
+    fullName: string;
+    tcNo: string | null;
+    position: string | null;
+    trainingDate: string | null;
+    trainingTopic: string | null;
     createdAt: string;
 }
 
@@ -50,6 +64,154 @@ export default function FirmaDetayPage() {
     const [dueDateYear, setDueDateYear] = useState('');
     const [showNoteForm, setShowNoteForm] = useState(false);
 
+    // Çalışanlar state
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+    const [newEmployee, setNewEmployee] = useState({ fullName: '', tcNo: '', position: '' });
+    const [employeeSaving, setEmployeeSaving] = useState(false);
+
+    // Toplu yükleme state
+    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+    const [bulkUploadData, setBulkUploadData] = useState<Array<{ fullName: string; tcNo: string; position: string; isValid: boolean; error?: string }>>([]);
+    const [bulkUploading, setBulkUploading] = useState(false);
+    const bulkFileInputRef = useRef<HTMLInputElement>(null);
+
+    // Excel şablon indirme
+    const downloadEmployeeTemplate = () => {
+        const ws = XLSX.utils.aoa_to_sheet([
+            ['Ad Soyad', 'T.C. No', 'Görev Ünvanı'],
+            ['ÖRNEK ÇALIŞAN 1', '12345678900', 'İşçi'],
+            ['ÖRNEK ÇALIŞAN 2', '98765432100', 'Formen'],
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Çalışanlar');
+        XLSX.writeFile(wb, 'Calisan_Sablonu.xlsx');
+    };
+
+    // Excel dosyası işleme
+    const handleBulkExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
+
+                const parsedEmployees: Array<{ fullName: string; tcNo: string; position: string; isValid: boolean; error?: string }> = [];
+
+                jsonData.forEach((row: Record<string, unknown>) => {
+                    // Esnek sütun isimleri
+                    const fullName = (row['Ad Soyad'] || row['Adı Soyadı'] || row['İsim Soyisim'] || row['Ad Soyadı'] || row['İsim'])?.toString().trim() || '';
+                    const tcNo = (row['T.C. No'] || row['TC No'] || row['TC'] || row['T.C.'] || row['TC Kimlik No'])?.toString().trim() || '';
+                    const position = (row['Görev Ünvanı'] || row['Görev Ünvan'] || row['Görev'] || row['Ünvan'] || row['Pozisyon'])?.toString().trim() || '';
+
+                    if (!fullName) return; // Boş satırları atla
+
+                    // TC doğrulaması
+                    let isValid = true;
+                    let error: string | undefined;
+
+                    if (tcNo && !validateTC(tcNo)) {
+                        isValid = false;
+                        error = 'Geçersiz TC No';
+                    }
+
+                    parsedEmployees.push({
+                        fullName: toUpperCaseTurkish(fullName),
+                        tcNo,
+                        position,
+                        isValid,
+                        error
+                    });
+                });
+
+                if (parsedEmployees.length === 0) {
+                    showEmployeeNotification('Excel dosyasında geçerli veri bulunamadı!', 'error');
+                    return;
+                }
+
+                setBulkUploadData(parsedEmployees);
+                setShowBulkUploadModal(true);
+            } catch (error) {
+                console.error('Excel parse error:', error);
+                showEmployeeNotification('Excel dosyası okunamadı!', 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+
+        // Input'u sıfırla
+        if (bulkFileInputRef.current) {
+            bulkFileInputRef.current.value = '';
+        }
+    };
+
+    // Toplu çalışan ekleme
+    const handleBulkEmployeeUpload = async () => {
+        const validEmployees = bulkUploadData.filter(e => e.isValid);
+        if (validEmployees.length === 0) {
+            showEmployeeNotification('Geçerli çalışan bulunamadı!', 'error');
+            return;
+        }
+
+        setBulkUploading(true);
+        let addedCount = 0;
+        let duplicateCount = 0;
+
+        // Mevcut çalışanların TC numaralarını al
+        const existingTcNumbers = employees.map(e => e.tcNo).filter(Boolean);
+
+        try {
+            for (const emp of validEmployees) {
+                // Aynı TC numarası varsa atla
+                if (emp.tcNo && existingTcNumbers.includes(emp.tcNo)) {
+                    duplicateCount++;
+                    continue;
+                }
+
+                const res = await fetch('/api/employees', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        companyId,
+                        fullName: emp.fullName,
+                        tcNo: emp.tcNo || null,
+                        position: emp.position || null
+                    })
+                });
+                if (res.ok) {
+                    const addedEmployee = await res.json();
+                    setEmployees(prev => [addedEmployee, ...prev]);
+                    // Yeni eklenen çalışanın TC'sini listeye ekle (sonraki döngülerde tekrar eklenmemesi için)
+                    if (addedEmployee.tcNo) {
+                        existingTcNumbers.push(addedEmployee.tcNo);
+                    }
+                    addedCount++;
+                }
+            }
+
+            // Bildirim mesajı oluştur
+            let message = `${addedCount} çalışan başarıyla eklendi!`;
+            if (duplicateCount > 0) {
+                message += ` (${duplicateCount} aynı TC No kullanan çalışan eklenmedi)`;
+            }
+            showEmployeeNotification(message, addedCount > 0 ? 'success' : 'error');
+
+            setShowBulkUploadModal(false);
+            setBulkUploadData([]);
+        } catch (error) {
+            console.error('Toplu yükleme hatası:', error);
+            showEmployeeNotification('Toplu yükleme sırasında hata oluştu!', 'error');
+        } finally {
+            setBulkUploading(false);
+        }
+    };
+
     // Dropdown değerleri
     const days = Array.from({ length: 31 }, (_, i) => i + 1);
     const months = [
@@ -68,8 +230,142 @@ export default function FirmaDetayPage() {
             fetchCompany();
             fetchReports();
             fetchNotes();
+            fetchEmployees();
         }
     }, [companyId]);
+
+    // Çalışanları getir
+    const fetchEmployees = async () => {
+        try {
+            const res = await fetch(`/api/employees?company_id=${companyId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setEmployees(data);
+            }
+        } catch (error) {
+            console.error('Çalışanlar alınamadı:', error);
+        }
+    };
+
+    // Türkçe karakterleri büyük harfe çeviren fonksiyon
+    const toUpperCaseTurkish = (str: string) => {
+        return str
+            .replace(/i/g, 'İ')
+            .replace(/ı/g, 'I')
+            .replace(/ğ/g, 'Ğ')
+            .replace(/ü/g, 'Ü')
+            .replace(/ş/g, 'Ş')
+            .replace(/ö/g, 'Ö')
+            .replace(/ç/g, 'Ç')
+            .toUpperCase();
+    };
+
+    // TC No doğrulama fonksiyonu
+    const validateTC = (tc: string): boolean => {
+        const tcRegex = /^[0-9]{11}$/;
+        if (!tcRegex.test(tc)) return false;
+        const lastDigit = parseInt(tc[10]);
+        return lastDigit % 2 === 0;
+    };
+
+    // Çalışan bildirim state
+    const [employeeNotification, setEmployeeNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+    const showEmployeeNotification = (message: string, type: 'success' | 'error') => {
+        setEmployeeNotification({ show: true, message, type });
+        setTimeout(() => setEmployeeNotification({ show: false, message: '', type: 'success' }), 5000);
+    };
+
+    // Çalışan ekle
+    const handleAddEmployee = async () => {
+        if (!newEmployee.fullName.trim()) {
+            showEmployeeNotification('Lütfen ad soyad girin!', 'error');
+            return;
+        }
+
+        // TC No validasyonu (eğer girilmişse)
+        if (newEmployee.tcNo && !validateTC(newEmployee.tcNo)) {
+            showEmployeeNotification('Geçersiz TC No! (11 haneli ve son hane çift olmalı)', 'error');
+            return;
+        }
+
+        // Aynı TC numarası kontrolü
+        if (newEmployee.tcNo && employees.some(e => e.tcNo === newEmployee.tcNo)) {
+            showEmployeeNotification('Bu TC No ile kayıtlı çalışan zaten mevcut!', 'error');
+            return;
+        }
+
+        setEmployeeSaving(true);
+        try {
+            const res = await fetch('/api/employees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    companyId,
+                    fullName: toUpperCaseTurkish(newEmployee.fullName.trim()),
+                    tcNo: newEmployee.tcNo || null,
+                    position: newEmployee.position || null
+                })
+            });
+            if (res.ok) {
+                const addedEmployee = await res.json();
+                // Optimistic UI: Yeni çalışanı hemen state'e ekle
+                setEmployees(prev => [addedEmployee, ...prev]);
+                setNewEmployee({ fullName: '', tcNo: '', position: '' });
+                setShowEmployeeForm(false);
+                showEmployeeNotification('Çalışan eklendi!', 'success');
+            }
+        } catch (error) {
+            console.error('Çalışan eklenemedi:', error);
+            showEmployeeNotification('Çalışan eklenirken hata oluştu!', 'error');
+        } finally {
+            setEmployeeSaving(false);
+        }
+    };
+
+    // Çalışan sil (Optimistic UI)
+    const handleDeleteEmployee = async (id: string) => {
+        if (!confirm('Bu çalışanı silmek istediğinize emin misiniz?')) return;
+
+        // Optimistic UI: Hemen listeden kaldır
+        setEmployees(prev => prev.filter(e => e.id !== id));
+
+        try {
+            const res = await fetch(`/api/employees?id=${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                // Başarısızsa geri yükle
+                fetchEmployees();
+                showEmployeeNotification('Çalışan silinemedi!', 'error');
+            }
+        } catch (error) {
+            console.error('Çalışan silinemedi:', error);
+            fetchEmployees();
+            showEmployeeNotification('Çalışan silinemedi!', 'error');
+        }
+    };
+
+    // Tümünü sil modal state
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+    const [deletingAll, setDeletingAll] = useState(false);
+
+    // Tüm çalışanları sil
+    const handleDeleteAllEmployees = async () => {
+        setDeletingAll(true);
+        try {
+            for (const emp of employees) {
+                await fetch(`/api/employees?id=${emp.id}`, { method: 'DELETE' });
+            }
+            setEmployees([]);
+            setShowDeleteAllModal(false);
+            showEmployeeNotification('Tüm çalışanlar silindi!', 'success');
+        } catch (error) {
+            console.error('Çalışanlar silinemedi:', error);
+            showEmployeeNotification('Silme sırasında hata oluştu!', 'error');
+            fetchEmployees();
+        } finally {
+            setDeletingAll(false);
+        }
+    };
 
     const fetchCompany = async () => {
         try {
@@ -326,6 +622,180 @@ export default function FirmaDetayPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Çalışanlar Kartı */}
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} rounded-2xl border p-6 shadow-sm`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                <UserPlus className="w-5 h-5 text-emerald-600" />
+                                Çalışanlar
+                                <span className={`text-sm font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    ({employees.length})
+                                </span>
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                {/* Tümünü Sil Butonu */}
+                                {employees.length > 0 && (
+                                    <button
+                                        onClick={() => setShowDeleteAllModal(true)}
+                                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-red-900/30' : 'text-red-500 hover:bg-red-50'}`}
+                                        title="Tümünü Sil"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                )}
+                                {/* Toplu Yükleme Butonu */}
+                                <button
+                                    onClick={() => setShowBulkUploadModal(true)}
+                                    className={`p-2 rounded-lg transition-colors ${isDark ? 'text-blue-400 hover:bg-blue-900/30' : 'text-blue-600 hover:bg-blue-50'}`}
+                                    title="Excel ile Toplu Yükle"
+                                >
+                                    <Upload className="w-5 h-5" />
+                                </button>
+                                {/* Tek Ekleme Butonu */}
+                                <button
+                                    onClick={() => setShowEmployeeForm(!showEmployeeForm)}
+                                    className={`p-2 rounded-lg transition-colors ${isDark ? 'text-emerald-400 hover:bg-emerald-900/30' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                                >
+                                    {showEmployeeForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                                </button>
+                            </div>
+                            {/* Hidden File Input */}
+                            <input
+                                type="file"
+                                ref={bulkFileInputRef}
+                                onChange={handleBulkExcelUpload}
+                                accept=".xlsx,.xls"
+                                className="hidden"
+                            />
+                        </div>
+
+                        {/* Global Bildirim (Toplu yükleme için) */}
+                        {employeeNotification.show && !showEmployeeForm && (
+                            <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${employeeNotification.type === 'error' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                                {employeeNotification.message}
+                            </div>
+                        )}
+
+                        {/* Çalışan Ekleme Formu */}
+                        {showEmployeeForm && (
+                            <div className={`mb-4 p-4 rounded-xl ${isDark ? 'bg-emerald-900/20 border border-emerald-900/30' : 'bg-emerald-50 border border-emerald-200'}`}>
+                                {/* Bildirim */}
+                                {employeeNotification.show && (
+                                    <div className={`mb-3 p-2 rounded-lg text-sm font-medium ${employeeNotification.type === 'error' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                                        {employeeNotification.message}
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Ad Soyad *"
+                                        value={newEmployee.fullName}
+                                        onChange={(e) => setNewEmployee({ ...newEmployee, fullName: e.target.value })}
+                                        className={`p-2 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="TC No (11 haneli)"
+                                        maxLength={11}
+                                        value={newEmployee.tcNo}
+                                        onChange={(e) => setNewEmployee({ ...newEmployee, tcNo: e.target.value.replace(/[^0-9]/g, '') })}
+                                        className={`p-2 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Görev"
+                                        value={newEmployee.position}
+                                        onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
+                                        className={`p-2 rounded-lg border text-sm ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`}
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleAddEmployee}
+                                    disabled={employeeSaving || !newEmployee.fullName.trim()}
+                                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                >
+                                    {employeeSaving ? 'Ekleniyor...' : 'Çalışan Ekle'}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Çalışan Listesi */}
+                        {employees.length === 0 ? (
+                            <div className={`text-center py-8 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                <UserPlus className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                                <p>Henüz çalışan eklenmemiş</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className={`border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                                            <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ad Soyad</th>
+                                            <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>TC No</th>
+                                            <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Görev</th>
+                                            <th className={`text-center py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Eğitim Durumu</th>
+                                            <th className={`text-right py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>İşlem</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {employees.map((emp) => (
+                                            <tr key={emp.id} className={`border-b ${isDark ? 'border-slate-800/50 hover:bg-slate-800/30' : 'border-slate-100 hover:bg-slate-50'}`}>
+                                                <td className={`py-2 px-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{emp.fullName}</td>
+                                                <td className={`py-2 px-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{emp.tcNo || '-'}</td>
+                                                <td className={`py-2 px-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{emp.position || '-'}</td>
+                                                <td className="py-2 px-2 text-center">
+                                                    {emp.trainingDate ? (
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <Check className="w-4 h-4 text-emerald-500" />
+                                                            <div className="relative group">
+                                                                <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                                                                <div className={`absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${isDark ? 'bg-slate-800 text-white' : 'bg-slate-700 text-white'}`}>
+                                                                    <div className="font-medium">{emp.trainingTopic || 'Eğitim'}</div>
+                                                                    <div className="text-slate-300">{formatDate(emp.trainingDate)}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className={`text-xs ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>-</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 px-2 text-right">
+                                                    <button
+                                                        onClick={() => handleDeleteEmployee(emp.id)}
+                                                        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-red-900/30' : 'text-red-500 hover:bg-red-50'}`}
+                                                        title="Sil"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {/* Eğitim/Sertifika Butonları */}
+                        {employees.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                                <Link
+                                    href={`/egitim-katilim?company=${companyId}`}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+                                >
+                                    <GraduationCap className="w-4 h-4" />
+                                    Eğitim Katılım Formu
+                                </Link>
+                                <Link
+                                    href={`/sertifika?company=${companyId}`}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-purple-900/30 text-purple-400 hover:bg-purple-900/50' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    Sertifika Oluştur
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
                     {/* Risk Değerlendirme Ekibi */}
@@ -616,6 +1086,144 @@ export default function FirmaDetayPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Toplu Yükleme Modal */}
+            {showBulkUploadModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} rounded-2xl border shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden`}>
+                        {/* Modal Header */}
+                        <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                Toplu Çalışan Yükleme
+                            </h3>
+                            <button
+                                onClick={() => { setShowBulkUploadModal(false); setBulkUploadData([]); }}
+                                className={`p-1 rounded-lg ${isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-4 overflow-y-auto max-h-[50vh]">
+                            {/* Şablon ve Yükleme Butonları */}
+                            <div className={`mb-4 p-4 rounded-xl ${isDark ? 'bg-slate-800/50 border border-slate-700' : 'bg-slate-50 border border-slate-200'}`}>
+                                <p className={`text-sm mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                    Excel dosyası ile toplu çalışan ekleyebilirsiniz. Önce şablonu indirip doldurun, ardından yükleyin.
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={downloadEmployeeTemplate}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${isDark ? 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+                                    >
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                        Şablon İndir
+                                    </button>
+                                    <button
+                                        onClick={() => bulkFileInputRef.current?.click()}
+                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors"
+                                    >
+                                        <Upload className="w-4 h-4" />
+                                        Excel Yükle
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Önizleme Tablosu */}
+                            {bulkUploadData.length > 0 && (
+                                <div className="overflow-x-auto">
+                                    <p className={`text-sm font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                        {bulkUploadData.length} kişi bulundu ({bulkUploadData.filter(e => e.isValid).length} geçerli)
+                                    </p>
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className={`border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                                                <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>#</th>
+                                                <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ad Soyad</th>
+                                                <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>TC No</th>
+                                                <th className={`text-left py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Görev</th>
+                                                <th className={`text-center py-2 px-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Durum</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {bulkUploadData.map((emp, idx) => (
+                                                <tr key={idx} className={`border-b ${isDark ? 'border-slate-800/50' : 'border-slate-100'} ${!emp.isValid ? (isDark ? 'bg-red-900/10' : 'bg-red-50') : ''}`}>
+                                                    <td className={`py-2 px-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{idx + 1}</td>
+                                                    <td className={`py-2 px-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{emp.fullName}</td>
+                                                    <td className={`py-2 px-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{emp.tcNo || '-'}</td>
+                                                    <td className={`py-2 px-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{emp.position || '-'}</td>
+                                                    <td className="py-2 px-2 text-center">
+                                                        {emp.isValid ? (
+                                                            <Check className="w-4 h-4 text-emerald-500 mx-auto" />
+                                                        ) : (
+                                                            <span className="text-xs text-red-500 font-medium">{emp.error}</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className={`flex items-center justify-end gap-3 p-4 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+                            <button
+                                onClick={() => { setShowBulkUploadModal(false); setBulkUploadData([]); }}
+                                className={`px-4 py-2 rounded-lg font-bold ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={handleBulkEmployeeUpload}
+                                disabled={bulkUploading || bulkUploadData.filter(e => e.isValid).length === 0}
+                                className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {bulkUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                {bulkUploading ? 'Yükleniyor...' : `${bulkUploadData.filter(e => e.isValid).length} Çalışan Ekle`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tümünü Sil Onay Modal */}
+            {showDeleteAllModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} rounded-2xl border shadow-2xl max-w-md w-full`}>
+                        <div className="p-6 text-center">
+                            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${isDark ? 'bg-red-900/30' : 'bg-red-100'}`}>
+                                <Trash2 className={`w-8 h-8 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+                            </div>
+                            <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                Tüm Çalışanları Sil
+                            </h3>
+                            <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                <strong>{employees.length}</strong> çalışanı silmek istediğinize emin misiniz?
+                                <br />Bu işlem geri alınamaz!
+                            </p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={() => setShowDeleteAllModal(false)}
+                                    disabled={deletingAll}
+                                    className={`px-4 py-2 rounded-lg font-bold ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={handleDeleteAllEmployees}
+                                    disabled={deletingAll}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {deletingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                    {deletingAll ? 'Siliniyor...' : 'Evet, Tümünü Sil'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

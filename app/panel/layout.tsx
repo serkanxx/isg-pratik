@@ -195,46 +195,52 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const today = new Date();
     const notifications = [
         {
+            id: 'calisan-yonetimi',
+            title: 'Firmalara Çalışan Ekleme',
+            description: 'Firmalarım sayfasından firmalara çalışan ekleyebilir, bu çalışanları eğitim ve sertifika işlemlerinde hızlıca kullanabilirsiniz.',
+            date: new Date('2025-12-27')
+        },
+        {
             id: 'isg-sertifika',
             title: 'İSG Sertifikası Oluşturucu Eklendi!',
             description: 'Profesyonel İSG eğitim sertifikaları oluşturabilir, katılımcı listesi ekleyebilir ve PDF olarak indirebilirsiniz.',
-            date: new Date(today)
+            date: new Date('2025-12-26')
         },
         {
             id: 'ucretsiz-ilan-ver',
             title: 'Ücretsiz İş İlanı Verin!',
             description: 'İSG iş ilanları bölümünden ücretsiz ilan yayınlayabilirsiniz. İş arayanlar ve işverenler için ideal platform!',
-            date: new Date(today)
+            date: new Date('2025-12-25')
         },
         {
             id: 'acil-durum-word',
             title: 'Acil Durum Eylem Planı - Word Desteği',
             description: 'Acil Durum Eylem Planı raporunu artık ister PDF, ister Word dosyası formatında alabilirsiniz!',
-            date: new Date(today)
+            date: new Date('2025-12-24')
         },
         {
             id: 'egitim-katilim',
             title: 'Eğitim Katılım Formu Hazırla',
             description: 'Saniyeler içinde profesyonel Eğitim Katılım Formu oluşturun ve PDF olarak indirin.',
-            date: new Date(today)
+            date: new Date('2025-12-22')
         },
         {
             id: 'is-ilanlari',
             title: 'İSG İş İlanları Eklendi',
             description: 'İSG iş ilanları bölümü eklendi, iş arayanlar ve işverenler için platform oluşturuldu.',
-            date: new Date(today)
+            date: new Date('2025-12-20')
         },
         {
             id: 'mobil-iyilestirme',
             title: 'Mobil Görünümde İyileştirmeler Yapıldı',
             description: 'Mobil cihazlarda daha iyi bir deneyim için arayüz iyileştirmeleri yapıldı.',
-            date: new Date(today)
+            date: new Date('2025-12-18')
         },
         {
             id: 'dosya-arsivi',
             title: 'İSG Dev Dosya Arşivi Eklendi',
             description: 'Kapsamlı İSG dosya arşivi eklendi, binlerce dokümana kolayca erişebilirsiniz.',
-            date: new Date(today)
+            date: new Date('2025-12-15')
         }
     ];
 

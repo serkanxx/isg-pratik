@@ -544,7 +544,7 @@ export default function LandingPage() {
                     </div>
                     <div className="bg-slate-800/50 rounded-2xl p-6 border border-white/5">
                       <div className="text-4xl font-black text-purple-400 mb-2">0₺</div>
-                      <div className="text-sm text-slate-400">Başlangıç Ücreti</div>
+                      <div className="text-sm text-slate-400">Tamamen Ücretsiz</div>
                     </div>
                   </div>
 

@@ -95,6 +95,95 @@ export default function EgitimKatilimPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
+    // Firma çalışanları state
+    const [companyEmployees, setCompanyEmployees] = useState<Array<{ id: string; fullName: string; tcNo: string | null; position: string | null }>>([]);
+    const [employeesLoading, setEmployeesLoading] = useState(false);
+
+    // Firma seçildiğinde çalışanları çek
+    useEffect(() => {
+        if (selectedCompanyId && selectedCompanyId !== 'manual') {
+            fetchCompanyEmployees(selectedCompanyId);
+        } else {
+            setCompanyEmployees([]);
+        }
+    }, [selectedCompanyId]);
+
+    const fetchCompanyEmployees = async (companyId: string) => {
+        setEmployeesLoading(true);
+        try {
+            const res = await fetch(`/api/employees?company_id=${companyId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCompanyEmployees(data);
+            }
+        } catch (error) {
+            console.error('Çalışanlar alınamadı:', error);
+        } finally {
+            setEmployeesLoading(false);
+        }
+    };
+
+    // TC No doğrulama fonksiyonu
+    const validateTC = (tc: string): boolean => {
+        const tcRegex = /^[0-9]{11}$/;
+        if (!tcRegex.test(tc)) return false;
+        const lastDigit = parseInt(tc[10]);
+        return lastDigit % 2 === 0;
+    };
+
+    // Çalışanı katılımcı listesine ekle
+    const addEmployeeToParticipants = (employeeId: string) => {
+        const emp = companyEmployees.find(e => e.id === employeeId);
+        if (!emp) return;
+
+        // Aynı çalışan zaten eklenmişse ekleme
+        const alreadyExists = participants.some(p => p.tc === emp.tcNo);
+        if (alreadyExists) {
+            showNotification('Bu çalışan zaten listede!', 'error');
+            return;
+        }
+
+        // TC kontrolü
+        if (!emp.tcNo || !validateTC(emp.tcNo)) {
+            showNotification('Çalışanın TC No geçersiz!', 'error');
+            return;
+        }
+
+        setParticipants([...participants, {
+            id: Date.now().toString(),
+            name: emp.fullName,
+            tc: emp.tcNo,
+            position: emp.position || ''
+        }]);
+    };
+
+    // Tüm çalışanları katılımcı listesine ekle
+    const addAllEmployeesToParticipants = () => {
+        let addedCount = 0;
+        const newParticipants: Array<{ id: string; name: string; tc: string; position: string }> = [];
+
+        companyEmployees.forEach(emp => {
+            if (!emp.tcNo || !validateTC(emp.tcNo)) return;
+            const alreadyExists = participants.some(p => p.tc === emp.tcNo);
+            if (alreadyExists) return;
+
+            newParticipants.push({
+                id: Date.now().toString() + addedCount,
+                name: emp.fullName,
+                tc: emp.tcNo,
+                position: emp.position || ''
+            });
+            addedCount++;
+        });
+
+        if (addedCount > 0) {
+            setParticipants([...participants, ...newParticipants]);
+            showNotification(`${addedCount} çalışan eklendi!`, 'success');
+        } else {
+            showNotification('Eklenebilecek çalışan bulunamadı!', 'error');
+        }
+    };
+
     // Mobile accordion state for category subtopics - tracks which categories are expanded per day
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
@@ -709,6 +798,37 @@ export default function EgitimKatilimPage() {
                                 <User className="w-5 h-5 text-indigo-500" />
                                 Katılımcı Listesi ({participants.length})
                             </h3>
+
+                            {/* Firmadan Çalışan Seçme */}
+                            {companyEmployees.length > 0 && (
+                                <div className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                                    <p className="text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-2">Firmadan Çalışan Ekle</p>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <select
+                                            onChange={(e) => {
+                                                if (e.target.value) {
+                                                    addEmployeeToParticipants(e.target.value);
+                                                    e.target.value = '';
+                                                }
+                                            }}
+                                            className="flex-1 bg-white dark:bg-slate-800 border border-indigo-300 dark:border-indigo-700 rounded-lg p-2.5 text-sm text-black dark:text-slate-100"
+                                        >
+                                            <option value="">Çalışan Seçin ({companyEmployees.length} kişi)</option>
+                                            {companyEmployees.map(emp => (
+                                                <option key={emp.id} value={emp.id}>
+                                                    {emp.fullName} {emp.position ? `- ${emp.position}` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            onClick={addAllEmployeesToParticipants}
+                                            className="px-2 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-bold hover:bg-indigo-700 transition-colors"
+                                        >
+                                            Tümünü Ekle
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Add Participant Form */}
                             <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 mb-6">

@@ -288,3 +288,21 @@ model UserJobPosting {
   @@index([status, createdAt])
   @@map("user_job_postings")
 }
+
+// Firma Çalışanları
+model CompanyEmployee {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId     String    @map("company_id")
+  userId        String    @map("user_id")
+  fullName      String    @map("full_name")
+  tcNo          String?   @map("tc_no")
+  position      String?
+  trainingDate  DateTime? @map("training_date") @db.Timestamptz
+  trainingTopic String?   @map("training_topic")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("company_employees")
+}

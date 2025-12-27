@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys, apiFetchers } from '@/lib/queries';
@@ -105,6 +105,89 @@ export default function SertifikaPage() {
 
     // Excel file input ref
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Firma çalışanları state
+    const [companyEmployees, setCompanyEmployees] = useState<Array<{ id: string; fullName: string; tcNo: string | null; position: string | null }>>([]);
+    const [employeesLoading, setEmployeesLoading] = useState(false);
+
+    // Firma seçildiğinde çalışanları çek
+    useEffect(() => {
+        if (selectedCompanyId && selectedCompanyId !== 'manual') {
+            fetchCompanyEmployees(selectedCompanyId);
+        } else {
+            setCompanyEmployees([]);
+        }
+    }, [selectedCompanyId]);
+
+    const fetchCompanyEmployees = async (companyId: string) => {
+        setEmployeesLoading(true);
+        try {
+            const res = await fetch(`/api/employees?company_id=${companyId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCompanyEmployees(data);
+            }
+        } catch (error) {
+            console.error('Çalışanlar alınamadı:', error);
+        } finally {
+            setEmployeesLoading(false);
+        }
+    };
+
+    // Çalışanı katılımcı listesine ekle
+    const addEmployeeToParticipants = (employeeId: string) => {
+        const emp = companyEmployees.find(e => e.id === employeeId);
+        if (!emp) return;
+
+        // Aynı çalışan zaten eklenmişse ekleme
+        const alreadyExists = participants.some(p => p.tc === emp.tcNo);
+        if (alreadyExists) {
+            showNotification('Bu çalışan zaten listede!', 'error');
+            return;
+        }
+
+        // TC kontrolü
+        if (!emp.tcNo || !validateTC(emp.tcNo)) {
+            showNotification('Çalışanın TC No geçersiz!', 'error');
+            return;
+        }
+
+        setParticipants([...participants, {
+            id: Date.now().toString(),
+            name: emp.fullName,
+            tc: emp.tcNo,
+            position: emp.position || '',
+            certNo: ''
+        }]);
+    };
+
+    // Tüm çalışanları katılımcı listesine ekle
+    const addAllEmployeesToParticipants = () => {
+        let addedCount = 0;
+        const newParticipants: Array<{ id: string; name: string; tc: string; position: string; certNo: string }> = [];
+
+        companyEmployees.forEach(emp => {
+            if (!emp.tcNo || !validateTC(emp.tcNo)) return;
+            const alreadyExists = participants.some(p => p.tc === emp.tcNo);
+            if (alreadyExists) return;
+
+            newParticipants.push({
+                id: Date.now().toString() + addedCount,
+                name: emp.fullName,
+                tc: emp.tcNo,
+                position: emp.position || '',
+                certNo: ''
+            });
+            addedCount++;
+        });
+
+        if (addedCount > 0) {
+            setParticipants([...participants, ...newParticipants]);
+            showNotification(`${addedCount} çalışan eklendi!`, 'success');
+        } else {
+            showNotification('Eklenebilecek çalışan bulunamadı!', 'error');
+        }
+    };
 
     // Excel şablon indirme
     const downloadExcelTemplate = () => {
@@ -391,6 +474,44 @@ export default function SertifikaPage() {
         return `${validityDate.day}.${validityDate.month}.${validityDate.year}`;
     };
 
+    // Çalışan eğitim durumunu güncelle (TC No ile eşleştir)
+    const updateEmployeeTrainingStatus = async (tcNo: string, trainingDateStr: string, trainingTopic: string) => {
+        try {
+            // Önce bu TC ile eşleşen çalışanı bul
+            if (!selectedCompanyId || selectedCompanyId === 'manual') return;
+
+            const employees = await fetch(`/api/employees?company_id=${selectedCompanyId}`);
+            if (!employees.ok) return;
+
+            const empList = await employees.json();
+            const matchingEmployee = empList.find((e: { tcNo: string }) => e.tcNo === tcNo);
+
+            if (matchingEmployee) {
+                // Eğitim tarihini parse et (gün.ay.yıl formatından)
+                const dateParts = trainingDateStr.split('.');
+                if (dateParts.length >= 3) {
+                    const day = dateParts[0].split('-')[0]; // İlk günü al
+                    const month = dateParts[1];
+                    const year = dateParts[2];
+                    const trainingDate = new Date(`${year}-${month}-${day}`);
+
+                    // Çalışanın eğitim durumunu güncelle
+                    await fetch('/api/employees', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: matchingEmployee.id,
+                            trainingDate: trainingDate.toISOString(),
+                            trainingTopic: trainingTopic
+                        })
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Eğitim durumu güncellenemedi:', error);
+        }
+    };
+
     // PDF Generation
     const generatePDF = async () => {
         // Giriş kontrolü
@@ -621,6 +742,10 @@ export default function SertifikaPage() {
                 const fileName = `${participantNameUpper} İSG Sertifikası.pdf`;
                 doc.save(fileName);
 
+                // Çalışan eğitim durumunu güncelle (firmadan eklenen çalışanlar için)
+                const trainingDateStr = getFormattedTrainingDates();
+                await updateEmployeeTrainingStatus(participant.tc, trainingDateStr, 'İSG Temel Eğitimi');
+
                 // Birden fazla dosya indirirken tarayıcının engellemesini önlemek için küçük gecikme
                 if (participants.length > 1) {
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -840,6 +965,37 @@ export default function SertifikaPage() {
                                     </button>
                                 )}
                             </div>
+
+                            {/* Firmadan Çalışan Seçme */}
+                            {companyEmployees.length > 0 && (
+                                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                                    <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-2">Firmadan Çalışan Ekle</p>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <select
+                                            onChange={(e) => {
+                                                if (e.target.value) {
+                                                    addEmployeeToParticipants(e.target.value);
+                                                    e.target.value = '';
+                                                }
+                                            }}
+                                            className="flex-1 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-700 rounded-lg p-2.5 text-sm text-black dark:text-slate-100"
+                                        >
+                                            <option value="">Çalışan Seçin ({companyEmployees.length} kişi)</option>
+                                            {companyEmployees.map(emp => (
+                                                <option key={emp.id} value={emp.id}>
+                                                    {emp.fullName} {emp.position ? `- ${emp.position}` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            onClick={addAllEmployeesToParticipants}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors whitespace-nowrap"
+                                        >
+                                            Tümünü Ekle
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Katılımcı Ekleme Formu */}
                             <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
