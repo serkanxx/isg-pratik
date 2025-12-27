@@ -15,6 +15,7 @@ import { jsPDF } from 'jspdf';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import * as XLSX from 'xlsx';
+import { DownloadAdModal } from '@/components/ads';
 
 const MONTHS = [
     { value: '01', label: 'Ocak' },
@@ -102,6 +103,10 @@ export default function SertifikaPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    // Reklam modal state'i
+    const [showAdModal, setShowAdModal] = useState(false);
+    const [adModalFileName, setAdModalFileName] = useState('');
 
     // Excel file input ref
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -753,6 +758,10 @@ export default function SertifikaPage() {
             }
 
             showNotification(`${participants.length} sertifika PDF'i başarıyla oluşturuldu!`, 'success');
+
+            // Reklam modalını göster
+            setAdModalFileName(`${participants.length} İSG Sertifikası`);
+            setShowAdModal(true);
         } catch (error) {
             console.error('PDF error:', error);
             showNotification('PDF oluşturulurken bir hata oluştu!', 'error');
@@ -763,6 +772,16 @@ export default function SertifikaPage() {
 
     return (
         <div className="sertifika-page min-h-screen bg-white dark:bg-slate-950 p-4 md:p-8 transition-colors duration-300 text-black dark:text-slate-100">
+            {/* Reklam Modal */}
+            <DownloadAdModal
+                isOpen={showAdModal}
+                onClose={() => setShowAdModal(false)}
+                downloadType="PDF"
+                fileName={adModalFileName}
+                showPlaceholder={true}
+                autoCloseDelay={4000}
+            />
+
             <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* Header */}

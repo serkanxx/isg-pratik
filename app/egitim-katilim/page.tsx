@@ -15,6 +15,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { DownloadAdModal } from '@/components/ads';
 
 // Eğitim Konuları
 const TRAINING_SUBJECTS = {
@@ -94,6 +95,10 @@ export default function EgitimKatilimPage() {
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+
+    // Reklam modal state'i
+    const [showAdModal, setShowAdModal] = useState(false);
+    const [adModalFileName, setAdModalFileName] = useState('');
 
     // Firma çalışanları state
     const [companyEmployees, setCompanyEmployees] = useState<Array<{ id: string; fullName: string; tcNo: string | null; position: string | null }>>([]);
@@ -560,6 +565,10 @@ export default function EgitimKatilimPage() {
 
             doc.save(`${selectedCompany.title.split(' ')[0]}_Egitim_Katilim_Formu.pdf`);
             showNotification('PDF başarıyla oluşturuldu!', 'success');
+
+            // Reklam modalını göster
+            setAdModalFileName(`${selectedCompany.title.split(' ')[0]}_Egitim_Katilim_Formu.pdf`);
+            setShowAdModal(true);
         } catch (error) {
             console.error('PDF error:', error);
             showNotification('PDF oluşturulurken bir hata oluştu!', 'error');
@@ -570,6 +579,16 @@ export default function EgitimKatilimPage() {
 
     return (
         <div className="egitim-katilim-page min-h-screen bg-white dark:bg-slate-950 p-4 md:p-8 transition-colors duration-300 text-black dark:text-slate-100">
+            {/* Reklam Modal */}
+            <DownloadAdModal
+                isOpen={showAdModal}
+                onClose={() => setShowAdModal(false)}
+                downloadType="PDF"
+                fileName={adModalFileName}
+                showPlaceholder={true}
+                autoCloseDelay={4000}
+            />
+
             <div className="max-w-6xl mx-auto space-y-6">
 
                 {/* Header */}

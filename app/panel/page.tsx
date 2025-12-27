@@ -15,6 +15,7 @@ import {
 import { Company } from '../types';
 import { useTheme } from '@/app/context/ThemeContext';
 import * as XLSX from 'xlsx';
+import { AdCard } from '@/components/ads';
 
 interface Note {
     id: string;
@@ -1153,7 +1154,8 @@ export default function PanelPage() {
                             </div>
                         </div>
                     </div>
-                )}
+                )
+                }
 
                 {/* Rapor İstatistikleri Grafiği */}
                 <div className="xl:col-span-1 bg-white rounded-xl p-5 border border-slate-200 relative overflow-hidden h-full max-h-[310px] self-start flex flex-col">
@@ -1381,6 +1383,11 @@ export default function PanelPage() {
                 </div>
             </div>
 
+            {/* Reklam Kartı - Notlarım Bölümünden Sonra */}
+            <div className="mb-6">
+                <AdCard showPlaceholder={true} className="max-w-md" />
+            </div>
+
             {/* Son Firmalar ve Son Alınan Raporlar - Yan Yana */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Son Firmalar */}
@@ -1395,56 +1402,58 @@ export default function PanelPage() {
                         </Link>
                     </div>
 
-                    {loading ? (
-                        <div className="p-6 text-center text-slate-500">
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-500 border-t-transparent mx-auto mb-2"></div>
-                            <p className="text-xs">Yükleniyor...</p>
-                        </div>
-                    ) : companies.length === 0 ? (
-                        <div className="p-6 text-center">
-                            <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                            <p className="text-xs text-slate-500 mb-3">Henüz firma eklemediniz</p>
-                            <Link
-                                href="/firmalar?new=true"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
-                            >
-                                <Plus className="w-3 h-3" />
-                                İlk Firmayı Ekle
-                            </Link>
-                        </div>
-                    ) : (
-                        <ul className="divide-y divide-slate-100">
-                            {companies.slice(0, 5).map((company) => (
-                                <li key={company.id}>
-                                    <Link
-                                        href={`/firmalar?edit=${company.id}`}
-                                        className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
-                                            {company.title.charAt(0)}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm text-slate-800 truncate">{company.title}</p>
-                                            <p className="text-xs text-slate-500 truncate">{company.address || 'Adres girilmemiş'}</p>
-                                        </div>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${company.danger_class === 'az_tehlikeli'
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : company.danger_class === 'tehlikeli'
-                                                ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-red-100 text-red-700'
-                                            }`}>
-                                            {company.danger_class === 'az_tehlikeli'
-                                                ? 'Az Tehlikeli'
+                    {
+                        loading ? (
+                            <div className="p-6 text-center text-slate-500">
+                                <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-500 border-t-transparent mx-auto mb-2"></div>
+                                <p className="text-xs">Yükleniyor...</p>
+                            </div>
+                        ) : companies.length === 0 ? (
+                            <div className="p-6 text-center">
+                                <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                                <p className="text-xs text-slate-500 mb-3">Henüz firma eklemediniz</p>
+                                <Link
+                                    href="/firmalar?new=true"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
+                                >
+                                    <Plus className="w-3 h-3" />
+                                    İlk Firmayı Ekle
+                                </Link>
+                            </div>
+                        ) : (
+                            <ul className="divide-y divide-slate-100">
+                                {companies.slice(0, 5).map((company) => (
+                                    <li key={company.id}>
+                                        <Link
+                                            href={`/firmalar?edit=${company.id}`}
+                                            className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors"
+                                        >
+                                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
+                                                {company.title.charAt(0)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-sm text-slate-800 truncate">{company.title}</p>
+                                                <p className="text-xs text-slate-500 truncate">{company.address || 'Adres girilmemiş'}</p>
+                                            </div>
+                                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${company.danger_class === 'az_tehlikeli'
+                                                ? 'bg-emerald-100 text-emerald-700'
                                                 : company.danger_class === 'tehlikeli'
-                                                    ? 'Tehlikeli'
-                                                    : 'Çok Tehlikeli'}
-                                        </span>
-                                        <ChevronRight className="w-3 h-3 text-slate-400" />
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                {company.danger_class === 'az_tehlikeli'
+                                                    ? 'Az Tehlikeli'
+                                                    : company.danger_class === 'tehlikeli'
+                                                        ? 'Tehlikeli'
+                                                        : 'Çok Tehlikeli'}
+                                            </span>
+                                            <ChevronRight className="w-3 h-3 text-slate-400" />
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )
+                    }
                 </div>
 
                 {/* Son Alınan Raporlar */}
@@ -1459,110 +1468,112 @@ export default function PanelPage() {
                         </Link>
                     </div>
 
-                    {loading ? (
-                        <div className="p-6 text-center text-slate-500">
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-500 border-t-transparent mx-auto mb-2"></div>
-                            <p className="text-xs">Yükleniyor...</p>
-                        </div>
-                    ) : recentReports.length === 0 ? (
-                        <div className="p-6 text-center">
-                            <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                            <p className="text-xs text-slate-500 mb-3">Henüz rapor oluşturmadınız</p>
-                            <div className="flex justify-center gap-2">
-                                <Link href="/risk-degerlendirme" className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
-                                    Risk Analizi
-                                </Link>
-                                <Link href="/acil-durum" className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition-colors">
-                                    Acil Durum
-                                </Link>
+                    {
+                        loading ? (
+                            <div className="p-6 text-center text-slate-500">
+                                <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-500 border-t-transparent mx-auto mb-2"></div>
+                                <p className="text-xs">Yükleniyor...</p>
                             </div>
-                        </div>
-                    ) : (
-                        <ul className="divide-y divide-slate-100">
-                            {recentReports.map((report) => {
-                                let companyName = report.title;
-                                let dangerClass = '';
-                                let reportDate = '-';
+                        ) : recentReports.length === 0 ? (
+                            <div className="p-6 text-center">
+                                <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                                <p className="text-xs text-slate-500 mb-3">Henüz rapor oluşturmadınız</p>
+                                <div className="flex justify-center gap-2">
+                                    <Link href="/risk-degerlendirme" className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
+                                        Risk Analizi
+                                    </Link>
+                                    <Link href="/acil-durum" className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition-colors">
+                                        Acil Durum
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <ul className="divide-y divide-slate-100">
+                                {recentReports.map((report) => {
+                                    let companyName = report.title;
+                                    let dangerClass = '';
+                                    let reportDate = '-';
 
-                                try {
-                                    if (report.type === 'RISK_ASSESSMENT') {
-                                        dangerClass = report.data?.headerInfo?.dangerClass || report.data?.company?.danger_class || '';
-                                        reportDate = report.data?.headerInfo?.date || '-';
-                                    } else if (report.type === 'WORK_PERMIT') {
-                                        companyName = report.data?.companyName || report.title;
-                                        reportDate = report.createdAt || '-';
-                                    } else {
-                                        dangerClass = report.data?.company?.danger_class || report.data?.dangerClass || '';
-                                        reportDate = report.data?.date || report.data?.reportDate || '-';
-                                    }
-                                } catch (e) { }
-
-                                let dangerClassLabel = dangerClass;
-                                let dangerClassStyle = 'bg-slate-100 text-slate-600';
-
-                                if (dangerClass) {
-                                    const normalized = dangerClass.toLowerCase().replace(/ /g, '_');
-                                    if (normalized.includes('az')) { dangerClassLabel = 'Az Tehlikeli'; dangerClassStyle = 'bg-emerald-100 text-emerald-700'; }
-                                    else if (normalized.includes('cok') || normalized.includes('çok')) { dangerClassLabel = 'Çok Tehlikeli'; dangerClassStyle = 'bg-red-100 text-red-700'; }
-                                    else if (normalized.includes('tehlikeli')) { dangerClassLabel = 'Tehlikeli'; dangerClassStyle = 'bg-amber-100 text-amber-700'; }
-                                }
-
-                                if (reportDate !== '-') {
                                     try {
-                                        const d = new Date(reportDate);
-                                        if (!isNaN(d.getTime())) {
-                                            reportDate = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                        if (report.type === 'RISK_ASSESSMENT') {
+                                            dangerClass = report.data?.headerInfo?.dangerClass || report.data?.company?.danger_class || '';
+                                            reportDate = report.data?.headerInfo?.date || '-';
+                                        } else if (report.type === 'WORK_PERMIT') {
+                                            companyName = report.data?.companyName || report.title;
+                                            reportDate = report.createdAt || '-';
+                                        } else {
+                                            dangerClass = report.data?.company?.danger_class || report.data?.dangerClass || '';
+                                            reportDate = report.data?.date || report.data?.reportDate || '-';
                                         }
                                     } catch (e) { }
-                                }
 
-                                return (
-                                    <li key={report.id}>
-                                        <div className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${report.type === 'RISK_ASSESSMENT'
-                                                ? 'bg-indigo-100 text-indigo-600'
-                                                : report.type === 'WORK_PERMIT'
-                                                    ? 'bg-blue-100 text-blue-600'
-                                                    : 'bg-orange-100 text-orange-600'
-                                                }`}>
-                                                {report.type === 'RISK_ASSESSMENT'
-                                                    ? <Shield className="w-4 h-4" />
+                                    let dangerClassLabel = dangerClass;
+                                    let dangerClassStyle = 'bg-slate-100 text-slate-600';
+
+                                    if (dangerClass) {
+                                        const normalized = dangerClass.toLowerCase().replace(/ /g, '_');
+                                        if (normalized.includes('az')) { dangerClassLabel = 'Az Tehlikeli'; dangerClassStyle = 'bg-emerald-100 text-emerald-700'; }
+                                        else if (normalized.includes('cok') || normalized.includes('çok')) { dangerClassLabel = 'Çok Tehlikeli'; dangerClassStyle = 'bg-red-100 text-red-700'; }
+                                        else if (normalized.includes('tehlikeli')) { dangerClassLabel = 'Tehlikeli'; dangerClassStyle = 'bg-amber-100 text-amber-700'; }
+                                    }
+
+                                    if (reportDate !== '-') {
+                                        try {
+                                            const d = new Date(reportDate);
+                                            if (!isNaN(d.getTime())) {
+                                                reportDate = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+                                            }
+                                        } catch (e) { }
+                                    }
+
+                                    return (
+                                        <li key={report.id}>
+                                            <div className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${report.type === 'RISK_ASSESSMENT'
+                                                    ? 'bg-indigo-100 text-indigo-600'
                                                     : report.type === 'WORK_PERMIT'
-                                                        ? <FileText className="w-4 h-4" />
-                                                        : <AlertTriangle className="w-4 h-4" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-sm text-slate-800 truncate">{companyName}</p>
-                                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                    <span>{
-                                                        report.type === 'RISK_ASSESSMENT'
-                                                            ? 'Risk Analizi'
-                                                            : report.type === 'WORK_PERMIT'
-                                                                ? 'İş İzin Formu'
-                                                                : 'Acil Durum Planı'
-                                                    }</span>
-                                                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                                    <span>{reportDate}</span>
+                                                        ? 'bg-blue-100 text-blue-600'
+                                                        : 'bg-orange-100 text-orange-600'
+                                                    }`}>
+                                                    {report.type === 'RISK_ASSESSMENT'
+                                                        ? <Shield className="w-4 h-4" />
+                                                        : report.type === 'WORK_PERMIT'
+                                                            ? <FileText className="w-4 h-4" />
+                                                            : <AlertTriangle className="w-4 h-4" />}
                                                 </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm text-slate-800 truncate">{companyName}</p>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                        <span>{
+                                                            report.type === 'RISK_ASSESSMENT'
+                                                                ? 'Risk Analizi'
+                                                                : report.type === 'WORK_PERMIT'
+                                                                    ? 'İş İzin Formu'
+                                                                    : 'Acil Durum Planı'
+                                                        }</span>
+                                                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                        <span>{reportDate}</span>
+                                                    </div>
+                                                </div>
+                                                {report.type === 'WORK_PERMIT' ? (
+                                                    <span className="text-xs px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap bg-blue-100 text-blue-700 hidden sm:inline-block">
+                                                        {(report.data as any)?.permitNo || 'İzin'}
+                                                    </span>
+                                                ) : dangerClass && (
+                                                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap hidden sm:inline-block ${dangerClassStyle}`}>
+                                                        {dangerClassLabel}
+                                                    </span>
+                                                )}
+                                                <Link href={report.type === 'RISK_ASSESSMENT' ? `/risk-degerlendirme?reportId=${report.id}` : '/raporlarim'} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors">
+                                                    <ChevronRight className="w-3 h-3 text-slate-400" />
+                                                </Link>
                                             </div>
-                                            {report.type === 'WORK_PERMIT' ? (
-                                                <span className="text-xs px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap bg-blue-100 text-blue-700 hidden sm:inline-block">
-                                                    {(report.data as any)?.permitNo || 'İzin'}
-                                                </span>
-                                            ) : dangerClass && (
-                                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold whitespace-nowrap hidden sm:inline-block ${dangerClassStyle}`}>
-                                                    {dangerClassLabel}
-                                                </span>
-                                            )}
-                                            <Link href={report.type === 'RISK_ASSESSMENT' ? `/risk-degerlendirme?reportId=${report.id}` : '/raporlarim'} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors">
-                                                <ChevronRight className="w-3 h-3 text-slate-400" />
-                                            </Link>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )
+                    }
                 </div>
             </div>
 
@@ -1578,242 +1589,248 @@ export default function PanelPage() {
                     </Link>
                 </div>
 
-                {loading ? (
-                    <div className="p-8 text-center text-slate-500">
-                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500 border-t-transparent mx-auto mb-3"></div>
-                        Yükleniyor...
-                    </div>
-                ) : userRisks.length === 0 ? (
-                    <div className="p-8 text-center">
-                        <Shield className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-500 mb-4">Henüz risk maddesi eklemediniz</p>
-                        <Link
-                            href="/panel/risk-maddelerim"
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            İlk Risk Maddesini Ekle
-                        </Link>
-                    </div>
-                ) : (
-                    <ul className="divide-y divide-slate-100">
-                        {userRisks.slice(0, 5).map((risk) => (
-                            <li key={risk.id}>
-                                <Link
-                                    href="/panel/risk-maddelerim"
-                                    className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
-                                >
-                                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">
-                                        {risk.risk_no}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-slate-800 truncate">{risk.hazard}</p>
-                                        <p className="text-sm text-slate-500 truncate">{risk.risk}</p>
-                                    </div>
-                                    <span className={`text-xs px-2 py-1 rounded-full font-bold ${risk.status === 'approved'
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : risk.status === 'rejected'
-                                            ? 'bg-red-100 text-red-700'
-                                            : 'bg-amber-100 text-amber-700'
-                                        }`}>
-                                        {risk.status === 'approved' ? 'Onaylandı' : risk.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}
-                                    </span>
-                                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                )}
+                {
+                    loading ? (
+                        <div className="p-8 text-center text-slate-500">
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-500 border-t-transparent mx-auto mb-3"></div>
+                            Yükleniyor...
+                        </div>
+                    ) : userRisks.length === 0 ? (
+                        <div className="p-8 text-center">
+                            <Shield className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                            <p className="text-slate-500 mb-4">Henüz risk maddesi eklemediniz</p>
+                            <Link
+                                href="/panel/risk-maddelerim"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                İlk Risk Maddesini Ekle
+                            </Link>
+                        </div>
+                    ) : (
+                        <ul className="divide-y divide-slate-100">
+                            {userRisks.slice(0, 5).map((risk) => (
+                                <li key={risk.id}>
+                                    <Link
+                                        href="/panel/risk-maddelerim"
+                                        className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs">
+                                            {risk.risk_no}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-slate-800 truncate">{risk.hazard}</p>
+                                            <p className="text-sm text-slate-500 truncate">{risk.risk}</p>
+                                        </div>
+                                        <span className={`text-xs px-2 py-1 rounded-full font-bold ${risk.status === 'approved'
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : risk.status === 'rejected'
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-amber-100 text-amber-700'
+                                            }`}>
+                                            {risk.status === 'approved' ? 'Onaylandı' : risk.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}
+                                        </span>
+                                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )
+                }
             </div>
 
             {/* Yorumlar Modal */}
-            {showJobComments && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
-                            <h2 className="text-lg font-bold text-blue-800">💬 Bekleyen İş İlanı Yorumları</h2>
-                            <button
-                                onClick={() => setShowJobComments(false)}
-                                className="p-2 hover:bg-blue-100 rounded text-blue-700"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
+            {
+                showJobComments && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
+                                <h2 className="text-lg font-bold text-blue-800">💬 Bekleyen İş İlanı Yorumları</h2>
+                                <button
+                                    onClick={() => setShowJobComments(false)}
+                                    className="p-2 hover:bg-blue-100 rounded text-blue-700"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
 
-                        <div className="p-4 overflow-y-auto max-h-[60vh]">
-                            {loadingComments ? (
-                                <div className="text-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
-                                    <p className="text-gray-500">Yükleniyor...</p>
-                                </div>
-                            ) : pendingComments.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-gray-500">Bekleyen yorum yok.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {pendingComments.map((comment) => (
-                                        <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
-                                                            {comment.id.substring(0, 8)}...
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {new Date(comment.createdAt).toLocaleString('tr-TR')}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mb-2">
-                                                        <p className="text-xs text-gray-600 mb-1">
-                                                            <strong>Kullanıcı:</strong> {comment.user.name || 'Bilinmiyor'} ({comment.user.email})
-                                                        </p>
-                                                        <p className="text-xs text-gray-600">
-                                                            <strong>Anonim:</strong> {comment.isAnonymous ? 'Evet' : 'Hayır'}
-                                                        </p>
-                                                    </div>
-                                                    <p className="font-bold text-gray-800 mb-2">{comment.content}</p>
-                                                    <div className="text-xs text-gray-500 bg-white p-2 rounded border">
-                                                        <strong>İlan:</strong> {comment.jobPosting.content.substring(0, 100)}...
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-col gap-2 ml-4">
-                                                    <button
-                                                        onClick={() => handleApproveComment(comment.id)}
-                                                        className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
-                                                    >
-                                                        <Check className="w-3 h-3 mr-1" /> Onayla
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRejectComment(comment.id)}
-                                                        className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
-                                                    >
-                                                        <X className="w-3 h-3 mr-1" /> Reddet
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* İlan Onay Modal */}
-            {showJobPostingApproval && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className={`rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
-                        <div className={`p-4 border-b flex justify-between items-center ${isDark ? 'border-slate-700 bg-emerald-900/20' : 'border-slate-200 bg-emerald-50'}`}>
-                            <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
-                                📋 Kullanıcı İlan Onayları
-                                {pendingJobPostingsCount > 0 && (
-                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${isDark ? 'bg-emerald-500 text-white' : 'bg-emerald-600 text-white'}`}>
-                                        {pendingJobPostingsCount} bekleyen
-                                    </span>
-                                )}
-                            </h2>
-                            <button
-                                onClick={() => { setShowJobPostingApproval(false); setEditingJobPosting(null); }}
-                                className={`p-2 rounded transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-emerald-100 text-emerald-700'}`}
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-4 overflow-y-auto max-h-[70vh]">
-                            {loadingJobPostings ? (
-                                <div className="text-center py-8">
-                                    <RefreshCw className={`w-8 h-8 animate-spin mx-auto mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`} />
-                                    <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>Yükleniyor...</p>
-                                </div>
-                            ) : pendingJobPostings.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bekleyen ilan yok.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {pendingJobPostings.map((posting) => (
-                                        <div key={posting.id} className={`border rounded-lg p-4 ${isDark ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-slate-50'}`}>
-                                            {editingJobPosting?.id === posting.id ? (
-                                                // Düzenleme Modu
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className={`text-xs font-bold block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>İlan İçeriği</label>
-                                                        <textarea
-                                                            rows={6}
-                                                            className={`w-full border rounded p-3 text-sm ${isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
-                                                            value={editedJobContent}
-                                                            onChange={e => setEditedJobContent(e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div className="flex gap-2 justify-end">
-                                                        <button
-                                                            onClick={() => setEditingJobPosting(null)}
-                                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${isDark ? 'bg-slate-600 text-white hover:bg-slate-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
-                                                        >
-                                                            İptal
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleApproveJobPosting(posting.id, editedJobContent)}
-                                                            className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700"
-                                                        >
-                                                            <Check className="w-4 h-4 inline mr-1" /> Onayla ve Yayınla
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                // Görüntüleme Modu
-                                                <>
-                                                    <div className="flex items-start justify-between mb-3">
-                                                        <div>
-                                                            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                                <span className="font-bold">Gönderen:</span> {posting.user?.name || posting.user?.email || 'Anonim'}
+                            <div className="p-4 overflow-y-auto max-h-[60vh]">
+                                {loadingComments ? (
+                                    <div className="text-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
+                                        <p className="text-gray-500">Yükleniyor...</p>
+                                    </div>
+                                ) : pendingComments.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">Bekleyen yorum yok.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingComments.map((comment) => (
+                                            <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="text-xs font-mono bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+                                                                {comment.id.substring(0, 8)}...
+                                                            </span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {new Date(comment.createdAt).toLocaleString('tr-TR')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mb-2">
+                                                            <p className="text-xs text-gray-600 mb-1">
+                                                                <strong>Kullanıcı:</strong> {comment.user.name || 'Bilinmiyor'} ({comment.user.email})
                                                             </p>
-                                                            <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                                <span className="font-bold">Tarih:</span> {new Date(posting.createdAt).toLocaleString('tr-TR')}
+                                                            <p className="text-xs text-gray-600">
+                                                                <strong>Anonim:</strong> {comment.isAnonymous ? 'Evet' : 'Hayır'}
                                                             </p>
                                                         </div>
+                                                        <p className="font-bold text-gray-800 mb-2">{comment.content}</p>
+                                                        <div className="text-xs text-gray-500 bg-white p-2 rounded border">
+                                                            <strong>İlan:</strong> {comment.jobPosting.content.substring(0, 100)}...
+                                                        </div>
                                                     </div>
-                                                    <div className={`p-3 rounded-lg mb-3 whitespace-pre-wrap text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-slate-700 border border-slate-200'}`}>
-                                                        {posting.content}
-                                                    </div>
-                                                    <div className="flex gap-2 justify-end">
+                                                    <div className="flex flex-col gap-2 ml-4">
                                                         <button
-                                                            onClick={() => {
-                                                                setEditingJobPosting(posting);
-                                                                setEditedJobContent(posting.content);
-                                                            }}
-                                                            className={`px-3 py-2 rounded-lg text-sm font-medium ${isDark ? 'bg-slate-600 text-white hover:bg-slate-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                                                            onClick={() => handleApproveComment(comment.id)}
+                                                            className="px-3 py-1.5 bg-green-600 text-white rounded font-bold text-xs hover:bg-green-700 flex items-center"
                                                         >
-                                                            <Edit2 className="w-4 h-4 inline mr-1" /> Düzenle
+                                                            <Check className="w-3 h-3 mr-1" /> Onayla
                                                         </button>
                                                         <button
-                                                            onClick={() => handleApproveJobPosting(posting.id)}
-                                                            className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700"
+                                                            onClick={() => handleRejectComment(comment.id)}
+                                                            className="px-3 py-1.5 bg-red-600 text-white rounded font-bold text-xs hover:bg-red-700 flex items-center"
                                                         >
-                                                            <Check className="w-4 h-4 inline mr-1" /> Onayla
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleRejectJobPosting(posting.id)}
-                                                            className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700"
-                                                        >
-                                                            <X className="w-4 h-4 inline mr-1" /> Reddet
+                                                            <X className="w-3 h-3 mr-1" /> Reddet
                                                         </button>
                                                     </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </div >
+            {/* İlan Onay Modal */}
+            {
+                showJobPostingApproval && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className={`rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                            <div className={`p-4 border-b flex justify-between items-center ${isDark ? 'border-slate-700 bg-emerald-900/20' : 'border-slate-200 bg-emerald-50'}`}>
+                                <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
+                                    📋 Kullanıcı İlan Onayları
+                                    {pendingJobPostingsCount > 0 && (
+                                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${isDark ? 'bg-emerald-500 text-white' : 'bg-emerald-600 text-white'}`}>
+                                            {pendingJobPostingsCount} bekleyen
+                                        </span>
+                                    )}
+                                </h2>
+                                <button
+                                    onClick={() => { setShowJobPostingApproval(false); setEditingJobPosting(null); }}
+                                    className={`p-2 rounded transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-emerald-100 text-emerald-700'}`}
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-4 overflow-y-auto max-h-[70vh]">
+                                {loadingJobPostings ? (
+                                    <div className="text-center py-8">
+                                        <RefreshCw className={`w-8 h-8 animate-spin mx-auto mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                                        <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>Yükleniyor...</p>
+                                    </div>
+                                ) : pendingJobPostings.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bekleyen ilan yok.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {pendingJobPostings.map((posting) => (
+                                            <div key={posting.id} className={`border rounded-lg p-4 ${isDark ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-slate-50'}`}>
+                                                {editingJobPosting?.id === posting.id ? (
+                                                    // Düzenleme Modu
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className={`text-xs font-bold block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>İlan İçeriği</label>
+                                                            <textarea
+                                                                rows={6}
+                                                                className={`w-full border rounded p-3 text-sm ${isDark ? 'bg-slate-800 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                                                value={editedJobContent}
+                                                                onChange={e => setEditedJobContent(e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2 justify-end">
+                                                            <button
+                                                                onClick={() => setEditingJobPosting(null)}
+                                                                className={`px-3 py-2 rounded-lg text-sm font-medium ${isDark ? 'bg-slate-600 text-white hover:bg-slate-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                                                            >
+                                                                İptal
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleApproveJobPosting(posting.id, editedJobContent)}
+                                                                className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700"
+                                                            >
+                                                                <Check className="w-4 h-4 inline mr-1" /> Onayla ve Yayınla
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Görüntüleme Modu
+                                                    <>
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                    <span className="font-bold">Gönderen:</span> {posting.user?.name || posting.user?.email || 'Anonim'}
+                                                                </p>
+                                                                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                    <span className="font-bold">Tarih:</span> {new Date(posting.createdAt).toLocaleString('tr-TR')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`p-3 rounded-lg mb-3 whitespace-pre-wrap text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                                                            {posting.content}
+                                                        </div>
+                                                        <div className="flex gap-2 justify-end">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingJobPosting(posting);
+                                                                    setEditedJobContent(posting.content);
+                                                                }}
+                                                                className={`px-3 py-2 rounded-lg text-sm font-medium ${isDark ? 'bg-slate-600 text-white hover:bg-slate-500' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}`}
+                                                            >
+                                                                <Edit2 className="w-4 h-4 inline mr-1" /> Düzenle
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleApproveJobPosting(posting.id)}
+                                                                className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700"
+                                                            >
+                                                                <Check className="w-4 h-4 inline mr-1" /> Onayla
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRejectJobPosting(posting.id)}
+                                                                className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700"
+                                                            >
+                                                                <X className="w-4 h-4 inline mr-1" /> Reddet
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+        </div>
     );
 }
 

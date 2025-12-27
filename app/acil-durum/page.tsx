@@ -11,6 +11,7 @@ import { queryKeys } from '@/lib/queries';
 import { Company, VALIDITY_YEARS, DANGER_CLASS_LABELS } from '@/app/types';
 import { formatDate } from '@/app/utils';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { DownloadAdModal } from '@/components/ads';
 
 export default function AcilDurumPage() {
     const { data: session, status } = useSession();
@@ -45,6 +46,11 @@ export default function AcilDurumPage() {
     const [bulkDownloadPDF, setBulkDownloadPDF] = useState<boolean>(true);
     const [bulkDownloadWord, setBulkDownloadWord] = useState<boolean>(false);
     const [generatingType, setGeneratingType] = useState<'pdf' | 'word'>('pdf');
+
+    // Reklam modal state'i
+    const [showAdModal, setShowAdModal] = useState<boolean>(false);
+    const [adModalType, setAdModalType] = useState<'PDF' | 'Word'>('PDF');
+    const [adModalFileName, setAdModalFileName] = useState<string>('');
 
     // Tümünü seç/seçimi kaldır
     const toggleSelectAllCompanies = () => {
@@ -507,6 +513,11 @@ export default function AcilDurumPage() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
 
+            // Reklam modalını göster
+            setAdModalType('PDF');
+            setAdModalFileName(`${safeFilename} - Acil Durum Eylem Planı.pdf`);
+            setShowAdModal(true);
+
             showNotification('PDF başarıyla indirildi!', 'success');
 
             // Raporu veritabanına kaydet (Arka planda)
@@ -650,6 +661,11 @@ export default function AcilDurumPage() {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
 
+            // Reklam modalını göster
+            setAdModalType('Word');
+            setAdModalFileName(`${safeFilename} - Acil Durum Eylem Planı.docx`);
+            setShowAdModal(true);
+
             showNotification('Word dosyası başarıyla indirildi!', 'success');
 
         } catch (error: any) {
@@ -666,6 +682,15 @@ export default function AcilDurumPage() {
 
     return (
         <div className="space-y-8">
+            {/* Reklam Modal */}
+            <DownloadAdModal
+                isOpen={showAdModal}
+                onClose={() => setShowAdModal(false)}
+                downloadType={adModalType}
+                fileName={adModalFileName}
+                showPlaceholder={true}
+                autoCloseDelay={4000}
+            />
 
             {notification.show && (
                 <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-2xl z-[100] flex items-center animate-bounce-in ${notification.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>

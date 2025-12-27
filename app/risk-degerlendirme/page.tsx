@@ -15,6 +15,7 @@ import { SECTOR_SUGGESTIONS } from '../data/constants';
 import { useTheme } from '@/app/context/ThemeContext';
 import MobileRiskTour from '@/components/MobileRiskTour';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { DownloadAdModal } from '@/components/ads';
 
 // --- 1. RİSK KÜTÜPHANESİ ---
 // --- 1. RİSK KÜTÜPHANESİ ---
@@ -169,6 +170,10 @@ function RiskAssessmentContent() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0); // Progress bar için (0-100)
+
+  // Reklam modal state'i
+  const [showAdModal, setShowAdModal] = useState(false);
+  const [adModalFileName, setAdModalFileName] = useState('');
 
   // --- LOCAL STORAGE ---
   useEffect(() => {
@@ -2518,6 +2523,10 @@ function RiskAssessmentContent() {
       doc.save(filename);
       setProgress(100); // PDF kaydedildi
       showNotification('PDF başarıyla indirildi!', 'success');
+
+      // Reklam modalını göster
+      setAdModalFileName(filename);
+      setShowAdModal(true);
     } catch (error: any) {
       console.error('PDF hatası:', error);
       showNotification('PDF oluşturulurken hata oluştu: ' + (error.message || 'Bilinmeyen hata'), 'error');
@@ -2564,6 +2573,16 @@ function RiskAssessmentContent() {
         onComplete={() => { }}
         isSidebarOpen={isMobileSidebarOpen}
         onSidebarOpen={() => setIsMobileSidebarOpen(true)}
+      />
+
+      {/* Reklam Modal */}
+      <DownloadAdModal
+        isOpen={showAdModal}
+        onClose={() => setShowAdModal(false)}
+        downloadType="PDF"
+        fileName={adModalFileName}
+        showPlaceholder={true}
+        autoCloseDelay={4000}
       />
 
       {notification.show && (
