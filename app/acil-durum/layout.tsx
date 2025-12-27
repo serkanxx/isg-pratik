@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import PanelLayout from '@/app/panel/layout';
 
 export const metadata: Metadata = {
     title: 'Acil Durum Eylem Planı Oluştur | İSG Pratik',
@@ -7,11 +8,11 @@ export const metadata: Metadata = {
     openGraph: {
         title: 'Acil Durum Eylem Planı Oluştur | İSG Pratik',
         description: 'Ücretsiz Acil Durum Eylem Planı oluşturun. Firma bilgilerinizi girin, profesyonel PDF ve Word raporunuzu hemen indirin.',
-        url: 'https://www.isgpratik.com/panel/acil-durum',
+        url: 'https://www.isgpratik.com/acil-durum',
         type: 'website',
     },
     alternates: {
-        canonical: 'https://www.isgpratik.com/panel/acil-durum',
+        canonical: 'https://www.isgpratik.com/acil-durum',
     },
 };
 
@@ -20,5 +21,5 @@ export default function AcilDurumLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return children;
+    return <PanelLayout>{children}</PanelLayout>;
 }

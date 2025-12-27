@@ -26,5 +26,22 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/panel/:path*', '/admin/:path*', '/login', '/register'],
+    matcher: [
+        '/panel/:path*',
+        '/admin/:path*',
+        '/login',
+        '/register',
+        // Yeni root-level sayfalar
+        '/firmalar/:path*',
+        '/risk-maddelerim/:path*',
+        '/raporlarim/:path*',
+        '/notlarim/:path*',
+        '/acil-durum/:path*',
+        '/egitim-katilim/:path*',
+        '/sertifika/:path*',
+        '/is-izin-formu/:path*',
+        '/ziyaret-programi/:path*',
+        '/nace-kod/:path*',
+        '/arsiv/:path*',
+    ],
 };

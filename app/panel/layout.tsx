@@ -19,28 +19,28 @@ import OnboardingTour, { useTourStatus } from '@/components/OnboardingTour';
 const menuItems = [
     {
         name: 'Firmalarım',
-        href: '/panel/firmalar',
+        href: '/firmalar',
         icon: Building2,
         active: true,
         dataTour: 'firmalar'
     },
     {
         name: 'Risklerim',
-        href: '/panel/risk-maddelerim',
+        href: '/risk-maddelerim',
         icon: Shield,
         active: true,
         dataTour: 'risklerim'
     },
     {
         name: 'Raporlarım',
-        href: '/panel/raporlarim',
+        href: '/raporlarim',
         icon: FileText,
         active: true,
         dataTour: 'raporlarim'
     },
     {
         name: 'Notlarım',
-        href: '/panel/notlarim',
+        href: '/notlarim',
         icon: StickyNote,
         active: true,
         dataTour: 'notlarim'
@@ -57,42 +57,42 @@ const menuItems = [
     },
     {
         name: 'Acil Durum Eylem Planı',
-        href: '/panel/acil-durum',
+        href: '/acil-durum',
         icon: AlertTriangle,
         active: true,
         dataTour: 'acil-durum'
     },
     {
         name: 'Eğitim Katılım Formu',
-        href: '/panel/egitim-katilim',
+        href: '/egitim-katilim',
         icon: GraduationCap,
         active: true,
         dataTour: 'egitim-katilim'
     },
     {
         name: 'İSG Sertifikası Oluştur',
-        href: '/panel/sertifika',
+        href: '/sertifika',
         icon: FileCheck,
         active: true,
         dataTour: 'sertifika'
     },
     {
         name: 'İş İzin Formu',
-        href: '/panel/is-izin-formu',
+        href: '/is-izin-formu',
         icon: FileCheck,
         active: true,
         dataTour: 'is-izin'
     },
     {
         name: 'Firma Ziyaret Programı',
-        href: '/panel/ziyaret-programi',
+        href: '/ziyaret-programi',
         icon: Calendar,
         active: true,
         dataTour: 'ziyaret-programi'
     },
     {
         name: 'Nace  Teh. Sınıf Sorgula',
-        href: '/panel/nace-kod',
+        href: '/nace-kod',
         icon: Search,
         active: true,
         dataTour: 'nace-kod'
@@ -106,7 +106,7 @@ const menuItems = [
     },
     {
         name: 'İSG Dosya Arşivi',
-        href: '/panel/arsiv',
+        href: '/arsiv',
         icon: FolderOpen,
         active: true,
         highlight: true,
@@ -1018,8 +1018,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                                 onClick={() => setNotificationPage(p => Math.max(0, p - 1))}
                                                 disabled={notificationPage === 0}
                                                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isDark
-                                                        ? 'bg-slate-700 text-white hover:bg-slate-600'
-                                                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                    ? 'bg-slate-700 text-white hover:bg-slate-600'
+                                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                                                     }`}
                                             >
                                                 ← Önceki
@@ -1031,8 +1031,8 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                                 onClick={() => setNotificationPage(p => Math.min(Math.ceil(notifications.length / 4) - 1, p + 1))}
                                                 disabled={notificationPage >= Math.ceil(notifications.length / 4) - 1}
                                                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${isDark
-                                                        ? 'bg-slate-700 text-white hover:bg-slate-600'
-                                                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                                    ? 'bg-slate-700 text-white hover:bg-slate-600'
+                                                    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                                                     }`}
                                             >
                                                 Sonraki →

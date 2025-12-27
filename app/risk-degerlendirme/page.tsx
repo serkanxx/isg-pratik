@@ -2607,12 +2607,12 @@ function RiskAssessmentContent() {
 
             <div className="hidden lg:flex items-center space-x-1.5 ml-8 lg:ml-28">
               {/* Firmalarım */}
-              <Link href="/panel/firmalar" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+              <Link href="/firmalar" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
                 <span>Firmalarım</span>
               </Link>
               {/* Risklerim */}
-              <Link href="/panel/risk-maddelerim" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+              <Link href="/risk-maddelerim" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 <span>Risklerim</span>
               </Link>
@@ -2622,7 +2622,7 @@ function RiskAssessmentContent() {
                 <span>Risk Değerlendirmesi</span>
               </Link>
               {/* Acil Durum Eylem Planı */}
-              <Link href="/panel/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
+              <Link href="/acil-durum" className="px-3 py-2 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-all border border-white/10 bg-white/5 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 <span>Acil Durum Planı</span>
               </Link>
@@ -2981,7 +2981,7 @@ function RiskAssessmentContent() {
                 </div>
                 {session && (
                   <Link
-                    href="/panel/firmalar?new=true"
+                    href="/firmalar?new=true"
                     className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg text-sm font-bold hover:bg-white/20 transition-colors border border-white/20"
                   >
                     <Plus className="w-4 h-4" />
@@ -3007,7 +3007,7 @@ function RiskAssessmentContent() {
                   <Briefcase className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-500 mb-4">Henüz kayıtlı firmanız yok</p>
                   <Link
-                    href="/panel/firmalar?new=true"
+                    href="/firmalar?new=true"
                     className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -3345,7 +3345,7 @@ function RiskAssessmentContent() {
                       <span className="sm:hidden">Ekle</span>
                     </button>
                     <Link
-                      href="/panel/risk-maddelerim"
+                      href="/risk-maddelerim"
                       className={`text-xs hover:underline ${isDark
                         ? 'text-amber-400 hover:text-amber-300'
                         : 'text-amber-700 hover:text-amber-900'
@@ -3356,7 +3356,7 @@ function RiskAssessmentContent() {
                   </div>
                   {userRisks.length === 0 && (
                     <p className={`text-xs mt-2 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                      Henüz risk eklemediniz. <Link href="/panel/risk-maddelerim" className={`underline font-medium ${isDark ? 'text-amber-300' : ''}`}>Risk Maddelerim</Link> sayfasından ekleyebilirsiniz.
+                      Henüz risk eklemediniz. <Link href="/risk-maddelerim" className={`underline font-medium ${isDark ? 'text-amber-300' : ''}`}>Risk Maddelerim</Link> sayfasından ekleyebilirsiniz.
                     </p>
                   )}
                 </div>

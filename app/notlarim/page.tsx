@@ -9,7 +9,7 @@ import {
     StickyNote, Plus, Clock, Check, Trash2, X, Building2,
     Calendar, ChevronRight, Filter, Edit, Save
 } from 'lucide-react';
-import { Company } from '../../types';
+import { Company } from '../types';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 
 interface Note {

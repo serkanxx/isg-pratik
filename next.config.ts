@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Performans optimizasyonları
   compress: true, // Gzip compression
   poweredByHeader: false, // Güvenlik için X-Powered-By header'ını kaldır
-  
+
   // Image optimization
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -62,6 +62,25 @@ const nextConfig: NextConfig = {
       };
     }
     return config;
+  },
+
+  // 301 Redirects for SEO - old /panel/* URLs to new root-level URLs
+  async redirects() {
+    return [
+      { source: '/panel/acil-durum', destination: '/acil-durum', permanent: true },
+      { source: '/panel/arsiv', destination: '/arsiv', permanent: true },
+      { source: '/panel/egitim-katilim', destination: '/egitim-katilim', permanent: true },
+      { source: '/panel/firmalar', destination: '/firmalar', permanent: true },
+      { source: '/panel/is-izin-formu', destination: '/is-izin-formu', permanent: true },
+      { source: '/panel/nace-kod', destination: '/nace-kod', permanent: true },
+      { source: '/panel/notlarim', destination: '/notlarim', permanent: true },
+      { source: '/panel/raporlarim', destination: '/raporlarim', permanent: true },
+      { source: '/panel/risk-maddelerim', destination: '/risk-maddelerim', permanent: true },
+      { source: '/panel/sertifika', destination: '/sertifika', permanent: true },
+      { source: '/panel/ziyaret-programi', destination: '/ziyaret-programi', permanent: true },
+      // Query parametreli URL'ler için
+      { source: '/panel/firmalar/:path*', destination: '/firmalar/:path*', permanent: true },
+    ];
   },
 
   // Headers for caching and security

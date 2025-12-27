@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,11 +11,29 @@ import {
     ChevronRight, AlertCircle, CheckCircle, FileSpreadsheet, Download, Loader2,
     LayoutGrid, List, ArrowUpDown, SortAsc
 } from 'lucide-react';
-import { Company, DangerClass, DANGER_CLASS_LABELS } from '../../types';
+import { Company, DangerClass, DANGER_CLASS_LABELS } from '../types';
 import * as XLSX from 'xlsx';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 
-export default function FirmalarPage() {
+// Loading fallback for Suspense
+function FirmalarLoading() {
+    return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        </div>
+    );
+}
+
+// Main page wrapper with Suspense
+export default function FirmalarPageWrapper() {
+    return (
+        <Suspense fallback={<FirmalarLoading />}>
+            <FirmalarPage />
+        </Suspense>
+    );
+}
+
+function FirmalarPage() {
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -512,7 +530,7 @@ export default function FirmalarPage() {
                 resetForm();
                 setShowForm(false);
                 queryClient.invalidateQueries({ queryKey: queryKeys.companies });
-                router.replace('/panel/firmalar');
+                router.replace('/firmalar');
             } else {
                 const error = await res.json();
                 showNotif(error.error || 'Bir hata oluştu', 'error');
@@ -982,7 +1000,7 @@ export default function FirmalarPage() {
                                 {editingId ? 'Firma Düzenle' : 'Yeni Firma Ekle'}
                             </h2>
                             <button
-                                onClick={() => { setShowForm(false); resetForm(); router.replace('/panel/firmalar'); }}
+                                onClick={() => { setShowForm(false); resetForm(); router.replace('/firmalar'); }}
                                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5 text-slate-500" />
@@ -1136,7 +1154,7 @@ export default function FirmalarPage() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => { setShowForm(false); resetForm(); router.replace('/panel/firmalar'); }}
+                                    onClick={() => { setShowForm(false); resetForm(); router.replace('/firmalar'); }}
                                     className="flex-1 px-4 py-3 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                                 >
                                     İptal
@@ -1195,7 +1213,7 @@ export default function FirmalarPage() {
                                     <tr
                                         key={company.id}
                                         className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
-                                        onClick={() => router.push(`/panel/firmalar/${company.id}`)}
+                                        onClick={() => router.push(`/firmalar/${company.id}`)}
                                     >
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
@@ -1252,7 +1270,7 @@ export default function FirmalarPage() {
                             <div
                                 key={company.id}
                                 className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg hover:shadow-indigo-500/10 hover:border-indigo-300 transition-all duration-300 cursor-pointer"
-                                onClick={() => router.push(`/panel/firmalar/${company.id}`)}
+                                onClick={() => router.push(`/firmalar/${company.id}`)}
                             >
                                 {/* Kart Üst Kısım - Gradient Header */}
                                 <div className={`h-14 relative bg-gradient-to-br ${company.danger_class === 'az_tehlikeli'

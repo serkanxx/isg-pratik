@@ -139,7 +139,7 @@ export default function LandingPage() {
       color: "from-orange-500 to-red-600",
       bgColor: "bg-orange-500/10",
       iconBg: "bg-orange-500",
-      href: "/panel/acil-durum",
+      href: "/acil-durum",
       badge: null
     },
     {
@@ -149,7 +149,7 @@ export default function LandingPage() {
       color: "from-emerald-500 to-green-600",
       bgColor: "bg-emerald-500/10",
       iconBg: "bg-emerald-500",
-      href: "/panel/sertifika",
+      href: "/sertifika",
       badge: "Yeni"
     },
     {
@@ -159,7 +159,7 @@ export default function LandingPage() {
       color: "from-cyan-500 to-blue-600",
       bgColor: "bg-cyan-500/10",
       iconBg: "bg-cyan-500",
-      href: "/panel/egitim-katilim",
+      href: "/egitim-katilim",
       badge: "Yeni"
     },
     {
@@ -169,7 +169,7 @@ export default function LandingPage() {
       color: "from-red-500 to-pink-600",
       bgColor: "bg-red-500/10",
       iconBg: "bg-red-500",
-      href: "/panel/is-izin-formu",
+      href: "/is-izin-formu",
       badge: null
     },
     {
@@ -189,7 +189,7 @@ export default function LandingPage() {
       color: "from-blue-500 to-cyan-600",
       bgColor: "bg-blue-500/10",
       iconBg: "bg-blue-500",
-      href: "/panel/ziyaret-programi",
+      href: "/ziyaret-programi",
       badge: null
     },
     {
@@ -199,7 +199,7 @@ export default function LandingPage() {
       color: "from-amber-500 to-orange-600",
       bgColor: "bg-amber-500/10",
       iconBg: "bg-amber-500",
-      href: "/panel/arsiv",
+      href: "/arsiv",
       badge: "Yeni",
       highlight: "2000'den Fazla Dosya"
     }
@@ -207,10 +207,10 @@ export default function LandingPage() {
 
   // Hızlı erişim özellikleri
   const quickFeatures = [
-    { icon: Search, title: "NACE Kod Sorgulama", href: "/panel/nace-kod" },
-    { icon: StickyNote, title: "Not & Hatırlatma", href: "/panel/notlarim" },
+    { icon: Search, title: "NACE Kod Sorgulama", href: "/nace-kod" },
+    { icon: StickyNote, title: "Not & Hatırlatma", href: "/notlarim" },
     { icon: Briefcase, title: "İş İlanları", href: "/is-ilanlari" },
-    { icon: FileText, title: "Rapor Arşivi", href: "/panel/raporlarim" }
+    { icon: FileText, title: "Rapor Arşivi", href: "/raporlarim" }
   ];
 
   // İstatistikler

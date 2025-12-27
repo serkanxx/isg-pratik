@@ -803,8 +803,8 @@ export default function PanelPage() {
                                 <Link
                                     href="/panel?showRiskSuggestions=true"
                                     className={`relative inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors shadow-lg ${pendingRiskSuggestionsCount > 0
-                                            ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
-                                            : 'bg-amber-400/80 hover:bg-amber-500 text-white'
+                                        ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
+                                        : 'bg-amber-400/80 hover:bg-amber-500 text-white'
                                         }`}
                                 >
                                     <span className="mr-1 sm:mr-2">📥</span>
@@ -872,7 +872,7 @@ export default function PanelPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-white rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition-all group">
                     <Link
-                        href="/panel/firmalar?new=true"
+                        href="/firmalar?new=true"
                         className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0"
                     >
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all flex-shrink-0">
@@ -909,7 +909,7 @@ export default function PanelPage() {
                 </Link>
 
                 <Link
-                    href="/panel/acil-durum"
+                    href="/acil-durum"
                     className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-white rounded-xl border border-slate-200 hover:shadow-lg hover:border-orange-200 transition-all group sm:col-span-2 lg:col-span-1"
                 >
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 flex-shrink-0">
@@ -926,7 +926,7 @@ export default function PanelPage() {
             {/* İstatistik Kartları */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
                 {/* Firma Sayısı */}
-                <Link href="/panel/firmalar" className="block h-full">
+                <Link href="/firmalar" className="block h-full">
                     <div className="bg-white rounded-xl p-4 sm:p-6 border border-slate-200 hover:shadow-lg hover:border-indigo-200 transition-all group h-full flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-3 sm:mb-4">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
@@ -944,7 +944,7 @@ export default function PanelPage() {
                 </Link>
 
                 {/* İSG Dosya Arşivi Kartı */}
-                <Link href="/panel/arsiv" className="block h-full">
+                <Link href="/arsiv" className="block h-full">
                     <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 rounded-xl p-6 border border-purple-500 hover:shadow-2xl hover:shadow-purple-500/50 transition-all group h-full flex flex-col justify-between relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12"></div>
@@ -971,7 +971,7 @@ export default function PanelPage() {
                 </Link>
 
                 {/* Risklerim Kartı */}
-                <Link href="/panel/risk-maddelerim" className="block h-full">
+                <Link href="/risk-maddelerim" className="block h-full">
                     <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg hover:border-amber-200 transition-all group h-full flex flex-col justify-between relative overflow-visible">
                         {/* Post-it Image */}
                         <img
@@ -1005,7 +1005,7 @@ export default function PanelPage() {
                                 <Calendar className="w-4 h-4 text-indigo-600" />
                                 Ziyaret Programım
                             </h2>
-                            <Link href="/panel/ziyaret-programi" className="text-[10px] text-indigo-600 font-medium hover:underline flex items-center gap-0.5">
+                            <Link href="/ziyaret-programi" className="text-[10px] text-indigo-600 font-medium hover:underline flex items-center gap-0.5">
                                 Tümünü Gör <ChevronRight className="w-2.5 h-2.5" />
                             </Link>
                         </div>
@@ -1080,7 +1080,7 @@ export default function PanelPage() {
                                     return (
                                         <Link
                                             key={nearestProgram.id}
-                                            href="/panel/ziyaret-programi"
+                                            href="/ziyaret-programi"
                                             className="p-2.5 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all bg-white w-full block"
                                         >
                                             <div className="flex items-start justify-between mb-1.5">
@@ -1390,7 +1390,7 @@ export default function PanelPage() {
                             <Building2 className="w-4 h-4 text-indigo-600" />
                             Son Eklenen Firmalar
                         </h2>
-                        <Link href="/panel/firmalar" className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
+                        <Link href="/firmalar" className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
                             Tümünü Gör <ChevronRight className="w-3 h-3" />
                         </Link>
                     </div>
@@ -1405,7 +1405,7 @@ export default function PanelPage() {
                             <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                             <p className="text-xs text-slate-500 mb-3">Henüz firma eklemediniz</p>
                             <Link
-                                href="/panel/firmalar?new=true"
+                                href="/firmalar?new=true"
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
                             >
                                 <Plus className="w-3 h-3" />
@@ -1417,7 +1417,7 @@ export default function PanelPage() {
                             {companies.slice(0, 5).map((company) => (
                                 <li key={company.id}>
                                     <Link
-                                        href={`/panel/firmalar?edit=${company.id}`}
+                                        href={`/firmalar?edit=${company.id}`}
                                         className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
@@ -1454,7 +1454,7 @@ export default function PanelPage() {
                             <FileText className="w-4 h-4 text-indigo-600" />
                             Son Alınan Raporlar
                         </h2>
-                        <Link href="/panel/raporlarim" className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
+                        <Link href="/raporlarim" className="text-xs text-indigo-600 font-medium hover:underline flex items-center gap-1">
                             Tümünü Gör <ChevronRight className="w-3 h-3" />
                         </Link>
                     </div>
@@ -1472,7 +1472,7 @@ export default function PanelPage() {
                                 <Link href="/risk-degerlendirme" className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
                                     Risk Analizi
                                 </Link>
-                                <Link href="/panel/acil-durum" className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition-colors">
+                                <Link href="/acil-durum" className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition-colors">
                                     Acil Durum
                                 </Link>
                             </div>
@@ -1554,7 +1554,7 @@ export default function PanelPage() {
                                                     {dangerClassLabel}
                                                 </span>
                                             )}
-                                            <Link href={report.type === 'RISK_ASSESSMENT' ? `/risk-degerlendirme?reportId=${report.id}` : '/panel/raporlarim'} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors">
+                                            <Link href={report.type === 'RISK_ASSESSMENT' ? `/risk-degerlendirme?reportId=${report.id}` : '/raporlarim'} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors">
                                                 <ChevronRight className="w-3 h-3 text-slate-400" />
                                             </Link>
                                         </div>
@@ -1573,7 +1573,7 @@ export default function PanelPage() {
                         <Shield className="w-5 h-5 text-amber-600" />
                         Son Eklenen Riskler
                     </h2>
-                    <Link href="/panel/risk-maddelerim" className="text-sm text-amber-600 font-medium hover:underline flex items-center gap-1">
+                    <Link href="/risk-maddelerim" className="text-sm text-amber-600 font-medium hover:underline flex items-center gap-1">
                         Tümünü Gör <ChevronRight className="w-4 h-4" />
                     </Link>
                 </div>

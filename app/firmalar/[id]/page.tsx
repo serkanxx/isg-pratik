@@ -10,7 +10,7 @@ import {
     BarChart3, TrendingUp, Clock, AlertTriangle, StickyNote,
     Plus, Check, Trash2, X
 } from 'lucide-react';
-import { Company, DANGER_CLASS_LABELS, DangerClass } from '../../../types';
+import { Company, DANGER_CLASS_LABELS, DangerClass } from '../../types';
 import { useTheme } from '@/app/context/ThemeContext';
 
 // Not tipi
@@ -82,11 +82,11 @@ export default function FirmaDetayPage() {
                     geocodeAddress(data.address);
                 }
             } else {
-                router.push('/panel/firmalar');
+                router.push('/firmalar');
             }
         } catch (error) {
             console.error('Firma bilgisi alınamadı:', error);
-            router.push('/panel/firmalar');
+            router.push('/firmalar');
         } finally {
             setLoading(false);
         }
@@ -234,7 +234,7 @@ export default function FirmaDetayPage() {
         return (
             <div className="p-8 text-center">
                 <p className="text-slate-500">Firma bulunamadı</p>
-                <Link href="/panel/firmalar" className="text-indigo-600 hover:underline mt-2 inline-block">
+                <Link href="/firmalar" className="text-indigo-600 hover:underline mt-2 inline-block">
                     Firmalara Dön
                 </Link>
             </div>
@@ -252,7 +252,7 @@ export default function FirmaDetayPage() {
             {/* Geri Butonu */}
             <div className="mb-6">
                 <button
-                    onClick={() => router.push('/panel/firmalar')}
+                    onClick={() => router.push('/firmalar')}
                     className={`flex items-center gap-2 transition-colors ${isDark ? 'text-slate-400 hover:text-indigo-400' : 'text-slate-600 hover:text-indigo-600'}`}
                 >
                     <ArrowLeft className="w-5 h-5" />
@@ -298,7 +298,7 @@ export default function FirmaDetayPage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => router.push(`/panel/firmalar?edit=${company.id}`)}
+                                    onClick={() => router.push(`/firmalar?edit=${company.id}`)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
                                 >
                                     <Edit2 className="w-4 h-4" />
@@ -378,7 +378,7 @@ export default function FirmaDetayPage() {
                                     return (
                                         <Link
                                             key={report.id || idx}
-                                            href={`/panel/raporlarim?view=${report.id}`}
+                                            href={`/raporlarim?view=${report.id}`}
                                             className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${isDark
                                                 ? 'bg-slate-800/50 border-transparent hover:bg-slate-800 hover:border-slate-700'
                                                 : 'bg-slate-50 border-transparent hover:bg-indigo-50 hover:border-indigo-200'}`}
@@ -488,7 +488,7 @@ export default function FirmaDetayPage() {
                                 </div>
                             </Link>
                             <Link
-                                href={`/panel/acil-durum?company=${companyId}`}
+                                href={`/acil-durum?company=${companyId}`}
                                 className={`flex items-center gap-3 p-3 rounded-xl transition-all group ${isDark ? 'bg-orange-900/20 hover:bg-orange-900/30' : 'bg-orange-50 hover:bg-orange-100'}`}
                             >
                                 <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-orange-500/20">
