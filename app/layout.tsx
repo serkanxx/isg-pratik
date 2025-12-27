@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReactQueryProvider } from "@/lib/react-query";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -241,6 +242,7 @@ export default function RootLayout({
           <ThemeProvider>
             <ReactQueryProvider>
               <OfflineIndicator />
+              <PWAInstallPrompt />
               {children}
             </ReactQueryProvider>
           </ThemeProvider>
