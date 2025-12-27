@@ -195,6 +195,12 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const today = new Date();
     const notifications = [
         {
+            id: 'pwa-is-live',
+            title: 'İSGPratik Uygulaması Yayında!',
+            description: 'Artık sitemizi uygulama olarak telefonunuza yükleyebilir ve tüm özelliklerini çevrimdışı (internet olmadan) kullanabilirsiniz.',
+            date: new Date('2025-12-28')
+        },
+        {
             id: 'calisan-yonetimi',
             title: 'Firmalara Çalışan Ekleme',
             description: 'Firmalarım sayfasından firmalara çalışan ekleyebilir, bu çalışanları eğitim ve sertifika işlemlerinde hızlıca kullanabilirsiniz.',

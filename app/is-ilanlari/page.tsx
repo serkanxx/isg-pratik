@@ -504,6 +504,12 @@ export default function IsIlanlariPage() {
   const today = new Date();
   const notifications = [
     {
+      id: 'pwa-is-live',
+      title: 'İSGPratik Uygulaması Yayında!',
+      description: 'Artık sitemizi uygulama olarak telefonunuza yükleyebilir ve tüm özelliklerini çevrimdışı (internet olmadan) kullanabilirsiniz.',
+      date: new Date(today)
+    },
+    {
       id: 'is-ilanlari',
       title: 'İSG İş İlanları Eklendi',
       description: 'İSG iş ilanları bölümü eklendi, iş arayanlar ve işverenler için platform oluşturuldu.',
