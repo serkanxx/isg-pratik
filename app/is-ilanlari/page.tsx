@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -71,6 +72,13 @@ const menuItems = [
     icon: GraduationCap,
     active: true,
     dataTour: 'egitim-katilim'
+  },
+  {
+    name: 'İSG Sertifikası Oluştur',
+    href: '/panel/sertifika',
+    icon: FileCheck,
+    active: true,
+    dataTour: 'sertifika'
   },
   {
     name: 'İş İzin Formu',
@@ -344,15 +352,66 @@ export default function IsIlanlariPage() {
   const { isDark, toggleTheme } = useTheme();
   const { requireAuth } = useRequireAuth();
   const pathname = usePathname();
-  const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // State'ler önce tanımlanmalı
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // TanStack Query ile ilanları cache'le
+  const fetchTelegramJobPostings = async () => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: '15'
+    });
+    if (searchTerm) params.append('search', searchTerm);
+    if (selectedCity) params.append('city', selectedCity);
+
+    const response = await fetch(`/api/job-postings?${params}`);
+    const data = await response.json();
+    if (!response.ok || data.error) {
+      return { data: [], totalPages: 1 };
+    }
+    return {
+      data: Array.isArray(data.data) ? data.data : [],
+      totalPages: data.pagination?.totalPages || 1
+    };
+  };
+
+  const fetchUserJobPostingsAPI = async () => {
+    const params = new URLSearchParams({ page: '1', limit: '50' });
+    if (selectedCity) params.append('city', selectedCity);
+    if (searchTerm) params.append('search', searchTerm);
+
+    const response = await fetch(`/api/user-job-postings?${params}`);
+    const data = await response.json();
+    if (response.ok && data.success) {
+      return data.data || [];
+    }
+    return [];
+  };
+
+  // Telegram ilanları - useQuery ile cache
+  const { data: telegramData, isLoading: telegramLoading, refetch: refetchTelegram } = useQuery({
+    queryKey: ['job-postings', page, searchTerm, selectedCity],
+    queryFn: fetchTelegramJobPostings,
+    staleTime: 5 * 60 * 1000, // 5 dakika cache
+  });
+
+  // Kullanıcı ilanları - useQuery ile cache
+  const { data: userJobPostingsData, isLoading: userLoading, refetch: refetchUser } = useQuery({
+    queryKey: ['user-job-postings', searchTerm, selectedCity],
+    queryFn: fetchUserJobPostingsAPI,
+    staleTime: 5 * 60 * 1000, // 5 dakika cache
+  });
+
+  const jobPostings = telegramData?.data || [];
+  const totalPages = telegramData?.totalPages || 1;
+  const userJobPostings = userJobPostingsData || [];
+  const loading = telegramLoading || userLoading;
 
   // Yorum state'leri
   const [comments, setComments] = useState<Record<string, JobComment[]>>({});
@@ -369,7 +428,7 @@ export default function IsIlanlariPage() {
   const [jobPostingContent, setJobPostingContent] = useState('');
   const [jobPostingCity, setJobPostingCity] = useState('Tüm Türkiye');
   const [submittingJobPosting, setSubmittingJobPosting] = useState(false);
-  const [userJobPostings, setUserJobPostings] = useState<any[]>([]);
+  // userJobPostings artık useQuery'den geliyor (yukarıda tanımlı)
 
   // Notification state
   const [notification, setNotification] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -439,19 +498,7 @@ export default function IsIlanlariPage() {
     }
   }, []);
 
-  // Tüm ilanları çek - filtreler değiştiğinde (paralel)
-  useEffect(() => {
-    const fetchAllPostings = async () => {
-      setLoading(true);
-      try {
-        // Her iki API çağrısını paralel yap
-        await Promise.all([fetchJobPostings(), fetchUserJobPostings()]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAllPostings();
-  }, [page, searchTerm, selectedCity]);
+  // useQuery otomatik olarak filtreler değiştiğinde yeniden çeker (queryKey'e bağlı)
 
   // Bildirim verileri
   const today = new Date();
@@ -528,73 +575,14 @@ export default function IsIlanlariPage() {
     localStorage.setItem('readNotificationIds', JSON.stringify(Array.from(allIds)));
   };
 
-  const fetchJobPostings = async () => {
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '15'
-      });
-
-      if (searchTerm) {
-        params.append('search', searchTerm);
-      }
-
-      if (selectedCity) {
-        params.append('city', selectedCity);
-      }
-
-      const response = await fetch(`/api/job-postings?${params}`);
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        console.error('API hatası:', data.error || response.status);
-        setJobPostings([]);
-        setTotalPages(1);
-        return;
-      }
-
-      setJobPostings(Array.isArray(data.data) ? data.data : []);
-      setTotalPages(data.pagination?.totalPages || 1);
-    } catch (error) {
-      console.error('İş ilanları yüklenemedi:', error);
-      setJobPostings([]);
-      setTotalPages(1);
-    }
-  };
+  // fetchJobPostings ve fetchUserJobPostings fonksiyonları artık useQuery içinde tanımlı
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([fetchJobPostings(), fetchUserJobPostings()]);
+      await Promise.all([refetchTelegram(), refetchUser()]);
     } finally {
       setRefreshing(false);
-    }
-  };
-
-  // Kullanıcı ilanlarını çek
-  const fetchUserJobPostings = async () => {
-    try {
-      const params = new URLSearchParams({
-        page: '1',
-        limit: '50'
-      });
-
-      if (selectedCity) {
-        params.append('city', selectedCity);
-      }
-
-      if (searchTerm) {
-        params.append('search', searchTerm);
-      }
-
-      const response = await fetch(`/api/user-job-postings?${params}`);
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setUserJobPostings(data.data || []);
-      }
-    } catch (error) {
-      console.error('Kullanıcı ilanları yüklenemedi:', error);
     }
   };
 
@@ -756,11 +744,11 @@ export default function IsIlanlariPage() {
         return;
       }
 
-      // İlan türüne göre doğru state'i güncelle
+      // Silme başarılı - veriyi yeniden çek
       if (isUserPosting) {
-        setUserJobPostings(prev => prev.filter(p => p.id !== id));
+        await refetchUser();
       } else {
-        setJobPostings(prev => prev.filter(p => p.id !== id));
+        await refetchTelegram();
       }
 
       showNotification('İlan başarıyla silindi', 'success');

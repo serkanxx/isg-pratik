@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -134,7 +135,22 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
     const [editForm, setEditForm] = useState<any>({});
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [showHamburgerTooltip, setShowHamburgerTooltip] = useState(false);
-    const [archiveFileCount, setArchiveFileCount] = useState<number | null>(null);
+
+    // Arşiv dosya sayısı - useQuery ile 15 dakika cache
+    const { data: archiveFileCount } = useQuery({
+        queryKey: ['archive-file-count'],
+        queryFn: async () => {
+            const res = await fetch('/api/archive/list');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.files && Array.isArray(data.files)) {
+                    return data.files.length;
+                }
+            }
+            return null;
+        },
+        staleTime: 15 * 60 * 1000, // 15 dakika cache
+    });
     const [showNotifications, setShowNotifications] = useState(false);
     const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(new Set());
     const [notificationPage, setNotificationPage] = useState(0); // 0 = ilk sayfa, 1 = sonraki sayfa
@@ -161,23 +177,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         }
     }, [isAdmin]);
 
-    // R2'den arşiv dosya sayısını çek
-    useEffect(() => {
-        const fetchArchiveFileCount = async () => {
-            try {
-                const res = await fetch('/api/archive/list');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.files && Array.isArray(data.files)) {
-                        setArchiveFileCount(data.files.length);
-                    }
-                }
-            } catch (err) {
-                console.error("Arşiv dosya sayısı alınamadı:", err);
-            }
-        };
-        fetchArchiveFileCount();
-    }, []);
+    // Arşiv dosya sayısı artık useQuery ile çekiliyor (yukarıda tanımlı)
 
     // Bildirimleri localStorage'dan yükle
     useEffect(() => {
@@ -541,7 +541,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                     >
                                         {Icon && <Icon className={`w-5 h-5 ${isFeatured && !isActive ? 'text-purple-600 dark:text-purple-400' : ''}`} />}
                                         <span className="flex-1">{item.name}</span>
-                                        {isFeatured && archiveFileCount !== null && (
+                                        {isFeatured && archiveFileCount != null && (
                                             <span className={`
                                                 px-2 py-0.5 rounded-full text-xs font-bold
                                                 ${isActive || isFeatured
@@ -553,7 +553,7 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
                                                         : 'bg-purple-600 text-white'
                                                 }
                                             `}>
-                                                {archiveFileCount.toLocaleString('tr-TR')} dosya
+                                                {archiveFileCount?.toLocaleString('tr-TR')} dosya
                                             </span>
                                         )}
                                         {isFeatured && archiveFileCount === null && (

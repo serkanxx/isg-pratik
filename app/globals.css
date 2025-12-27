@@ -103,6 +103,64 @@ html.dark .sertifika-page.bg-white {
   background-color: #020617 !important;
 }
 
+/* ==================== NACE KOD SAYFASI OVERRIDE'LARI ==================== */
+/* Aydınlık modda (HTML'de dark class yokken) - her zaman beyaz */
+html:not(.dark) .nace-kod-page .bg-white,
+html:not(.dark) .dark-content .nace-kod-page .bg-white {
+  background-color: #ffffff !important;
+}
+
+/* Karanlık modda - siyah arka plan */
+html.dark .nace-kod-page .bg-white,
+html.dark .dark-content .nace-kod-page .bg-white {
+  background-color: #000000 !important;
+}
+
+/* NACE Kod sayfası aydınlık mod metin renkleri */
+html:not(.dark) .nace-kod-page label,
+html:not(.dark) .nace-kod-page h1,
+html:not(.dark) .nace-kod-page h2,
+html:not(.dark) .nace-kod-page h3,
+html:not(.dark) .nace-kod-page p:not(.text-indigo-600):not(.text-amber-700),
+html:not(.dark) .nace-kod-page span:not(.text-indigo-600):not(.text-white):not(.text-emerald-700):not(.text-red-700):not(.text-amber-700),
+html:not(.dark) .nace-kod-page input:not([type="checkbox"]) {
+  color: #000000 !important;
+}
+
+html:not(.dark) .nace-kod-page .text-black {
+  color: #000000 !important;
+}
+
+/* Input arka planı - aydınlık modda beyaz */
+html:not(.dark) .nace-kod-page input,
+html:not(.dark) .dark-content .nace-kod-page input {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Input arka planı - karanlık modda siyah */
+html.dark .nace-kod-page input,
+html.dark .dark-content .nace-kod-page input {
+  background-color: #000000 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Karanlık modda metin renkleri beyaz */
+html.dark .nace-kod-page label,
+html.dark .nace-kod-page h1,
+html.dark .nace-kod-page h2,
+html.dark .nace-kod-page h3,
+html.dark .nace-kod-page p {
+  color: #ffffff !important;
+}
+
+/* Buton içindeki yazının her zaman beyaz kalması */
+.nace-kod-page button.bg-indigo-600 span,
+.nace-kod-page button.bg-indigo-600 {
+  color: #ffffff !important;
+}
+
 /* Ziyaret olan takvim günleri - Aydınlık modda beyaz arka plan korunmalı */
 .visit-day-light {
   background-color: #ffffff !important;

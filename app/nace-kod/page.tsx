@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, AlertCircle, CheckCircle, Loader2, Info } from 'lucide-react';
-import { useTheme } from '@/app/context/ThemeContext';
+
 
 interface NaceResult {
     code: string;
@@ -17,7 +17,6 @@ interface NaceSuggestion {
 }
 
 export default function NaceKodPage() {
-    const { isDark } = useTheme();
     const [naceCode, setNaceCode] = useState<string>('');
     const [result, setResult] = useState<NaceResult | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -28,10 +27,10 @@ export default function NaceKodPage() {
     const formatNaceCode = (value: string): string => {
         // Sadece rakamları al
         const numbers = value.replace(/\D/g, '');
-        
+
         // Maksimum 6 haneli
         const limited = numbers.slice(0, 6);
-        
+
         // Formatla: xx.xx.xx
         if (limited.length <= 2) {
             return limited;
@@ -106,7 +105,7 @@ export default function NaceKodPage() {
     };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        <div className="nace-kod-page p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
             {/* Başlık */}
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-2">
@@ -119,8 +118,8 @@ export default function NaceKodPage() {
             </div>
 
             {/* Arama Kutusu */}
-            <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 mb-6 shadow-sm`}>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+            <div className="bg-white dark:bg-black rounded-xl border border-slate-200 dark:border-slate-800 p-6 mb-6 shadow-sm transition-colors duration-200">
+                <label className="block text-sm font-bold text-black dark:text-white mb-2">
                     NACE Kodu
                 </label>
                 <div className="flex gap-3">
@@ -132,11 +131,7 @@ export default function NaceKodPage() {
                             onKeyPress={handleKeyPress}
                             placeholder="Örn: 01.11.14 veya 011114"
                             maxLength={8} // xx.xx.xx formatı için maksimum 8 karakter
-                            className={`w-full px-4 py-3 pl-10 pr-4 border rounded-lg text-lg font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
-                                isDark 
-                                    ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400' 
-                                    : 'bg-white border-slate-300 text-slate-800'
-                            }`}
+                            className="w-full px-4 py-3 pl-10 pr-4 border rounded-lg text-lg font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white dark:bg-black border-slate-300 dark:border-slate-700 text-black dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         />
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     </div>
@@ -165,7 +160,7 @@ export default function NaceKodPage() {
 
             {/* Hata Mesajı */}
             {error && (
-                <div className={`bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6`}>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
                     <div className="flex items-start gap-3 mb-3">
                         <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                         <div>
@@ -173,7 +168,7 @@ export default function NaceKodPage() {
                             <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
                         </div>
                     </div>
-                    
+
                     {/* Öneriler */}
                     {suggestions && suggestions.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-red-200 dark:border-red-800">
@@ -191,11 +186,7 @@ export default function NaceKodPage() {
                                             // Otomatik sorgula
                                             handleSearch(suggestion.code);
                                         }}
-                                        className={`w-full text-left p-3 rounded-lg border-2 transition-all hover:shadow-md ${
-                                            isDark
-                                                ? 'bg-slate-700 border-slate-600 hover:border-indigo-500 hover:bg-slate-600'
-                                                : 'bg-white border-slate-200 hover:border-indigo-500 hover:bg-indigo-50'
-                                        }`}
+                                        className="w-full text-left p-3 rounded-lg border-2 transition-all hover:shadow-md bg-white border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-indigo-500 dark:hover:bg-slate-700"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex-1">
@@ -207,7 +198,7 @@ export default function NaceKodPage() {
                                                         {suggestion.dangerClass}
                                                     </span>
                                                 </div>
-                                                <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                <p className="text-sm text-slate-600 dark:text-slate-300">
                                                     {suggestion.activity}
                                                 </p>
                                             </div>
@@ -223,10 +214,10 @@ export default function NaceKodPage() {
 
             {/* Sonuç */}
             {result && (
-                <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm`}>
+                <div className="bg-white dark:bg-black rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm transition-colors duration-200">
                     <div className="flex items-center gap-2 mb-4">
                         <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                        <h2 className="text-lg font-bold text-black dark:text-white">
                             Sorgulama Sonucu
                         </h2>
                     </div>
@@ -234,27 +225,27 @@ export default function NaceKodPage() {
                     <div className="space-y-4">
                         {/* NACE Kodu */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-bold text-black/60 dark:text-white/60 uppercase tracking-wider mb-1">
                                 NACE Kodu
                             </label>
-                            <p className="text-lg font-mono font-bold text-slate-800 dark:text-slate-100">
+                            <p className="text-lg font-mono font-bold text-black dark:text-white">
                                 {result.code}
                             </p>
                         </div>
 
                         {/* Faaliyet Alanı */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-bold text-black/60 dark:text-white/60 uppercase tracking-wider mb-1">
                                 Faaliyet Alanı
                             </label>
-                            <p className={`text-base font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
+                            <p className="text-base font-medium text-black dark:text-white">
                                 {result.activity}
                             </p>
                         </div>
 
                         {/* Tehlike Sınıfı */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-bold text-black/60 dark:text-white/60 uppercase tracking-wider mb-1">
                                 Tehlike Sınıfı
                             </label>
                             <span className={`inline-block px-4 py-2 rounded-lg font-bold text-sm border-2 ${getDangerClassColor(result.dangerClass)}`}>
@@ -266,14 +257,14 @@ export default function NaceKodPage() {
             )}
 
             {/* Bilgi Kutusu */}
-            <div className={`bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mt-6`}>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mt-6">
                 <div className="flex items-start gap-3">
                     <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <div>
                         <h3 className="font-bold text-blue-800 dark:text-blue-300 mb-1">NACE Kodu Hakkında</h3>
                         <p className="text-sm text-blue-700 dark:text-blue-400">
-                            NACE (Nomenclature statistique des activités économiques dans la Communauté européenne) kodu, 
-                            işletmelerin faaliyet alanlarını sınıflandırmak için kullanılan uluslararası bir kodlama sistemidir. 
+                            NACE (Nomenclature statistique des activités économiques dans la Communauté européenne) kodu,
+                            işletmelerin faaliyet alanlarını sınıflandırmak için kullanılan uluslararası bir kodlama sistemidir.
                             Bu kod, işyerinizin tehlike sınıfını belirlemek için kullanılır.
                         </p>
                     </div>
