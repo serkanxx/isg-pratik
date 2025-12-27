@@ -445,13 +445,13 @@ export default function IsIlanlariPage() {
 
   // Tüm ilanları birleştir ve tarihe göre sırala (en yeni en üstte)
   const allPostings = useMemo(() => {
-    const telegramPosts = jobPostings.map(p => ({
+    const telegramPosts = jobPostings.map((p: JobPosting) => ({
       ...p,
       _type: 'telegram' as const,
       _sortDate: new Date(p.postedAt || p.createdAt).getTime()
     }));
 
-    const userPosts = userJobPostings.map(p => ({
+    const userPosts = userJobPostings.map((p: any) => ({
       ...p,
       _type: 'user' as const,
       _sortDate: new Date(p.createdAt).getTime()
