@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/app/context/ThemeContext";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ReactQueryProvider } from "@/lib/react-query";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -213,6 +214,12 @@ export default function RootLayout({
         <link rel="icon" href="https://www.isgpratik.com/favicon-96x96.png" type="image/png" sizes="96x96" />
         <link rel="shortcut icon" href="https://www.isgpratik.com/favicon.ico" />
         <link rel="apple-touch-icon" href="https://www.isgpratik.com/apple-touch-icon.png" />
+        {/* PWA Meta Tags */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="İSG Pratik" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="google-site-verification" content="j4rFgnURFww2H9HH7z5kWXtedMvdalOyefFAJqPlsr8" />
         <meta name="geo.region" content="TR" />
         <meta name="geo.placename" content="Türkiye" />
@@ -233,6 +240,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <ReactQueryProvider>
+              <OfflineIndicator />
               {children}
             </ReactQueryProvider>
           </ThemeProvider>

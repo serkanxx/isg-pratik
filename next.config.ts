@@ -1,4 +1,66 @@
 import type { NextConfig } from "next";
+import withPWAInit from 'next-pwa';
+
+const withPWA = withPWAInit({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  fallbacks: {
+    document: '/offline.html',
+  },
+  runtimeCaching: [
+    // Google Fonts
+    {
+      urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts',
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 yıl
+        },
+      },
+    },
+    // API istekleri için NetworkFirst (Supabase verileri)
+    {
+      urlPattern: /\/api\/.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'api-cache',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 24 * 60 * 60, // 1 gün
+        },
+        networkTimeoutSeconds: 10,
+      },
+    },
+    // Statik dosyalar
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'static-images',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 gün
+        },
+      },
+    },
+    // Diğer sayfalar için StaleWhileRevalidate
+    {
+      urlPattern: /.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'pages-cache',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 gün
+        },
+      },
+    },
+  ],
+});
 
 const nextConfig: NextConfig = {
   // Performans optimizasyonları
@@ -129,4 +191,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

@@ -47,3 +47,9 @@ webhook-kur.bat
 webhook-kontrol.bat
 
 .vercel
+
+# PWA - Service Worker generated files
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
