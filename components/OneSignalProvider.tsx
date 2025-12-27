@@ -7,21 +7,31 @@ import { useOneSignal } from '@/lib/onesignal';
 export function OneSignalProvider({ children }: { children: React.ReactNode }) {
     const { isInitialized, isSubscribed, requestPermission } = useOneSignal();
     const [showPrompt, setShowPrompt] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const [isStandalone, setIsStandalone] = useState(false);
 
     useEffect(() => {
-        // Mobil kontrol
-        const checkMobile = () => {
-            const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                window.innerWidth < 768;
-            setIsMobile(mobile);
-            return mobile;
+        // Standalone (PWA yüklü) modu kontrolü
+        const checkStandalone = () => {
+            const standalone = window.matchMedia('(display-mode: standalone)').matches;
+            // @ts-expect-error - iOS Safari specific
+            const iosStandalone = window.navigator.standalone === true;
+            return standalone || iosStandalone;
         };
 
-        const mobile = checkMobile();
+        // Mobil kontrol
+        const checkMobile = () => {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                window.innerWidth < 768;
+        };
 
-        // Sadece mobilde ve initialize olduktan sonra göster
-        if (!mobile) return;
+        const isStandaloneMode = checkStandalone();
+        const isMobile = checkMobile();
+
+        setIsStandalone(isStandaloneMode);
+
+        // Sadece mobil + PWA yüklü (standalone modda) göster
+        // Normal web sitesinde gösterme
+        if (!isMobile || !isStandaloneMode) return;
 
         // Daha önce reddedilmiş mi kontrol et
         const dismissed = localStorage.getItem('notification-prompt-dismissed');
@@ -34,11 +44,8 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
 
         // OneSignal hazır ve abone değilse göster
         if (isInitialized && !isSubscribed) {
-            // PWA install prompt'tan sonra göster
-            const pwaPromptDismissed = localStorage.getItem('pwa-install-dismissed');
-            const delay = pwaPromptDismissed ? 3000 : 10000; // PWA kapatılmışsa 3sn, değilse 10sn
-
-            setTimeout(() => setShowPrompt(true), delay);
+            // PWA açıldığında 2 saniye bekle sonra göster
+            setTimeout(() => setShowPrompt(true), 2000);
         }
     }, [isInitialized, isSubscribed]);
 
@@ -56,8 +63,8 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
         <>
             {children}
 
-            {/* Notification Permission Prompt - Sadece Mobil */}
-            {isMobile && showPrompt && !isSubscribed && (
+            {/* Notification Permission Prompt - Sadece Standalone PWA modunda */}
+            {isStandalone && showPrompt && !isSubscribed && (
                 <div className="fixed bottom-20 left-4 right-4 z-[9997] animate-slide-up">
                     <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-2xl p-4 relative overflow-hidden">
                         {/* Decorative background */}
@@ -83,10 +90,10 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
                             {/* Content */}
                             <div className="flex-1 min-w-0 pr-6">
                                 <h3 className="text-white font-semibold text-base mb-1">
-                                    🔔 Bildirimleri Aç
+                                    🔔 Bildirimleri Açın
                                 </h3>
                                 <p className="text-white/90 text-sm leading-snug mb-3">
-                                    Yeni özellikler ve önemli duyurulardan haberdar olun!
+                                    Yeni özellikler, özel günler ve önemli duyurulardan haberdar olmak için bildirimleri açın!
                                 </p>
 
                                 <button
