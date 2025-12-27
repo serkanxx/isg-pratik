@@ -8,13 +8,32 @@ interface BeforeInstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const TOUR_STORAGE_KEY = 'isg_panel_tour_completed';
+const PWA_DISMISSED_KEY = 'pwa-install-dismissed';
+
 export function PWAInstallPrompt() {
     const [showPrompt, setShowPrompt] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [isIOS, setIsIOS] = useState(false);
     const [isInstalled, setIsInstalled] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
+        // Mobil cihaz kontrolü
+        const checkMobile = () => {
+            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                window.innerWidth < 768;
+            setIsMobile(isMobileDevice);
+            return isMobileDevice;
+        };
+
+        const isMobileDevice = checkMobile();
+
+        // Masaüstünde gösterme
+        if (!isMobileDevice) {
+            return;
+        }
+
         // iOS kontrolü
         const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
         setIsIOS(isIOSDevice);
@@ -30,7 +49,7 @@ export function PWAInstallPrompt() {
         }
 
         // Local storage kontrolü - kullanıcı daha önce kapatmış mı?
-        const dismissed = localStorage.getItem('pwa-install-dismissed');
+        const dismissed = localStorage.getItem(PWA_DISMISSED_KEY);
         if (dismissed) {
             const dismissedDate = new Date(dismissed);
             const now = new Date();
@@ -41,23 +60,67 @@ export function PWAInstallPrompt() {
             }
         }
 
+        // Onboarding tour tamamlanmış mı kontrol et
+        const checkTourAndShow = () => {
+            const tourCompleted = localStorage.getItem(TOUR_STORAGE_KEY);
+
+            // Tour tamamlanmışsa göster
+            if (tourCompleted === 'true') {
+                setTimeout(() => setShowPrompt(true), 1000);
+                return true;
+            }
+            return false;
+        };
+
+        // İlk kontrol
+        if (checkTourAndShow()) {
+            // Tour zaten tamamlanmış, göster
+        } else {
+            // Tour tamamlanana kadar dinle
+            const handleStorageChange = (e: StorageEvent) => {
+                if (e.key === TOUR_STORAGE_KEY && e.newValue === 'true') {
+                    setTimeout(() => setShowPrompt(true), 1500);
+                }
+            };
+
+            // Aynı pencerede değişiklikleri dinlemek için interval
+            const checkInterval = setInterval(() => {
+                if (checkTourAndShow()) {
+                    clearInterval(checkInterval);
+                }
+            }, 2000);
+
+            window.addEventListener('storage', handleStorageChange);
+
+            // 30 saniye sonra kontrol etmeyi durdur
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                window.removeEventListener('storage', handleStorageChange);
+            }, 30000);
+        }
+
         // Android/Chrome için beforeinstallprompt event'i
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
-            // Küçük bir gecikme ile göster
-            setTimeout(() => setShowPrompt(true), 2000);
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-        // iOS için 3 saniye sonra göster
-        if (isIOSDevice && !isStandalone && !isIOSStandalone) {
-            setTimeout(() => setShowPrompt(true), 3000);
-        }
+        // Resize listener
+        const handleResize = () => {
+            const newIsMobile = window.innerWidth < 768;
+            if (!newIsMobile) {
+                setShowPrompt(false);
+            }
+            setIsMobile(newIsMobile);
+        };
+
+        window.addEventListener('resize', handleResize);
 
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('resize', handleResize);
         };
     }, []);
 
@@ -74,15 +137,16 @@ export function PWAInstallPrompt() {
 
     const handleDismiss = () => {
         setShowPrompt(false);
-        localStorage.setItem('pwa-install-dismissed', new Date().toISOString());
+        localStorage.setItem(PWA_DISMISSED_KEY, new Date().toISOString());
     };
 
-    if (!showPrompt || isInstalled) {
+    // Masaüstünde, yüklüyse veya gösterilmeyecekse null döndür
+    if (!isMobile || !showPrompt || isInstalled) {
         return null;
     }
 
     return (
-        <div className="fixed bottom-20 left-4 right-4 z-[9998] md:left-auto md:right-4 md:max-w-sm animate-slide-up">
+        <div className="fixed bottom-20 left-4 right-4 z-[9998] animate-slide-up">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-4 relative overflow-hidden">
                 {/* Decorative background */}
                 <div className="absolute inset-0 opacity-10">
@@ -108,20 +172,17 @@ export function PWAInstallPrompt() {
                     {/* Content */}
                     <div className="flex-1 min-w-0 pr-6">
                         <h3 className="text-white font-semibold text-base mb-1">
-                            Uygulamayı Yükle
+                            🎉 İSGPratik Uygulaması Yayında!
                         </h3>
-                        <p className="text-white/80 text-sm leading-snug mb-3">
-                            {isIOS
-                                ? 'Ana ekrana ekleyerek çevrimdışı kullanın! Menüden "Ana Ekrana Ekle" seçin.'
-                                : 'Ana ekrana ekleyerek hızlıca açın ve çevrimdışı kullanın!'
-                            }
+                        <p className="text-white/90 text-sm leading-snug mb-3">
+                            Tüm özellikleri çevrimdışı da kullanabilirsiniz. Ana ekrana ekleyerek hızlıca erişin!
                         </p>
 
                         {/* Action buttons */}
                         {isIOS ? (
-                            <div className="flex items-center gap-2 text-white/90 text-sm">
-                                <Share className="w-4 h-4" />
-                                <span>Paylaş → Ana Ekrana Ekle</span>
+                            <div className="flex items-center gap-2 text-white/90 text-sm bg-white/10 rounded-lg px-3 py-2">
+                                <Share className="w-4 h-4 flex-shrink-0" />
+                                <span>Paylaş menüsünden &quot;Ana Ekrana Ekle&quot;</span>
                             </div>
                         ) : (
                             <button
@@ -129,7 +190,7 @@ export function PWAInstallPrompt() {
                                 className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-white/90 transition-colors"
                             >
                                 <Download className="w-4 h-4" />
-                                <span>Şimdi Yükle</span>
+                                <span>Uygulamayı Yükle</span>
                             </button>
                         )}
                     </div>
