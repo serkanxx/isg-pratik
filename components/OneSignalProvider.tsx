@@ -1,62 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useOneSignal } from '@/lib/onesignal';
 
 export function OneSignalProvider({ children }: { children: React.ReactNode }) {
-    const { isInitialized, isSubscribed, requestPermission } = useOneSignal();
-    const [showPrompt, setShowPrompt] = useState(false);
-    const [isStandalone, setIsStandalone] = useState(false);
+    const { isInitialized, isSubscribed, isStandalone, requestPermission } = useOneSignal();
 
-    useEffect(() => {
-        // Standalone (PWA yüklü) modu kontrolü
-        const checkStandalone = () => {
-            const standalone = window.matchMedia('(display-mode: standalone)').matches;
-            // @ts-expect-error - iOS Safari specific
-            const iosStandalone = window.navigator.standalone === true;
-            return standalone || iosStandalone;
-        };
+    const handleAllow = async () => {
+        await requestPermission();
+    };
 
-        // Mobil kontrol
-        const checkMobile = () => {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                window.innerWidth < 768;
-        };
+    const handleDismiss = () => {
+        localStorage.setItem('notification-prompt-dismissed', new Date().toISOString());
+        // Force re-render by dispatching custom event
+        window.dispatchEvent(new Event('notification-dismissed'));
+    };
 
-        const isStandaloneMode = checkStandalone();
-        const isMobile = checkMobile();
+    // Sadece standalone modda ve henüz abone değilse göster kontrolü
+    const shouldShowPrompt = () => {
+        if (!isStandalone || !isInitialized || isSubscribed) return false;
 
-        setIsStandalone(isStandaloneMode);
-
-        // Sadece mobil + PWA yüklü (standalone modda) göster
-        // Normal web sitesinde gösterme
-        if (!isMobile || !isStandaloneMode) return;
-
-        // Daha önce reddedilmiş mi kontrol et
+        // Daha önce kapatılmış mı kontrol et
         const dismissed = localStorage.getItem('notification-prompt-dismissed');
         if (dismissed) {
             const dismissedDate = new Date(dismissed);
             const now = new Date();
             const daysDiff = (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
-            if (daysDiff < 30) return; // 30 gün bekle
+            if (daysDiff < 30) return false; // 30 gün bekle
         }
 
-        // OneSignal hazır ve abone değilse göster
-        if (isInitialized && !isSubscribed) {
-            // PWA açıldığında 2 saniye bekle sonra göster
-            setTimeout(() => setShowPrompt(true), 2000);
-        }
-    }, [isInitialized, isSubscribed]);
-
-    const handleAllow = async () => {
-        await requestPermission();
-        setShowPrompt(false);
-    };
-
-    const handleDismiss = () => {
-        setShowPrompt(false);
-        localStorage.setItem('notification-prompt-dismissed', new Date().toISOString());
+        return true;
     };
 
     return (
@@ -64,7 +37,7 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
             {children}
 
             {/* Notification Permission Prompt - Sadece Standalone PWA modunda */}
-            {isStandalone && showPrompt && !isSubscribed && (
+            {shouldShowPrompt() && (
                 <div className="fixed bottom-20 left-4 right-4 z-[9997] animate-slide-up">
                     <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-2xl p-4 relative overflow-hidden">
                         {/* Decorative background */}
@@ -93,7 +66,7 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
                                     🔔 Bildirimleri Açın
                                 </h3>
                                 <p className="text-white/90 text-sm leading-snug mb-3">
-                                    Yeni özellikler, özel günler ve önemli duyurulardan haberdar olmak için bildirimleri açın!
+                                    Yeni özellikler, özel günler ve önemli duyurulardan anında haberdar olun!
                                 </p>
 
                                 <button
@@ -108,20 +81,20 @@ export function OneSignalProvider({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <style jsx>{`
-            @keyframes slide-up {
-              from {
-                opacity: 0;
-                transform: translateY(20px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-            .animate-slide-up {
-              animation: slide-up 0.3s ease-out forwards;
-            }
-          `}</style>
+                        @keyframes slide-up {
+                            from {
+                                opacity: 0;
+                                transform: translateY(20px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+                        .animate-slide-up {
+                            animation: slide-up 0.3s ease-out forwards;
+                        }
+                    `}</style>
                 </div>
             )}
         </>
